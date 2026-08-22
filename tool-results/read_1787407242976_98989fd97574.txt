@@ -1,0 +1,927 @@
+     1→    60→  id: string;
+     2→    61→  title: string;
+     3→    62→  summary: string;
+     4→    63→  imageUrl: string | null;
+     5→    64→  publishedAt: string;
+     6→    65→  readCount: number | null;
+     7→    66→}
+     8→    67→
+     9→    68→type FetchState = 'idle' | 'loading' | 'success' | 'error';
+    10→    69→
+    11→    70→interface AuthState {
+    12→    71→  token: string | null;
+    13→    72→  fullName: string | null;
+    14→    73→}
+    15→    74→
+    16→    75→/* ================================================================== */
+    17→    76→/*  Utility                                                            */
+    18→    77→/* ================================================================== */
+    19→    78→
+    20→    79→function formatDate(iso: string): string {
+    21→    80→  const d = new Date(iso);
+    22→    81→  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    23→    82→}
+    24→    83→
+    25→    84→function txIcon(type: string) {
+    26→    85→  switch (type) {
+    27→    86→    case 'topUp':
+    28→    87→    case 'bonus':
+    29→    88→      return <ArrowDownLeft className="h-5 w-5 text-emerald-500" />;
+    30→    89→    case 'refund':
+    31→    90→      return <RefreshCw className="h-5 w-5 text-blue-500" />;
+    32→    91→    default:
+    33→    92→      return <ArrowUpRight className="h-5 w-5 text-red-400" />;
+    34→    93→  }
+    35→    94→}
+    36→    95→
+    37→    96→function txSign(type: string): string {
+    38→    97→  return type === 'topUp' || type === 'bonus' || type === 'refund' ? '+' : '-';
+    39→    98→}
+    40→    99→
+    41→   100→function txColor(type: string): string {
+    42→   101→  return type === 'topUp' || type === 'bonus' || type === 'refund' ? 'text-emerald-600' : 'text-red-500';
+    43→   102→}
+    44→   103→
+    45→   104→function txLabel(type: string): string {
+    46→   105→  switch (type) {
+    47→   106→    case 'topUp': return 'Пополнение';
+    48→   107→    case 'payment': return 'Оплата';
+    49→   108→    case 'refund': return 'Возврат';
+    50→   109→    case 'bonus': return 'Бонус';
+    51→   110→    default: return type;
+    52→   111→  }
+    53→   112→}
+    54→   113→
+    55→   114→const AUTH_KEY = 'telecom_auth';
+    56→   115→
+    57→   116→function loadAuth(): AuthState {
+    58→   117→  if (typeof window === 'undefined') return { token: null, fullName: null };
+    59→   118→  try {
+    60→   119→    const raw = localStorage.getItem(AUTH_KEY);
+    61→   120→    return raw ? JSON.parse(raw) : { token: null, fullName: null };
+    62→   121→  } catch {
+    63→   122→    return { token: null, fullName: null };
+    64→   123→  }
+    65→   124→}
+    66→   125→
+    67→   126→function saveAuth(auth: AuthState) {
+    68→   127→  localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    69→   128→}
+    70→   129→
+    71→   130→function clearAuth() {
+    72→   131→  localStorage.removeItem(AUTH_KEY);
+    73→   132→}
+    74→   133→
+    75→   134→/* ================================================================== */
+    76→   135→/*  Login Screen                                                       */
+    77→   136→/* ================================================================== */
+    78→   137→
+    79→   138→function LoginScreen({
+    80→   139→  onLogin,
+    81→   140→  onOpenSupport,
+    82→   141→}: {
+    83→   142→  onLogin: (auth: AuthState) => void;
+    84→   143→  onOpenSupport: () => void;
+    85→   144→}) {
+    86→   145→  const [pin, setPin] = useState('');
+    87→   146→  const [password, setPassword] = useState('');
+    88→   147→  const [showPassword, setShowPassword] = useState(false);
+    89→   148→  const [loading, setLoading] = useState(false);
+    90→   149→  const [error, setError] = useState('');
+    91→   150→  const [pinFocused, setPinFocused] = useState(false);
+    92→   151→
+    93→   152→  const handleSubmit = async (e: React.FormEvent) => {
+    94→   153→    e.preventDefault();
+    95→   154→    if (!pin.trim() || !password.trim()) {
+    96→   155→      setError('Введите ПИН и пароль');
+    97→   156→      return;
+    98→   157→    }
+    99→   158→    setLoading(true);
+   100→   159→    setError('');
+   101→   160→    try {
+   102→   161→      const res = await fetch('/api/auth/login', {
+   103→   162→        method: 'POST',
+   104→   163→        headers: { 'Content-Type': 'application/json' },
+   105→   164→        body: JSON.stringify({ pin: pin.trim(), password }),
+   106→   165→      });
+   107→   166→      const json = await res.json();
+   108→   167→      if (!res.ok) {
+   109→   168→        setError(json.error || 'Ошибка авторизации');
+   110→   169→        return;
+   111→   170→      }
+   112→   171→      onLogin({ token: json.token, fullName: json.user.fullName });
+   113→   172→    } catch {
+   114→   173→      setError('Сервер недоступен');
+   115→   174→    } finally {
+   116→   175→      setLoading(false);
+   117→   176→    }
+   118→   177→  };
+   119→   178→
+   120→   179→  return (
+   121→   180→    <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col justify-center bg-[#FFF5F0] px-6">
+   122→   181→      {/* ---- Logo ---- */}
+   123→   182→      <div className="mb-10 flex items-center justify-center gap-4">
+   124→   183→        <div className="text-center">
+   125→   184→          <h1 className="text-[42px] font-extrabold leading-none tracking-tight text-gray-900">
+   126→   185→            Starlink
+   127→   186→          </h1>
+   128→   187→          <p className="mt-1 text-[16px] font-medium text-gray-600">
+   129→   188→            просто с нами проще
+   130→   189→          </p>
+   131→   190→        </div>
+   132→   191→        <div
+   133→   192→          className="flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full"
+   134→   193→          style={{ background: 'linear-gradient(135deg, #FF9A44 0%, #FC6076 100%)' }}
+   135→   194→        >
+   136→   195→          <span className="text-3xl font-black text-white" style={{ fontFamily: 'system-ui' }}>S</span>
+   137→   196→        </div>
+   138→   197→      </div>
+   139→   198→
+   140→   199→      {/* ---- Form ---- */}
+   141→   200→      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+   142→   201→        {/* PIN */}
+   143→   202→        <div
+   144→   203→          className={`flex h-14 items-center gap-3 rounded-xl border-2 bg-white px-4 transition-colors ${
+   145→   204→            pinFocused ? 'border-[#F37021]' : 'border-gray-200'
+   146→   205→          }`}
+   147→   206→        >
+   148→   207→          <User className="h-6 w-6 shrink-0 text-gray-400" strokeWidth={1.8} />
+   149→   208→          <input
+   150→   209→            type="text"
+   151→   210→            inputMode="numeric"
+   152→   211→            placeholder="ПИН"
+   153→   212→            value={pin}
+   154→   213→            onChange={(e) => setPin(e.target.value)}
+   155→   214→            onFocus={() => setPinFocused(true)}
+   156→   215→            onBlur={() => setPinFocused(false)}
+   157→   216→            autoComplete="off"
+   158→   217→            className="h-full flex-1 bg-transparent text-[18px] text-gray-900 outline-none placeholder:text-gray-400"
+   159→   218→          />
+   160→   219→        </div>
+   161→   220→
+   162→   221→        {/* Password */}
+   163→   222→        <div className="flex h-14 items-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 transition-colors focus-within:border-[#F37021]">
+   164→   223→          <LockIcon className="h-6 w-6 shrink-0 text-gray-400" strokeWidth={1.8} />
+   165→   224→          <input
+   166→   225→            type={showPassword ? 'text' : 'password'}
+   167→   226→            placeholder="Пароль"
+   168→   227→            value={password}
+   169→   228→            onChange={(e) => setPassword(e.target.value)}
+   170→   229→            autoComplete="off"
+   171→   230→            className="h-full flex-1 bg-transparent text-[18px] text-gray-900 outline-none placeholder:text-gray-400"
+   172→   231→          />
+   173→   232→          <button
+   174→   233→            type="button"
+   175→   234→            onClick={() => setShowPassword(!showPassword)}
+   176→   235→            className="text-gray-500 transition-colors hover:text-gray-700"
+   177→   236→            aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+   178→   237→          >
+   179→   238→            {showPassword
+   180→   239→              ? <EyeOff className="h-[22px] w-[22px]" strokeWidth={1.8} />
+   181→   240→              : <Eye className="h-[22px] w-[22px]" strokeWidth={1.8} />}
+   182→   241→          </button>
+   183→   242→        </div>
+   184→   243→
+   185→   244→        {/* Error */}
+   186→   245→        {error && (
+   187→   246→          <p className="-mt-2 text-center text-[14px] font-medium text-red-500">{error}</p>
+   188→   247→        )}
+   189→   248→
+   190→   249→        {/* Submit */}
+   191→   250→        <button
+   192→   251→          type="submit"
+   193→   252→          disabled={loading}
+   194→   253→          className="mt-2 flex h-14 w-full items-center justify-center rounded-xl bg-[#F37021] text-[18px] font-bold text-white transition-colors hover:bg-[#D45A10] disabled:opacity-60"
+   195→   254→        >
+   196→   255→          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Войти'}
+   197→   256→        </button>
+   198→   257→      </form>
+   199→   258→
+   200→   259→      {/* ---- Support link ---- */}
+   201→   260→      <button
+   202→   261→        type="button"
+   203→   262→        onClick={onOpenSupport}
+   204→   263→        className="mx-auto mt-6 flex items-center gap-2 text-[17px] font-medium text-blue-500 transition-colors hover:text-blue-600"
+   205→   264→      >
+   206→   265→        <Mail className="h-[22px] w-[22px]" strokeWidth={2} />
+   207→   266→        Написать в поддержку
+   208→   267→      </button>
+   209→   268→    </div>
+   210→   269→  );
+   211→   270→}
+   212→   271→
+   213→   272→/* ================================================================== */
+   214→   273→/*  Support Only Screen (unauthenticated)                               */
+   215→   274→/* ================================================================== */
+   216→   275→
+   217→   276→function SupportOnlyScreen({ onBack }: { onBack: () => void }) {
+   218→   277→  const [subject, setSubject] = useState('');
+   219→   278→  const [description, setDescription] = useState('');
+   220→   279→  const [sending, setSending] = useState(false);
+   221→   280→  const [sent, setSent] = useState(false);
+   222→   281→
+   223→   282→  const handleSubmit = async () => {
+   224→   283→    if (!subject.trim() || !description.trim()) {
+   225→   284→      toast.error('Заполните все поля');
+   226→   285→      return;
+   227→   286→    }
+   228→   287→    setSending(true);
+   229→   288→    await new Promise((r) => setTimeout(r, 1000));
+   230→   289→    setSending(false);
+   231→   290→    setSent(true);
+   232→   291→    toast.success('Обращение отправлено');
+   233→   292→  };
+   234→   293→
+   235→   294→  return (
+   236→   295→    <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-[#FFF5F0] px-5 pt-6 pb-10">
+   237→   296→      <button
+   238→   297→        type="button"
+   239→   298→        onClick={onBack}
+   240→   299→        className="mb-6 flex items-center gap-1.5 text-[16px] font-medium text-gray-600 transition-colors hover:text-gray-900"
+   241→   300→      >
+   242→   301→        <ChevronRight className="h-5 w-5 rotate-180" />
+   243→   302→        Назад
+   244→   303→      </button>
+   245→   304→
+   246→   305→      <h1 className="mb-2 text-[22px] font-bold text-gray-900">Поддержка</h1>
+   247→   306→      <p className="mb-6 text-[15px] text-gray-500">Оставьте обращение и мы свяжемся с вами</p>
+   248→   307→
+   249→   308→      {sent ? (
+   250→   309→        <div className="rounded-2xl bg-white p-8 text-center shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+   251→   310→          <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-500" />
+   252→   311→          <h2 className="mb-2 text-lg font-bold text-gray-900">Отправлено!</h2>
+   253→   312→          <p className="mb-5 text-[15px] text-gray-500">Мы ответим в ближайшее время</p>
+   254→   313→          <button
+   255→   314→            type="button"
+   256→   315→            onClick={() => { setSent(false); setSubject(''); setDescription(''); }}
+   257→   316→            className="text-sm font-medium text-orange-500 underline"
+   258→   317→          >
+   259→   318→            Новое обращение
+   260→   319→          </button>
+   261→   320→        </div>
+   262→   321→      ) : (
+   263→   322→        <div className="rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+   264→   323→          <label htmlFor="sp-subject" className="mb-1.5 block text-sm font-medium text-gray-700">Тема</label>
+   265→   324→          <input
+   266→   325→            id="sp-subject"
+   267→   326→            type="text"
+   268→   327→            placeholder="Кратко опишите проблему"
+   269→   328→            value={subject}
+   270→   329→            onChange={(e) => setSubject(e.target.value)}
+   271→   330→            className="mb-4 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-[15px] text-gray-900 outline-none transition-colors focus:border-orange-500"
+   272→   331→          />
+   273→   332→          <label htmlFor="sp-desc" className="mb-1.5 block text-sm font-medium text-gray-700">Описание</label>
+   274→   333→          <textarea
+   275→   334→            id="sp-desc"
+   276→   335→            placeholder="Подробно опишите вашу проблему…"
+   277→   336→            rows={5}
+   278→   337→            value={description}
+   279→   338→            onChange={(e) => setDescription(e.target.value)}
+   280→   339→            className="mb-5 w-full resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-[15px] text-gray-900 outline-none transition-colors focus:border-orange-500"
+   281→   340→          />
+   282→   341→          <button
+   283→   342→            type="button"
+   284→   343→            onClick={handleSubmit}
+   285→   344→            disabled={sending}
+   286→   345→            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3.5 text-[16px] font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+   287→   346→          >
+   288→   347→            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+   289→   348→            Отправить
+   290→   349→          </button>
+   291→   350→        </div>
+   292→   351→      )}
+   293→   352→
+   294→   353→      {/* FAQ */}
+   295→   354→      <div className="mt-8">
+   296→   355→        <h2 className="mb-4 text-[17px] font-semibold text-gray-800">Частые вопросы</h2>
+   297→   356→        <div className="flex flex-col gap-3">
+   298→   357→          {[
+   299→   358→            { q: 'Как пополнить баланс?', a: 'Войдите в личный кабинет и нажмите «Пополнить».' },
+   300→   359→            { q: 'Забыл пароль', a: 'Обратитесь в поддержку через эту форму.' },
+   301→   360→            { q: 'Как изменить тариф?', a: 'Обратитесь в поддержку через эту форму или позвоните на горячую линию.' },
+   302→   361→          ].map((faq) => (
+   303→   362→            <details key={faq.q} className="group rounded-2xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+   304→   363→              <summary className="flex cursor-pointer items-center justify-between p-4 text-[15px] font-medium text-gray-800">
+   305→   364→                {faq.q}
+   306→   365→                <ChevronRight className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-90" />
+   307→   366→              </summary>
+   308→   367→              <p className="px-4 pb-4 text-[14px] leading-relaxed text-gray-500">{faq.a}</p>
+   309→   368→            </details>
+   310→   369→          ))}
+   311→   370→        </div>
+   312→   371→      </div>
+   313→   372→    </div>
+   314→   373→  );
+   315→   374→}
+   316→   375→
+   317→   376→/* ================================================================== */
+   318→   377→/*  Main App                                                           */
+   319→   378→/* ================================================================== */
+   320→   379→
+   321→   380→export default function DashboardScreen() {
+   322→   381→  /* ---- Auth ---- */
+   323→   382→  const [auth, setAuth] = useState<AuthState>({ token: null, fullName: null });
+   324→   383→  const [authChecked, setAuthChecked] = useState(false);
+   325→   384→  const [screen, setScreen] = useState<'login' | 'support-only' | 'app'>('login');
+   326→   385→
+   327→   386→  /* Restore session on mount */
+   328→   387→  useEffect(() => {
+   329→   388→    const saved = loadAuth();
+   330→   389→    if (saved.token) {
+   331→   390→      setAuth(saved);
+   332→   391→      setScreen('app');
+   333→   392→    }
+   334→   393→    setAuthChecked(true);
+   335→   394→  }, []);
+   336→   395→
+   337→   396→  const handleLogin = useCallback((newAuth: AuthState) => {
+   338→   397→    saveAuth(newAuth);
+   339→   398→    setAuth(newAuth);
+   340→   399→    setScreen('app');
+   341→   400→  }, []);
+   342→   401→
+   343→   402→  const handleLogout = useCallback(() => {
+   344→   403→    clearAuth();
+   345→   404→    setAuth({ token: null, fullName: null });
+   346→   405→    setScreen('login');
+   347→   406→  }, []);
+   348→   407→
+   349→   408→  /* ---- Profile state ---- */
+   350→   409→  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+   351→   410→  const [profileState, setProfileState] = useState<FetchState>('idle');
+   352→   411→
+   353→   412→  /* ---- Transactions state ---- */
+   354→   413→  const [transactions, setTransactions] = useState<Transaction[]>([]);
+   355→   414→  const [txState, setTxState] = useState<FetchState>('idle');
+   356→   415→
+   357→   416→  /* ---- News state ---- */
+   358→   417→  const [news, setNews] = useState<NewsItem[]>([]);
+   359→   418→  const [newsState, setNewsState] = useState<FetchState>('idle');
+   360→   419→
+   361→   420→  /* ---- UI state ---- */
+   362→   421→  const [activeTab, setActiveTab] = useState(0);
+   363→   422→  const [topUpOpen, setTopUpOpen] = useState(false);
+   364→   423→  const [historyOpen, setHistoryOpen] = useState(false);
+   365→   424→  const [topUpAmount, setTopUpAmount] = useState('');
+   366→   425→  const [topUpLoading, setTopUpLoading] = useState(false);
+   367→   426→  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+   368→   427→
+   369→   428→  /* ---- Fetchers ---- */
+   370→   429→  const fetchProfile = useCallback(async () => {
+   371→   430→    setProfileState('loading');
+   372→   431→    try {
+   373→   432→      const res = await fetch('/api/account/profile');
+   374→   433→      if (!res.ok) throw new Error();
+   375→   434→      setProfile(await res.json());
+   376→   435→      setProfileState('success');
+   377→   436→    } catch { setProfileState('error'); }
+   378→   437→  }, []);
+   379→   438→
+   380→   439→  const fetchTransactions = useCallback(async () => {
+   381→   440→    setTxState('loading');
+   382→   441→    try {
+   383→   442→      const res = await fetch('/api/transactions');
+   384→   443→      if (!res.ok) throw new Error();
+   385→   444→      const json = await res.json();
+   386→   445→      setTransactions(json.transactions);
+   387→   446→      setTxState('success');
+   388→   447→    } catch { setTxState('error'); }
+   389→   448→  }, []);
+   390→   449→
+   391→   450→  const fetchNews = useCallback(async () => {
+   392→   451→    setNewsState('loading');
+   393→   452→    try {
+   394→   453→      const res = await fetch('/api/news');
+   395→   454→      if (!res.ok) throw new Error();
+   396→   455→      const json = await res.json();
+   397→   456→      setNews(json.news);
+   398→   457→      setNewsState('success');
+   399→   458→    } catch { setNewsState('error'); }
+   400→   459→  }, []);
+   401→   460→
+   402→   461→  /* ---- Load data on tab switch ---- */
+   403→   462→  useEffect(() => { if (screen === 'app') fetchProfile(); }, [screen, fetchProfile]);
+   404→   463→  useEffect(() => { if (screen === 'app' && activeTab === 1) fetchTransactions(); }, [screen, activeTab, fetchTransactions]);
+   405→   464→  useEffect(() => { if (screen === 'app' && activeTab === 2) fetchNews(); }, [screen, activeTab, fetchNews]);
+   406→   465→
+   407→   466→  /* ---- Top-up handler ---- */
+   408→   467→  const handleTopUp = async () => {
+   409→   468→    const amount = parseFloat(topUpAmount);
+   410→   469→    if (isNaN(amount) || amount <= 0) {
+   411→   470→      toast.error('Введите корректную сумму');
+   412→   471→      return;
+   413→   472→    }
+   414→   473→    setTopUpLoading(true);
+   415→   474→    try {
+   416→   475→      const res = await fetch('/api/top-up', {
+   417→   476→        method: 'POST',
+   418→   477→        headers: { 'Content-Type': 'application/json' },
+   419→   478→        body: JSON.stringify({ amount }),
+   420→   479→      });
+   421→   480→      if (!res.ok) throw new Error();
+   422→   481→      toast.success(`Баланс пополнен на ${amount} ₽`);
+   423→   482→      setTopUpAmount('');
+   424→   483→      setTopUpOpen(false);
+   425→   484→      fetchProfile();
+   426→   485→    } catch {
+   427→   486→      toast.error('Ошибка пополнения');
+   428→   487→    } finally {
+   429→   488→      setTopUpLoading(false);
+   430→   489→    }
+   431→   490→  };
+   432→   491→
+   433→   492→  /* ---- Tabs ---- */
+   434→   493→  const tabs = [
+   435→   494→    { icon: Home, label: 'Главная' },
+   436→   495→    { icon: CreditCard, label: 'Оплата' },
+   437→   496→    { icon: FileText, label: 'Новости' },
+   438→   497→    { icon: HelpCircle, label: 'Поддержка' },
+   439→   498→  ];
+   440→   499→
+   441→   500→  /* ---- Render ---- */
+   442→   501→  if (!authChecked) return null;
+   443→   502→
+   444→   503→  /* Login screen */
+   445→   504→  if (screen === 'login') {
+   446→   505→    return (
+   447→   506→      <LoginScreen
+   448→   507→        onLogin={handleLogin}
+   449→   508→        onOpenSupport={() => setScreen('support-only')}
+   450→   509→      />
+   451→   510→    );
+   452→   511→  }
+   453→   512→
+   454→   513→  /* Support-only screen (no auth required) */
+   455→   514→  if (screen === 'support-only') {
+   456→   515→    return <SupportOnlyScreen onBack={() => setScreen('login')} />;
+   457→   516→  }
+   458→   517→
+   459→   518→  /* Authenticated app */
+   460→   519→  return (
+   461→   520→    <div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-white font-sans">
+   462→   521→      {/* ============ CONTENT AREA ============ */}
+   463→   522→      {activeTab === 0 && (
+   464→   523→        <HomeTab
+   465→   524→          profile={profile} profileState={profileState}
+   466→   525→          onTopUp={() => setTopUpOpen(true)}
+   467→   526→          onHistory={() => { setHistoryOpen(true); fetchTransactions(); }}
+   468→   527→          onRetry={fetchProfile}
+   469→   528→          userName={auth.fullName}
+   470→   529→          onLogout={handleLogout}
+   471→   530→        />
+   472→   531→      )}
+   473→   532→      {activeTab === 1 && <PaymentTab transactions={transactions} txState={txState} onRetry={fetchTransactions} />}
+   474→   533→      {activeTab === 2 && <NewsTab news={news} newsState={newsState} onRetry={fetchNews} onSelect={setSelectedNews} />}
+   475→   534→      {activeTab === 3 && <SupportTab />}
+   476→   535→
+   477→   536→      {/* ============ TOP-UP SHEET ============ */}
+   478→   537→      <Sheet open={topUpOpen} onOpenChange={setTopUpOpen}>
+   479→   538→        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-2xl px-6 pb-8 pt-4">
+   480→   539→          <SheetHeader>
+   481→   540→            <SheetTitle className="text-xl font-bold text-gray-900">Пополнить баланс</SheetTitle>
+   482→   541→            <SheetDescription className="text-gray-500">Выберите или введите сумму пополнения</SheetDescription>
+   483→   542→          </SheetHeader>
+   484→   543→          <div className="mt-4">
+   485→   544→            <div className="grid grid-cols-3 gap-3">
+   486→   545→              {[100, 200, 500, 1000, 2000, 5000].map((a) => (
+   487→   546→                <button
+   488→   547→                  key={a}
+   489→   548→                  type="button"
+   490→   549→                  onClick={() => setTopUpAmount(String(a))}
+   491→   550→                  className={`rounded-xl border-2 py-3 text-center text-lg font-semibold transition-all ${
+   492→   551→                    topUpAmount === String(a)
+   493→   552→                      ? 'border-orange-500 bg-orange-50 text-orange-600'
+   494→   553→                      : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300'
+   495→   554→                  }`}
+   496→   555→                >
+   497→   556→                  {a} ₽
+   498→   557→                </button>
+   499→   558→              ))}
+   500→   559→            </div>
+   501→   560→            <div className="mt-4">
+   502→   561→              <label htmlFor="topup-input" className="mb-1.5 block text-sm font-medium text-gray-600">Другая сумма</label>
+   503→   562→              <input
+   504→   563→                id="topup-input"
+   505→   564→                type="number"
+   506→   565→                inputMode="numeric"
+   507→   566→                placeholder="0"
+   508→   567→                value={topUpAmount}
+   509→   568→                onChange={(e) => setTopUpAmount(e.target.value)}
+   510→   569→                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-xl font-semibold text-gray-900 outline-none transition-colors focus:border-orange-500"
+   511→   570→              />
+   512→   571→            </div>
+   513→   572→            <button
+   514→   573→              type="button"
+   515→   574→              onClick={handleTopUp}
+   516→   575→              disabled={topUpLoading || !topUpAmount}
+   517→   576→              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3.5 text-lg font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+   518→   577→            >
+   519→   578→              {topUpLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Wallet className="h-5 w-5" />}
+   520→   579→              Пополнить
+   521→   580→            </button>
+   522→   581→          </div>
+   523→   582→        </SheetContent>
+   524→   583→      </Sheet>
+   525→   584→
+   526→   585→      {/* ============ HISTORY SHEET ============ */}
+   527→   586→      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+   528→   587→        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-2xl px-6 pb-8 pt-4">
+   529→   588→          <SheetHeader>
+   530→   589→            <SheetTitle className="text-xl font-bold text-gray-900">История операций</SheetTitle>
+   531→   590→            <SheetDescription className="text-gray-500">Все транзакции по вашему аккаунту</SheetDescription>
+   532→   591→          </SheetHeader>
+   533→   592→          <div className="mt-2 max-h-[60vh] overflow-y-auto">
+   534→   593→            <TransactionList transactions={transactions} state={txState} onRetry={fetchTransactions} />
+   535→   594→          </div>
+   536→   595→        </SheetContent>
+   537→   596→      </Sheet>
+   538→   597→
+   539→   598→      {/* ============ NEWS DETAIL SHEET ============ */}
+   540→   599→      <Sheet open={!!selectedNews} onOpenChange={() => setSelectedNews(null)}>
+   541→   600→        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-2xl px-6 pb-8 pt-4">
+   542→   601→          {selectedNews && (
+   543→   602→            <>
+   544→   603→              <SheetHeader>
+   545→   604→                <SheetTitle className="text-xl font-bold text-gray-900 leading-snug">{selectedNews.title}</SheetTitle>
+   546→   605→                <SheetDescription className="text-gray-400 text-sm">
+   547→   606→                  <Clock className="mr-1 inline h-3.5 w-3.5" />
+   548→   607→                  {formatDate(selectedNews.publishedAt)}
+   549→   608→                  {selectedNews.readCount != null && ` · ${selectedNews.readCount} просмотров`}
+   550→   609→                </SheetDescription>
+   551→   610→              </SheetHeader>
+   552→   611→              <p className="mt-4 text-[16px] leading-relaxed text-gray-700">{selectedNews.summary}</p>
+   553→   612→            </>
+   554→   613→          )}
+   555→   614→        </SheetContent>
+   556→   615→      </Sheet>
+   557→   616→
+   558→   617→      {/* ============ BOTTOM NAV ============ */}
+   559→   618→      <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 border-t border-gray-200 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
+   560→   619→        <ul className="flex justify-around py-3 pb-5">
+   561→   620→          {tabs.map((tab, idx) => {
+   562→   621→            const Icon = tab.icon;
+   563→   622→            const active = idx === activeTab;
+   564→   623→            return (
+   565→   624→              <li key={tab.label}>
+   566→   625→                <button
+   567→   626→                  type="button"
+   568→   627→                  onClick={() => setActiveTab(idx)}
+   569→   628→                  className={`flex flex-col items-center gap-1.5 transition-colors ${
+   570→   629→                    active ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'
+   571→   630→                  }`}
+   572→   631→                >
+   573→   632→                  <Icon className="h-[26px] w-[26px]" strokeWidth={active ? 2.2 : 1.8} />
+   574→   633→                  <span className="text-[13px] font-medium">{tab.label}</span>
+   575→   634→                </button>
+   576→   635→              </li>
+   577→   636→            );
+   578→   637→          })}
+   579→   638→        </ul>
+   580→   639→      </nav>
+   581→   640→    </div>
+   582→   641→  );
+   583→   642→}
+   584→   643→
+   585→   644→/* ================================================================== */
+   586→   645→/*  Home Tab                                                           */
+   587→   646→/* ================================================================== */
+   588→   647→
+   589→   648→function HomeTab({
+   590→   649→  profile, profileState, onTopUp, onHistory, onRetry, userName, onLogout,
+   591→   650→}: {
+   592→   651→  profile: ProfileResponse | null;
+   593→   652→  profileState: FetchState;
+   594→   653→  onTopUp: () => void;
+   595→   654→  onHistory: () => void;
+   596→   655→  onRetry: () => void;
+   597→   656→  userName: string | null;
+   598→   657→  onLogout: () => void;
+   599→   658→}) {
+   600→   659→  return (
+   601→   660→    <>
+   602→   661→      {/* ---- Header ---- */}
+   603→   662→      <header className="bg-white px-5 pt-3 pb-6">
+   604→   663→        <div className="mb-8 flex items-start justify-between">
+   605→   664→          <div className="flex items-center gap-3">
+   606→   665→            <div
+   607→   666→              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
+   608→   667→              style={{ background: 'linear-gradient(135deg, #FF9A44 0%, #FC6076 100%)' }}
+   609→   668→            >
+   610→   669→              S
+   611→   670→            </div>
+   612→   671→            <div>
+   613→   672→              <h2 className="text-[21px] font-bold leading-tight tracking-tight text-gray-900">
+   614→   673→                ПИН {profileState === 'loading' ? '---' : profile?.user.pin ?? '------'}
+   615→   674→              </h2>
+   616→   675→              <p className="text-[17px] leading-tight text-gray-500">
+   617→   676→                {profileState === 'loading' ? '...' : (userName ?? profile?.user.fullName)}
+   618→   677→              </p>
+   619→   678→            </div>
+   620→   679→          </div>
+   621→   680→          <div className="flex items-center gap-5 pt-0.5">
+   622→   681→            <button type="button" aria-label="Уведомления" className="text-gray-600 transition-colors hover:text-gray-800">
+   623→   682→              <Bell className="h-[26px] w-[26px]" strokeWidth={1.8} />
+   624→   683→            </button>
+   625→   684→            <button type="button" aria-label="Настройки" className="text-gray-600 transition-colors hover:text-gray-800">
+   626→   685→              <Settings className="h-[26px] w-[26px]" strokeWidth={1.8} />
+   627→   686→            </button>
+   628→   687→            <button
+   629→   688→              type="button"
+   630→   689→              onClick={onLogout}
+   631→   690→              aria-label="Выйти"
+   632→   691→              className="text-gray-400 transition-colors hover:text-red-500"
+   633→   692→              title="Выйти"
+   634→   693→            >
+   635→   694→              <LogOut className="h-[22px] w-[22px]" strokeWidth={1.8} />
+   636→   695→            </button>
+   637→   696→          </div>
+   638→   697→        </div>
+   639→   698→
+   640→   699→        {/* Balance */}
+   641→   700→        {profileState === 'loading' ? (
+   642→   701→          <div className="flex items-center gap-3 py-2">
+   643→   702→            <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+   644→   703→            <span className="text-lg text-gray-300">Загрузка…</span>
+   645→   704→          </div>
+   646→   705→        ) : profileState === 'error' ? (
+   647→   706→          <div className="py-2">
+   648→   707→            <p className="text-base text-red-500">Ошибка загрузки профиля</p>
+   649→   708→            <button type="button" onClick={onRetry} className="mt-1 text-sm text-orange-500 underline">Повторить</button>
+   650→   709→          </div>
+   651→   710→        ) : (
+   652→   711→          <>
+   653→   712→            <div className="mb-2">
+   654→   713→              <span
+   655→   714→                className="text-[52px] font-medium leading-[1.1] tracking-[-0.03em] text-slate-700"
+   656→   715→                style={{ fontFeatureSettings: '"tnum"' }}
+   657→   716→              >
+   658→   717→                {profile?.balance.amount.toFixed(1)}{' '}
+   659→   718→                <span className="text-[36px]">₽</span>
+   660→   719→              </span>
+   661→   720→            </div>
+   662→   721→            <p className="text-[17px] text-gray-500">
+   663→   722→              Услуги оплачены {profile?.balance.paidUntilLabel ?? '---'}
+   664→   723→            </p>
+   665→   724→          </>
+   666→   725→        )}
+   667→   726→
+   668→   727→        {/* Action buttons */}
+   669→   728→        <div className="mt-6 flex justify-between px-2.5">
+   670→   729→          <button
+   671→   730→            type="button"
+   672→   731→            onClick={onTopUp}
+   673→   732→            className="flex items-center gap-2.5 px-1 py-2 text-[17px] font-medium tracking-[-0.01em] text-gray-900 transition-colors hover:text-orange-600"
+   674→   733→          >
+   675→   734→            <Plus className="h-[28px] w-[28px] rounded-full border-2 border-gray-900" strokeWidth={2} />
+   676→   735→            ПОПОЛНИТЬ
+   677→   736→          </button>
+   678→   737→          <button
+   679→   738→            type="button"
+   680→   739→            onClick={onHistory}
+   681→   740→            className="flex items-center gap-2.5 px-1 py-2 text-[17px] font-medium tracking-[-0.01em] text-gray-900 transition-colors hover:text-orange-600"
+   682→   741→          >
+   683→   742→            <History className="h-[28px] w-[28px] rounded-full border-2 border-gray-900" strokeWidth={2} />
+   684→   743→            ИСТОРИЯ
+   685→   744→          </button>
+   686→   745→        </div>
+   687→   746→      </header>
+   688→   747→
+   689→   748→      {/* ---- Active services ---- */}
+   690→   749→      <main className="min-h-[50vh] rounded-t-[20px] bg-gray-50 px-5 pt-6 pb-28" style={{ boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' }}>
+   691→   750→        <div className="mb-5 flex items-center justify-between">
+   692→   751→          <h2 className="text-[19px] font-semibold text-gray-900">Активные услуги</h2>
+   693→   752→          <LockIcon className="h-[26px] w-[26px] text-orange-500" strokeWidth={1.8} />
+   694→   753→        </div>
+   695→   754→        {profileState === 'loading' ? (
+   696→   755→          <div className="flex animate-pulse items-center justify-center rounded-2xl bg-white p-10">
+   697→   756→            <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
+   698→   757→          </div>
+   699→   758→        ) : profileState === 'error' ? null : (
+   700→   759→          (profile?.activeServices ?? []).map((svc) => <ServiceCard key={svc.id} service={svc} />)
+   701→   760→        )}
+   702→   761→      </main>
+   703→   762→    </>
+   704→   763→  );
+   705→   764→}
+   706→   765→
+   707→   766→/* ================================================================== */
+   708→   767→/*  Payment Tab                                                       */
+   709→   768→/* ================================================================== */
+   710→   769→
+   711→   770→function PaymentTab({ transactions, txState, onRetry }: { transactions: Transaction[]; txState: FetchState; onRetry: () => void }) {
+   712→   771→  return (
+   713→   772→    <div className="min-h-dvh bg-gray-50 px-5 pt-6 pb-28">
+   714→   773→      <h1 className="mb-6 text-[22px] font-bold text-gray-900">Оплата и финансы</h1>
+   715→   774→      <div className="mb-6 grid grid-cols-2 gap-3">
+   716→   775→        <QuickAction icon={Smartphone} label="Оплата услуг" color="bg-orange-500" />
+   717→   776→        <QuickAction icon={Building2} label="Перевод" color="bg-emerald-500" />
+   718→   777→        <QuickAction icon={CardIcon} label="Привязать карту" color="bg-blue-500" />
+   719→   778→        <QuickAction icon={Tag} label="Промокод" color="bg-violet-500" />
+   720→   779→      </div>
+   721→   780→      <h2 className="mb-3 text-[17px] font-semibold text-gray-800">Последние операции</h2>
+   722→   781→      <div className="rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+   723→   782→        <TransactionList transactions={transactions} state={txState} onRetry={onRetry} />
+   724→   783→      </div>
+   725→   784→    </div>
+   726→   785→  );
+   727→   786→}
+   728→   787→
+   729→   788→function QuickAction({ icon: Icon, label, color }: { icon: typeof Smartphone; label: string; color: string }) {
+   730→   789→  return (
+   731→   790→    <button
+   732→   791→      type="button"
+   733→   792→      className="flex flex-col items-center gap-2.5 rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow active:shadow-none"
+   734→   793→    >
+   735→   794→      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${color}`}>
+   736→   795→        <Icon className="h-6 w-6 text-white" strokeWidth={1.8} />
+   737→   796→      </div>
+   738→   797→      <span className="text-[14px] font-medium text-gray-700">{label}</span>
+   739→   798→    </button>
+   740→   799→  );
+   741→   800→}
+   742→   801→
+   743→   802→/* ================================================================== */
+   744→   803→/*  News Tab                                                          */
+   745→   804→/* ================================================================== */
+   746→   805→
+   747→   806→function NewsTab({ news, newsState, onRetry, onSelect }: { news: NewsItem[]; newsState: FetchState; onRetry: () => void; onSelect: (n: NewsItem) => void }) {
+   748→   807→  return (
+   749→   808→    <div className="min-h-dvh bg-gray-50 px-5 pt-6 pb-28">
+   750→   809→      <h1 className="mb-6 text-[22px] font-bold text-gray-900">Новости</h1>
+   751→   810→      {newsState === 'loading' ? (
+   752→   811→        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-gray-300" /></div>
+   753→   812→      ) : newsState === 'error' ? (
+   754→   813→        <div className="py-20 text-center">
+   755→   814→          <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-300" />
+   756→   815→          <p className="mb-2 text-gray-500">Не удалось загрузить новости</p>
+   757→   816→          <button type="button" onClick={onRetry} className="text-sm text-orange-500 underline">Повторить</button>
+   758→   817→        </div>
+   759→   818→      ) : news.length === 0 ? (
+   760→   819→        <div className="py-20 text-center">
+   761→   820→          <Inbox className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+   762→   821→          <p className="text-gray-400">Новостей пока нет</p>
+   763→   822→        </div>
+   764→   823→      ) : (
+   765→   824→        <div className="flex flex-col gap-3">
+   766→   825→          {news.map((item) => (
+   767→   826→            <button
+   768→   827→              key={item.id}
+   769→   828→              type="button"
+   770→   829→              onClick={() => onSelect(item)}
+   771→   830→              className="flex items-start gap-4 rounded-2xl bg-white p-4 text-left shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow hover:shadow-md"
+   772→   831→            >
+   773→   832→              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100">
+   774→   833→                <FileText className="h-5 w-5 text-orange-500" strokeWidth={1.8} />
+   775→   834→              </div>
+   776→   835→              <div className="min-w-0 flex-1">
+   777→   836→                <h3 className="mb-1 text-[15px] font-semibold leading-snug text-gray-900">{item.title}</h3>
+   778→   837→                <p className="mb-2 line-clamp-2 text-[13px] leading-relaxed text-gray-500">{item.summary}</p>
+   779→   838→                <div className="flex items-center gap-2 text-[12px] text-gray-400">
+   780→   839→                  <Clock className="h-3 w-3" />
+   781→   840→                  {formatDate(item.publishedAt)}
+   782→   841→                  {item.readCount != null && <span>· {item.readCount} просм.</span>}
+   783→   842→                </div>
+   784→   843→              </div>
+   785→   844→              <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-gray-300" />
+   786→   845→            </button>
+   787→   846→          ))}
+   788→   847→        </div>
+   789→   848→      )}
+   790→   849→    </div>
+   791→   850→  );
+   792→   851→}
+   793→   852→
+   794→   853→/* ================================================================== */
+   795→   854→/*  Support Tab (authenticated)                                       */
+   796→   855→/* ================================================================== */
+   797→   856→
+   798→   857→function SupportTab() {
+   799→   858→  const [subject, setSubject] = useState('');
+   800→   859→  const [description, setDescription] = useState('');
+   801→   860→  const [sending, setSending] = useState(false);
+   802→   861→  const [sent, setSent] = useState(false);
+   803→   862→
+   804→   863→  const handleSubmit = async () => {
+   805→   864→    if (!subject.trim() || !description.trim()) { toast.error('Заполните все поля'); return; }
+   806→   865→    setSending(true);
+   807→   866→    await new Promise((r) => setTimeout(r, 1000));
+   808→   867→    setSending(false);
+   809→   868→    setSent(true);
+   810→   869→    toast.success('Обращение отправлено');
+   811→   870→    setSubject(''); setDescription('');
+   812→   871→  };
+   813→   872→
+   814→   873→  return (
+   815→   874→    <div className="min-h-dvh bg-gray-50 px-5 pt-6 pb-28">
+   816→   875→      <h1 className="mb-2 text-[22px] font-bold text-gray-900">Поддержка</h1>
+   817→   876→      <p className="mb-6 text-[15px] text-gray-500">Оставьте обращение и мы свяжемся с вами</p>
+   818→   877→      {sent ? (
+   819→   878→        <div className="rounded-2xl bg-white p-8 text-center shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+   820→   879→          <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-500" />
+   821→   880→          <h2 className="mb-2 text-lg font-bold text-gray-900">Отправлено!</h2>
+   822→   881→          <p className="mb-5 text-[15px] text-gray-500">Мы ответим в ближайшее время</p>
+   823→   882→          <button type="button" onClick={() => setSent(false)} className="text-sm font-medium text-orange-500 underline">Новое обращение</button>
+   824→   883→        </div>
+   825→   884→      ) : (
+   826→   885→        <div className="rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+   827→   886→          <label htmlFor="s-subject" className="mb-1.5 block text-sm font-medium text-gray-700">Тема</label>
+   828→   887→          <input id="s-subject" type="text" placeholder="Кратко опишите проблему" value={subject} onChange={(e) => setSubject(e.target.value)} className="mb-4 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-[15px] text-gray-900 outline-none transition-colors focus:border-orange-500" />
+   829→   888→          <label htmlFor="s-desc" className="mb-1.5 block text-sm font-medium text-gray-700">Описание</label>
+   830→   889→          <textarea id="s-desc" placeholder="Подробно опишите вашу проблему…" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} className="mb-5 w-full resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-[15px] text-gray-900 outline-none transition-colors focus:border-orange-500" />
+   831→   890→          <button type="button" onClick={handleSubmit} disabled={sending} className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3.5 text-[16px] font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50">
+   832→   891→            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+   833→   892→            Отправить
+   834→   893→          </button>
+   835→   894→        </div>
+   836→   895→      )}
+   837→   896→      <div className="mt-8">
+   838→   897→        <h2 className="mb-4 text-[17px] font-semibold text-gray-800">Частые вопросы</h2>
+   839→   898→        <div className="flex flex-col gap-3">
+   840→   899→          {[
+   841→   900→            { q: 'Как пополнить баланс?', a: 'Нажмите «Пополнить» на главном экране и выберите сумму.' },
+   842→   901→            { q: 'Как узнать остаток трафика?', a: 'Информация отображается в карточке активной услуги на главном экране.' },
+   843→   902→            { q: 'Как изменить тариф?', a: 'Обратитесь в поддержку через эту форму или позвоните на горячую линию.' },
+   844→   903→          ].map((faq) => (
+   845→   904→            <details key={faq.q} className="group rounded-2xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+   846→   905→              <summary className="flex cursor-pointer items-center justify-between p-4 text-[15px] font-medium text-gray-800">
+   847→   906→                {faq.q}
+   848→   907→                <ChevronRight className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-90" />
+   849→   908→              </summary>
+   850→   909→              <p className="px-4 pb-4 text-[14px] leading-relaxed text-gray-500">{faq.a}</p>
+   851→   910→            </details>
+   852→   911→          ))}
+   853→   912→        </div>
+   854→   913→      </div>
+   855→   914→    </div>
+   856→   915→  );
+   857→   916→}
+   858→   917→
+   859→   918→/* ================================================================== */
+   860→   919→/*  Shared Components                                                  */
+   861→   920→/* ================================================================== */
+   862→   921→
+   863→   922→function ServiceCard({ service }: { service: ActiveService }) {
+   864→   923→  return (
+   865→   924→    <div className="rounded-[14px] border border-orange-100 bg-orange-50/80 p-5 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+   866→   925→      <div className="mb-5 text-center">
+   867→   926→        <h3 className="text-[27px] font-semibold leading-[1.3] tracking-[-0.01em] text-gray-700">{service.name}</h3>
+   868→   927→      </div>
+   869→   928→      <div className="flex items-start gap-4">
+   870→   929→        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-500">
+   871→   930→          <Globe className="h-8 w-8 text-white" strokeWidth={1.5} />
+   872→   931→        </div>
+   873→   932→        <div className="flex flex-col gap-1.5">
+   874→   933→          <p className="text-[19px] font-medium leading-[1.3] text-gray-600">Стоимость {service.cost} ₽</p>
+   875→   934→          <p className="text-[19px] font-medium leading-[1.3] text-gray-600">{service.category}</p>
+   876→   935→        </div>
+   877→   936→        {service.warningMessage && (
+   878→   937→          <div className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pink-400 text-[20px] font-bold leading-none text-white">
+   879→   938→            {service.warningMessage}
+   880→   939→          </div>
+   881→   940→        )}
+   882→   941→      </div>
+   883→   942→    </div>
+   884→   943→  );
+   885→   944→}
+   886→   945→
+   887→   946→function TransactionList({ transactions, state, onRetry }: { transactions: Transaction[]; state: FetchState; onRetry: () => void }) {
+   888→   947→  if (state === 'loading') {
+   889→   948→    return <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-gray-300" /></div>;
+   890→   949→  }
+   891→   950→  if (state === 'error') {
+   892→   951→    return (
+   893→   952→      <div className="py-10 text-center">
+   894→   953→        <p className="mb-2 text-sm text-gray-400">Ошибка загрузки</p>
+   895→   954→        <button type="button" onClick={onRetry} className="text-sm text-orange-500 underline">Повторить</button>
+   896→   955→      </div>
+   897→   956→    );
+   898→   957→  }
+   899→   958→  if (transactions.length === 0) {
+   900→   959→    return (
+   901→   960→      <div className="py-10 text-center">
+   902→   961→        <MessageSquare className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+   903→   962→        <p className="text-sm text-gray-400">Нет транзакций</p>
+   904→   963→      </div>
+   905→   964→    );
+   906→   965→  }
+   907→   966→  return (
+   908→   967→    <div className="divide-y divide-gray-100">
+   909→   968→      {transactions.map((tx) => (
+   910→   969→        <div key={tx.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+   911→   970→          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-50">
+   912→   971→            {txIcon(tx.type)}
+   913→   972→          </div>
+   914→   973→          <div className="min-w-0 flex-1">
+   915→   974→            <p className="truncate text-[14px] font-medium text-gray-800">{tx.description}</p>
+   916→   975→            <div className="flex items-center gap-2 text-[12px] text-gray-400">
+   917→   976→              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500">{txLabel(tx.type)}</span>
+   918→   977→              <span>{formatDate(tx.date)}</span>
+   919→   978→            </div>
+   920→   979→          </div>
+   921→   980→          <span className={`shrink-0 text-[15px] font-semibold tabular-nums ${txColor(tx.type)}`}>{txSign(tx.type)}{tx.amount.toFixed(0)} ₽</span>
+   922→   981→        </div>
+   923→   982→      ))}
+   924→   983→    </div>
+   925→   984→  );
+   926→   985→}
+   927→   986→

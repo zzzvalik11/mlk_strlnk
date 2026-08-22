@@ -151,3 +151,28 @@ Stage Summary:
 - All 4 tab screens + 3 sheet modals fully functional
 - 5 API endpoints (profile, transactions, news, support, top-up) all returning 200
 - Complete mobile app experience with loading/error/success states everywhere
+
+---
+Task ID: 15
+Agent: Agent-FullStack
+Task: Add PIN + password login form, protect all routes except support form
+
+Work Log:
+- Created LoginScreen component with PIN input (numeric, User icon) and password input (show/hide toggle, LockIcon)
+- Styled to match app branding: Starlink logo, gradient avatar, orange-500 accent, bg-[#FFF5F0]
+- Created POST /api/auth/login mock endpoint (PIN: 039103, password: 123456, 600ms delay)
+- Implemented client-side auth state management with AuthState interface (token + fullName)
+- Session persistence via localStorage (key: telecom_auth) with loadAuth/saveAuth/clearAuth helpers
+- Main component (DashboardScreen) routes between 3 screens: 'login' | 'support-only' | 'app'
+- All dashboard tabs (Главная, Оплата, Новости) protected behind auth check
+- Created SupportOnlyScreen — standalone support form accessible without authorization
+- Added «Написать в поддержку» link on LoginScreen to reach SupportOnlyScreen
+- Added LogOut button in dashboard header to clear session and return to LoginScreen
+- Updated README.md: added Авторизация section, auth API docs, test credentials, updated screenshots table, API table, project structure, architecture diagram
+
+Stage Summary:
+- Full auth flow implemented: login → session → protected routes → logout
+- Support form is the only unauthenticated screen (accessible from login page)
+- Test credentials: PIN 039103 / password 123456
+- 6 API endpoints total (added POST /api/auth/login)
+- Documentation updated in README.md and worklog.md
