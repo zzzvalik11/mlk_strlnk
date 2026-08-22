@@ -18,7 +18,7 @@ Stage Summary:
 ---
 Task ID: 1
 Agent: Agent-Database
-Task: Create Prisma schema matching Flutter domain entities (ARCHITECTURE.md §2.1–2.6)
+Task: Create Prisma schema matching domain entities (§2.1–2.6)
 
 Work Log:
 - Read worklog.md and ARCHITECTURE.md for full context
