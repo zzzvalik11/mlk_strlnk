@@ -2,22 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Bell,
-  Settings,
-  Plus,
-  History,
-  Globe,
-  Lock,
-  Home,
-  CreditCard,
-  FileText,
-  HelpCircle,
-  Loader2,
+  Bell, Settings, Plus, History, Globe, Lock,
+  Home, CreditCard, FileText, HelpCircle, Loader2,
+  ArrowDownLeft, ArrowUpRight, RefreshCw, Send, Clock, Tag,
+  Wallet, Smartphone, Building2, CreditCard as CardIcon,
+  CheckCircle2, AlertCircle, MessageSquare, Inbox, ChevronRight,
 } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { toast } from 'sonner';
 
-/* ------------------------------------------------------------------ */
-/*  Domain Types (mirrors ARCHITECTURE.md §2)                         */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/*  Domain Types                                                       */
+/* ================================================================== */
 
 interface UserProfile {
   pin: string;
@@ -50,33 +46,154 @@ interface ProfileResponse {
   activeServices: ActiveService[];
 }
 
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  description: string;
+  date: string;
+  status: string;
+}
+
+interface NewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  imageUrl: string | null;
+  publishedAt: string;
+  readCount: number | null;
+}
+
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
 
-/* ------------------------------------------------------------------ */
-/*  Dashboard Screen                                                  */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/*  Utility                                                            */
+/* ================================================================== */
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function txIcon(type: string) {
+  switch (type) {
+    case 'topUp':
+    case 'bonus':
+      return <ArrowDownLeft className="h-5 w-5 text-emerald-500" />;
+    case 'refund':
+      return <RefreshCw className="h-5 w-5 text-blue-500" />;
+    default:
+      return <ArrowUpRight className="h-5 w-5 text-red-400" />;
+  }
+}
+
+function txSign(type: string): string {
+  return type === 'topUp' || type === 'bonus' || type === 'refund' ? '+' : '-';
+}
+
+function txColor(type: string): string {
+  return type === 'topUp' || type === 'bonus' || type === 'refund' ? 'text-emerald-600' : 'text-red-500';
+}
+
+function txLabel(type: string): string {
+  switch (type) {
+    case 'topUp': return 'Пополнение';
+    case 'payment': return 'Оплата';
+    case 'refund': return 'Возврат';
+    case 'bonus': return 'Бонус';
+    default: return type;
+  }
+}
+
+/* ================================================================== */
+/*  Main App                                                           */
+/* ================================================================== */
 
 export default function DashboardScreen() {
-  const [data, setData] = useState<ProfileResponse | null>(null);
-  const [state, setState] = useState<FetchState>('idle');
-  const [activeTab, setActiveTab] = useState(0);
+  /* ---- Profile state ---- */
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [profileState, setProfileState] = useState<FetchState>('idle');
 
+  /* ---- Transactions state ---- */
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [txState, setTxState] = useState<FetchState>('idle');
+
+  /* ---- News state ---- */
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [newsState, setNewsState] = useState<FetchState>('idle');
+
+  /* ---- UI state ---- */
+  const [activeTab, setActiveTab] = useState(0);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [topUpLoading, setTopUpLoading] = useState(false);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+
+  /* ---- Fetchers ---- */
   const fetchProfile = useCallback(async () => {
-    setState('loading');
+    setProfileState('loading');
     try {
       const res = await fetch('/api/account/profile');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: ProfileResponse = await res.json();
-      setData(json);
-      setState('success');
-    } catch {
-      setState('error');
-    }
+      if (!res.ok) throw new Error();
+      setProfile(await res.json());
+      setProfileState('success');
+    } catch { setProfileState('error'); }
   }, []);
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+  const fetchTransactions = useCallback(async () => {
+    setTxState('loading');
+    try {
+      const res = await fetch('/api/transactions');
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      setTransactions(json.transactions);
+      setTxState('success');
+    } catch { setTxState('error'); }
+  }, []);
+
+  const fetchNews = useCallback(async () => {
+    setNewsState('loading');
+    try {
+      const res = await fetch('/api/news');
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      setNews(json.news);
+      setNewsState('success');
+    } catch { setNewsState('error'); }
+  }, []);
+
+  /* ---- Load data on tab switch ---- */
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
+  useEffect(() => { if (activeTab === 1) fetchTransactions(); }, [activeTab, fetchTransactions]);
+  useEffect(() => { if (activeTab === 2) fetchNews(); }, [activeTab, fetchNews]);
+
+  /* ---- Top-up handler ---- */
+  const handleTopUp = async () => {
+    const amount = parseFloat(topUpAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Введите корректную сумму');
+      return;
+    }
+    setTopUpLoading(true);
+    try {
+      const res = await fetch('/api/top-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      toast.success(`Баланс пополнен на ${amount} ₽`);
+      setTopUpAmount('');
+      setTopUpOpen(false);
+      fetchProfile();
+    } catch {
+      toast.error('Ошибка пополнения');
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
 
   /* ---- Tabs ---- */
   const tabs = [
@@ -89,146 +206,104 @@ export default function DashboardScreen() {
   /* ---- Render ---- */
   return (
     <div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-white font-sans">
-      {/* ============ HEADER ============ */}
-      <header className="bg-white px-5 pt-3 pb-6">
-        {/* Top row */}
-        <div className="flex items-start justify-between mb-8">
-          {/* User info */}
-          <div className="flex items-center gap-3">
-            {/* Avatar circle */}
-            <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white text-xl font-bold"
-              style={{
-                background:
-                  'linear-gradient(135deg, #FF9A44 0%, #FC6076 100%)',
-              }}
-            >
-              S
-            </div>
-            <div>
-              <h2 className="text-[21px] font-bold leading-tight tracking-tight text-gray-900">
-                ПИН{' '}
-                {state === 'loading'
-                  ? '---'
-                  : data?.user.pin ?? '039103'}
-              </h2>
-              <p className="text-[17px] font-normal leading-tight text-gray-500">
-                {state === 'loading'
-                  ? '...'
-                  : data?.user.fullName ?? 'Примеров-Заде П.'}
-              </p>
-            </div>
-          </div>
+      {/* ============ CONTENT AREA ============ */}
+      {activeTab === 0 && (
+        <HomeTab
+          profile={profile} profileState={profileState}
+          onTopUp={() => setTopUpOpen(true)}
+          onHistory={() => { setHistoryOpen(true); fetchTransactions(); }}
+          onRetry={fetchProfile}
+        />
+      )}
+      {activeTab === 1 && <PaymentTab transactions={transactions} txState={txState} onRetry={fetchTransactions} />}
+      {activeTab === 2 && <NewsTab news={news} newsState={newsState} onRetry={fetchNews} onSelect={setSelectedNews} />}
+      {activeTab === 3 && <SupportTab />}
 
-          {/* Actions */}
-          <div className="flex items-center gap-5 pt-0.5">
+      {/* ============ TOP-UP SHEET ============ */}
+      <Sheet open={topUpOpen} onOpenChange={setTopUpOpen}>
+        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-2xl px-6 pb-8 pt-4">
+          <SheetHeader>
+            <SheetTitle className="text-xl font-bold text-gray-900">Пополнить баланс</SheetTitle>
+            <SheetDescription className="text-gray-500">Выберите или введите сумму пополнения</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            {/* Quick amounts */}
+            <div className="grid grid-cols-3 gap-3">
+              {[100, 200, 500, 1000, 2000, 5000].map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => setTopUpAmount(String(a))}
+                  className={`rounded-xl border-2 py-3 text-center text-lg font-semibold transition-all ${
+                    topUpAmount === String(a)
+                      ? 'border-orange-500 bg-orange-50 text-orange-600'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300'
+                  }`}
+                >
+                  {a} ₽
+                </button>
+              ))}
+            </div>
+            {/* Custom input */}
+            <div className="mt-4">
+              <label htmlFor="topup-input" className="mb-1.5 block text-sm font-medium text-gray-600">
+                Другая сумма
+              </label>
+              <input
+                id="topup-input"
+                type="number"
+                inputMode="numeric"
+                placeholder="0"
+                value={topUpAmount}
+                onChange={(e) => setTopUpAmount(e.target.value)}
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-xl font-semibold text-gray-900 outline-none transition-colors focus:border-orange-500"
+              />
+            </div>
+            {/* Submit */}
             <button
               type="button"
-              aria-label="Уведомления"
-              className="text-gray-600 transition-colors hover:text-gray-800"
+              onClick={handleTopUp}
+              disabled={topUpLoading || !topUpAmount}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3.5 text-lg font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Bell className="h-[26px] w-[26px]" strokeWidth={1.8} />
-            </button>
-            <button
-              type="button"
-              aria-label="Настройки"
-              className="text-gray-600 transition-colors hover:text-gray-800"
-            >
-              <Settings className="h-[26px] w-[26px]" strokeWidth={1.8} />
+              {topUpLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Wallet className="h-5 w-5" />}
+              Пополнить
             </button>
           </div>
-        </div>
+        </SheetContent>
+      </Sheet>
 
-        {/* Balance */}
-        {state === 'loading' ? (
-          <div className="flex items-center gap-3 py-2">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
-            <span className="text-lg text-gray-300">Загрузка…</span>
+      {/* ============ HISTORY SHEET ============ */}
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-2xl px-6 pb-8 pt-4">
+          <SheetHeader>
+            <SheetTitle className="text-xl font-bold text-gray-900">История операций</SheetTitle>
+            <SheetDescription className="text-gray-500">Все транзакции по вашему аккаунту</SheetDescription>
+          </SheetHeader>
+          <div className="mt-2 max-h-[60vh] overflow-y-auto">
+            <TransactionList transactions={transactions} state={txState} onRetry={fetchTransactions} />
           </div>
-        ) : state === 'error' ? (
-          <div className="py-2">
-            <p className="text-base text-red-500">
-              Ошибка загрузки профиля
-            </p>
-            <button
-              type="button"
-              onClick={fetchProfile}
-              className="mt-1 text-sm text-orange-500 underline"
-            >
-              Повторить
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="mb-2">
-              <span className="text-[52px] font-medium leading-[1.1] tracking-[-0.03em] text-slate-700"
-                style={{ fontFeatureSettings: '"tnum"' }}
-              >
-                {data?.balance.amount.toFixed(1)}{' '}
-                <span className="text-[36px]">₽</span>
-              </span>
-            </div>
-            <p className="text-[17px] font-normal text-gray-500">
-              Услуги оплачены{' '}
-              {data?.balance.paidUntilLabel ?? 'до 11 ноября 2024'}
-            </p>
-          </>
-        )}
+        </SheetContent>
+      </Sheet>
 
-        {/* Action buttons */}
-        <div className="mt-6 flex justify-between px-2.5">
-          <button
-            type="button"
-            className="flex items-center gap-2.5 px-1 py-2 text-[17px] font-medium tracking-[-0.01em] text-gray-900 transition-colors hover:text-orange-600"
-          >
-            <Plus
-              className="h-[28px] w-[28px] rounded-full border-2 border-gray-900"
-              strokeWidth={2}
-            />
-            ПОПОЛНИТЬ
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-2.5 px-1 py-2 text-[17px] font-medium tracking-[-0.01em] text-gray-900 transition-colors hover:text-orange-600"
-          >
-            <History
-              className="h-[28px] w-[28px] rounded-full border-2 border-gray-900"
-              strokeWidth={2}
-            />
-            ИСТОРИЯ
-          </button>
-        </div>
-      </header>
-
-      {/* ============ MAIN CONTENT ============ */}
-      <main
-        className="min-h-[50vh] rounded-t-[20px] bg-gray-50 px-5 pt-6 pb-28"
-        style={{
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
-        }}
-      >
-        {/* Section header */}
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-[19px] font-semibold text-gray-900">
-            Активные услуги
-          </h2>
-          <Lock
-            className="h-[26px] w-[26px] text-orange-500"
-            strokeWidth={1.8}
-          />
-        </div>
-
-        {/* Service cards */}
-        {state === 'loading' ? (
-          <div className="flex animate-pulse items-center justify-center rounded-2xl bg-white p-10">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
-          </div>
-        ) : state === 'error' ? null : (
-          (data?.activeServices ?? []).map((svc) => (
-            <ServiceCard key={svc.id} service={svc} />
-          ))
-        )}
-      </main>
+      {/* ============ NEWS DETAIL SHEET ============ */}
+      <Sheet open={!!selectedNews} onOpenChange={() => setSelectedNews(null)}>
+        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-2xl px-6 pb-8 pt-4">
+          {selectedNews && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="text-xl font-bold text-gray-900 leading-snug">{selectedNews.title}</SheetTitle>
+                <SheetDescription className="text-gray-400 text-sm">
+                  <Clock className="mr-1 inline h-3.5 w-3.5" />
+                  {formatDate(selectedNews.publishedAt)}
+                  {selectedNews.readCount != null && ` · ${selectedNews.readCount} просмотров`}
+                </SheetDescription>
+              </SheetHeader>
+              <p className="mt-4 text-[16px] leading-relaxed text-gray-700">{selectedNews.summary}</p>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* ============ BOTTOM NAV ============ */}
       <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 border-t border-gray-200 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
@@ -242,18 +317,11 @@ export default function DashboardScreen() {
                   type="button"
                   onClick={() => setActiveTab(idx)}
                   className={`flex flex-col items-center gap-1.5 transition-colors ${
-                    active
-                      ? 'text-orange-500'
-                      : 'text-gray-400 hover:text-gray-600'
+                    active ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'
                   }`}
                 >
-                  <Icon
-                    className="h-[26px] w-[26px]"
-                    strokeWidth={active ? 2.2 : 1.8}
-                  />
-                  <span className="text-[13px] font-medium">
-                    {tab.label}
-                  </span>
+                  <Icon className="h-[26px] w-[26px]" strokeWidth={active ? 2.2 : 1.8} />
+                  <span className="text-[13px] font-medium">{tab.label}</span>
                 </button>
               </li>
             );
@@ -264,44 +332,410 @@ export default function DashboardScreen() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Service Card Component                                            */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/*  Home Tab                                                           */
+/* ================================================================== */
+
+function HomeTab({
+  profile, profileState, onTopUp, onHistory, onRetry,
+}: {
+  profile: ProfileResponse | null;
+  profileState: FetchState;
+  onTopUp: () => void;
+  onHistory: () => void;
+  onRetry: () => void;
+}) {
+  return (
+    <>
+      {/* ---- Header ---- */}
+      <header className="bg-white px-5 pt-3 pb-6">
+        <div className="mb-8 flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
+              style={{ background: 'linear-gradient(135deg, #FF9A44 0%, #FC6076 100%)' }}
+            >
+              S
+            </div>
+            <div>
+              <h2 className="text-[21px] font-bold leading-tight tracking-tight text-gray-900">
+                ПИН {profileState === 'loading' ? '---' : profile?.user.pin ?? '039103'}
+              </h2>
+              <p className="text-[17px] leading-tight text-gray-500">
+                {profileState === 'loading' ? '...' : profile?.user.fullName ?? 'Примеров-Заде П.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-5 pt-0.5">
+            <button type="button" aria-label="Уведомления" className="text-gray-600 transition-colors hover:text-gray-800">
+              <Bell className="h-[26px] w-[26px]" strokeWidth={1.8} />
+            </button>
+            <button type="button" aria-label="Настройки" className="text-gray-600 transition-colors hover:text-gray-800">
+              <Settings className="h-[26px] w-[26px]" strokeWidth={1.8} />
+            </button>
+          </div>
+        </div>
+
+        {/* Balance */}
+        {profileState === 'loading' ? (
+          <div className="flex items-center gap-3 py-2">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+            <span className="text-lg text-gray-300">Загрузка…</span>
+          </div>
+        ) : profileState === 'error' ? (
+          <div className="py-2">
+            <p className="text-base text-red-500">Ошибка загрузки профиля</p>
+            <button type="button" onClick={onRetry} className="mt-1 text-sm text-orange-500 underline">Повторить</button>
+          </div>
+        ) : (
+          <>
+            <div className="mb-2">
+              <span
+                className="text-[52px] font-medium leading-[1.1] tracking-[-0.03em] text-slate-700"
+                style={{ fontFeatureSettings: '"tnum"' }}
+              >
+                {profile?.balance.amount.toFixed(1)}{' '}
+                <span className="text-[36px]">₽</span>
+              </span>
+            </div>
+            <p className="text-[17px] text-gray-500">
+              Услуги оплачены {profile?.balance.paidUntilLabel ?? 'до 11 августа'}
+            </p>
+          </>
+        )}
+
+        {/* Action buttons */}
+        <div className="mt-6 flex justify-between px-2.5">
+          <button
+            type="button"
+            onClick={onTopUp}
+            className="flex items-center gap-2.5 px-1 py-2 text-[17px] font-medium tracking-[-0.01em] text-gray-900 transition-colors hover:text-orange-600"
+          >
+            <Plus className="h-[28px] w-[28px] rounded-full border-2 border-gray-900" strokeWidth={2} />
+            ПОПОЛНИТЬ
+          </button>
+          <button
+            type="button"
+            onClick={onHistory}
+            className="flex items-center gap-2.5 px-1 py-2 text-[17px] font-medium tracking-[-0.01em] text-gray-900 transition-colors hover:text-orange-600"
+          >
+            <History className="h-[28px] w-[28px] rounded-full border-2 border-gray-900" strokeWidth={2} />
+            ИСТОРИЯ
+          </button>
+        </div>
+      </header>
+
+      {/* ---- Active services ---- */}
+      <main className="min-h-[50vh] rounded-t-[20px] bg-gray-50 px-5 pt-6 pb-28" style={{ boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' }}>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-[19px] font-semibold text-gray-900">Активные услуги</h2>
+          <Lock className="h-[26px] w-[26px] text-orange-500" strokeWidth={1.8} />
+        </div>
+        {profileState === 'loading' ? (
+          <div className="flex animate-pulse items-center justify-center rounded-2xl bg-white p-10">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
+          </div>
+        ) : profileState === 'error' ? null : (
+          (profile?.activeServices ?? []).map((svc) => <ServiceCard key={svc.id} service={svc} />)
+        )}
+      </main>
+    </>
+  );
+}
+
+/* ================================================================== */
+/*  Payment Tab (Оплата)                                               */
+/* ================================================================== */
+
+function PaymentTab({
+  transactions, txState, onRetry,
+}: {
+  transactions: Transaction[];
+  txState: FetchState;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="min-h-dvh bg-gray-50 px-5 pt-6 pb-28">
+      <h1 className="mb-6 text-[22px] font-bold text-gray-900">Оплата и финансы</h1>
+
+      {/* Quick actions */}
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        <QuickAction icon={Smartphone} label="Оплата услуг" color="bg-orange-500" />
+        <QuickAction icon={Building2} label="Перевод" color="bg-emerald-500" />
+        <QuickAction icon={CardIcon} label="Привязать карту" color="bg-blue-500" />
+        <QuickAction icon={Tag} label="Промокод" color="bg-violet-500" />
+      </div>
+
+      {/* Recent transactions */}
+      <h2 className="mb-3 text-[17px] font-semibold text-gray-800">Последние операции</h2>
+      <div className="rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <TransactionList transactions={transactions} state={txState} onRetry={onRetry} />
+      </div>
+    </div>
+  );
+}
+
+function QuickAction({ icon: Icon, label, color }: { icon: typeof Smartphone; label: string; color: string }) {
+  return (
+    <button
+      type="button"
+      className="flex flex-col items-center gap-2.5 rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow active:shadow-none"
+    >
+      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${color}`}>
+        <Icon className="h-6 w-6 text-white" strokeWidth={1.8} />
+      </div>
+      <span className="text-[14px] font-medium text-gray-700">{label}</span>
+    </button>
+  );
+}
+
+/* ================================================================== */
+/*  News Tab (Новости)                                                 */
+/* ================================================================== */
+
+function NewsTab({
+  news, newsState, onRetry, onSelect,
+}: {
+  news: NewsItem[];
+  newsState: FetchState;
+  onRetry: () => void;
+  onSelect: (n: NewsItem) => void;
+}) {
+  return (
+    <div className="min-h-dvh bg-gray-50 px-5 pt-6 pb-28">
+      <h1 className="mb-6 text-[22px] font-bold text-gray-900">Новости</h1>
+
+      {newsState === 'loading' ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
+        </div>
+      ) : newsState === 'error' ? (
+        <div className="py-20 text-center">
+          <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-300" />
+          <p className="mb-2 text-gray-500">Не удалось загрузить новости</p>
+          <button type="button" onClick={onRetry} className="text-sm text-orange-500 underline">Повторить</button>
+        </div>
+      ) : news.length === 0 ? (
+        <div className="py-20 text-center">
+          <Inbox className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+          <p className="text-gray-400">Новостей пока нет</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {news.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSelect(item)}
+              className="flex items-start gap-4 rounded-2xl bg-white p-4 text-left shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow hover:shadow-md"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100">
+                <FileText className="h-5 w-5 text-orange-500" strokeWidth={1.8} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="mb-1 text-[15px] font-semibold leading-snug text-gray-900">{item.title}</h3>
+                <p className="mb-2 line-clamp-2 text-[13px] leading-relaxed text-gray-500">{item.summary}</p>
+                <div className="flex items-center gap-2 text-[12px] text-gray-400">
+                  <Clock className="h-3 w-3" />
+                  {formatDate(item.publishedAt)}
+                  {item.readCount != null && (
+                    <span>· {item.readCount} просм.</span>
+                  )}
+                </div>
+              </div>
+              <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-gray-300" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Support Tab (Поддержка)                                            */
+/* ================================================================== */
+
+function SupportTab() {
+  const [subject, setSubject] = useState('');
+  const [description, setDescription] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!subject.trim() || !description.trim()) {
+      toast.error('Заполните все поля');
+      return;
+    }
+    setSending(true);
+    await new Promise((r) => setTimeout(r, 1000));
+    setSending(false);
+    setSent(true);
+    toast.success('Обращение отправлено');
+    setSubject('');
+    setDescription('');
+  };
+
+  return (
+    <div className="min-h-dvh bg-gray-50 px-5 pt-6 pb-28">
+      <h1 className="mb-2 text-[22px] font-bold text-gray-900">Поддержка</h1>
+      <p className="mb-6 text-[15px] text-gray-500">Оставьте обращение и мы свяжемся с вами</p>
+
+      {sent ? (
+        <div className="rounded-2xl bg-white p-8 text-center shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-500" />
+          <h2 className="mb-2 text-lg font-bold text-gray-900">Отправлено!</h2>
+          <p className="mb-5 text-[15px] text-gray-500">Мы ответим в ближайшее время</p>
+          <button
+            type="button"
+            onClick={() => setSent(false)}
+            className="text-sm font-medium text-orange-500 underline"
+          >
+            Новое обращение
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-2xl bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <label htmlFor="support-subject" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Тема
+          </label>
+          <input
+            id="support-subject"
+            type="text"
+            placeholder="Кратко опишите проблему"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="mb-4 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-[15px] text-gray-900 outline-none transition-colors focus:border-orange-500"
+          />
+
+          <label htmlFor="support-desc" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Описание
+          </label>
+          <textarea
+            id="support-desc"
+            placeholder="Подробно опишите вашу проблему…"
+            rows={5}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="mb-5 w-full resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-[15px] text-gray-900 outline-none transition-colors focus:border-orange-500"
+          />
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={sending}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3.5 text-[16px] font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+          >
+            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+            Отправить
+          </button>
+        </div>
+      )}
+
+      {/* FAQ section */}
+      <div className="mt-8">
+        <h2 className="mb-4 text-[17px] font-semibold text-gray-800">Частые вопросы</h2>
+        <div className="flex flex-col gap-3">
+          {[
+            { q: 'Как пополнить баланс?', a: 'Нажмите «Пополнить» на главном экране и выберите сумму.' },
+            { q: 'Как узнать остаток трафика?', a: 'Информация отображается в карточке активной услуги на главном экране.' },
+            { q: 'Как изменить тариф?', a: 'Обратитесь в поддержку через эту форму или позвоните на горячую линию.' },
+          ].map((faq) => (
+            <details key={faq.q} className="group rounded-2xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+              <summary className="flex cursor-pointer items-center justify-between p-4 text-[15px] font-medium text-gray-800">
+                {faq.q}
+                <ChevronRight className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-90" />
+              </summary>
+              <p className="px-4 pb-4 text-[14px] leading-relaxed text-gray-500">{faq.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Shared Components                                                  */
+/* ================================================================== */
 
 function ServiceCard({ service }: { service: ActiveService }) {
   return (
     <div className="rounded-[14px] border border-orange-100 bg-orange-50/80 p-5 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-      {/* Card title — centered */}
       <div className="mb-5 text-center">
         <h3 className="text-[27px] font-semibold leading-[1.3] tracking-[-0.01em] text-gray-700">
           {service.name}
         </h3>
       </div>
-
-      {/* Card body */}
       <div className="flex items-start gap-4">
-        {/* Globe icon */}
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-500">
           <Globe className="h-8 w-8 text-white" strokeWidth={1.5} />
         </div>
-
-        {/* Details */}
         <div className="flex flex-col gap-1.5">
-          <p className="text-[19px] font-medium leading-[1.3] text-gray-600">
-            Стоимость {service.cost} ₽
-          </p>
-          <p className="text-[19px] font-medium leading-[1.3] text-gray-600">
-            {service.category}
-          </p>
+          <p className="text-[19px] font-medium leading-[1.3] text-gray-600">Стоимость {service.cost} ₽</p>
+          <p className="text-[19px] font-medium leading-[1.3] text-gray-600">{service.category}</p>
         </div>
-
-        {/* Warning badge */}
         {service.warningMessage && (
           <div className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pink-400 text-[20px] font-bold leading-none text-white">
             {service.warningMessage}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function TransactionList({
+  transactions, state, onRetry,
+}: {
+  transactions: Transaction[];
+  state: FetchState;
+  onRetry: () => void;
+}) {
+  if (state === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+      </div>
+    );
+  }
+  if (state === 'error') {
+    return (
+      <div className="py-10 text-center">
+        <p className="mb-2 text-sm text-gray-400">Ошибка загрузки</p>
+        <button type="button" onClick={onRetry} className="text-sm text-orange-500 underline">Повторить</button>
+      </div>
+    );
+  }
+  if (transactions.length === 0) {
+    return (
+      <div className="py-10 text-center">
+        <MessageSquare className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+        <p className="text-sm text-gray-400">Нет транзакций</p>
+      </div>
+    );
+  }
+  return (
+    <div className="divide-y divide-gray-100">
+      {transactions.map((tx) => (
+        <div key={tx.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-50">
+            {txIcon(tx.type)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[14px] font-medium text-gray-800">{tx.description}</p>
+            <div className="flex items-center gap-2 text-[12px] text-gray-400">
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500">
+                {txLabel(tx.type)}
+              </span>
+              <span>{formatDate(tx.date)}</span>
+            </div>
+          </div>
+          <span className={`shrink-0 text-[15px] font-semibold tabular-nums ${txColor(tx.type)}`}>
+            {txSign(tx.type)}{tx.amount.toFixed(0)} ₽
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

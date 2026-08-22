@@ -92,3 +92,62 @@ Stage Summary:
 - VLM visual comparison: 8/10 fidelity (remaining diffs: custom Sberbank logo, system status bar — both non-applicable for web)
 - All 5 agent steps completed successfully
 - Clean lint, zero runtime errors, fully functional
+
+---
+Task ID: 7
+Agent: Agent-Backend
+Task: Create remaining 4 mock API route files
+
+Work Log:
+- Created GET /api/transactions/route.ts — returns 5 hardcoded transactions (3 payments, 1 topUp, 1 refund) with 800ms delay
+- Created GET /api/news/route.ts — returns 3 news items (tariff update, maintenance, IPTV) with 800ms delay
+- Created GET /api/support/route.ts — returns empty tickets array for empty state UI with 800ms delay
+- Created POST /api/top-up/route.ts — parses JSON body for amount, returns newBalance (112.5 + amount) with 500ms delay, includes 400 error handling
+- All files follow existing pattern: NextResponse.json(), artificial delay, consistent formatting
+
+Stage Summary:
+- 4 new API route files created matching existing route.ts conventions
+- All endpoints ready for frontend integration: transactions history, news feed, support tickets, balance top-up
+- POST /api/top-up is the only non-GET endpoint, with body parsing and error handling
+
+---
+Task ID: 8
+Agent: Agent-Frontend + Agent-Integration
+Task: Build all remaining screens, modals, and full tab navigation
+
+Work Log:
+- Rewrote page.tsx as complete multi-screen SPA with 4 tabs + 3 sheet modals
+- HomeTab: preserved original pixel-accurate dashboard with profile fetch
+- PaymentTab (Оплата): 4 quick-action cards (Оплата услуг, Перевод, Привязать карту, Промокод) + transaction list
+- NewsTab (Новости): news list with icons, dates, read counts + detail sheet on click
+- SupportTab (Поддержка): contact form (subject + description) + success state + FAQ accordion (3 items)
+- TopUp Sheet: 6 quick-amount buttons (100-5000₽) + custom input + POST /api/top-up with toast
+- History Sheet: bottom sheet with TransactionList (5 items, colored + / - amounts)
+- Shared TransactionList component used in both Payment tab and History sheet
+- Lazy loading: transactions fetch only on Оплата tab, news fetch only on Новости tab
+- All screens: loading spinners, error states with retry, empty states
+- Used shadcn/ui Sheet for all modals, Sonner toasts for notifications
+
+---
+Task ID: 14
+Agent: Agent-CodeReviewer
+Task: Final lint + full browser QA across all screens
+
+Work Log:
+- Fixed JSX comment parse error (extra `}` in HomeTab)
+- ESLint: 0 errors/warnings
+- Browser QA (agent-browser, iPhone 14 viewport):
+  - Home: profile loads (PIN, name, balance 112.5₽, paidUntil), service card renders
+  - TopUp: sheet opens, amount buttons work, input fills, POST /api/top-up 200, toast fires, balance refreshes
+  - History: sheet opens, 5 transactions with correct icons/colors/amounts/dates
+  - Payment: 4 quick-action buttons, transaction list with data
+  - News: 3 news items with dates and read counts, detail sheet opens on click
+  - Support: form with subject/description, submit shows success state, FAQ accordions present
+- Tab switching: all 4 tabs work, lazy loading triggers correctly
+- Browser console: 0 errors across all interactions
+- Dev log: all 200s, no runtime exceptions
+
+Stage Summary:
+- All 4 tab screens + 3 sheet modals fully functional
+- 5 API endpoints (profile, transactions, news, support, top-up) all returning 200
+- Complete mobile app experience with loading/error/success states everywhere
