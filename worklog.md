@@ -176,3 +176,155 @@ Stage Summary:
 - Test credentials: PIN 039103 / password 123456
 - 6 API endpoints total (added POST /api/auth/login)
 - Documentation updated in README.md and worklog.md
+
+---
+Task ID: 1
+Agent: Agent-Domain
+Task: Generate Core + Domain layers
+
+Work Log:
+- Read worklog.md and ARCHITECTURE.md for full spec context
+- Created 15 directories under flutter/lib/ (domain/entities, domain/repositories, domain/usecases/{auth,balance,services,transactions,news,support}, core/{constants,errors,utils,widgets})
+- Generated 6 freezed entity files (user.dart, balance.dart, service.dart, transaction.dart, news_item.dart, support_ticket.dart) with @JsonKey annotations, @JsonSerializable(), enums co-located (ServiceStatus, TransactionType, TransactionStatus, TicketStatus)
+- Generated page.dart generic entity for paginated responses (Page<T>)
+- Generated 6 abstract repository classes returning Future<Either<Failure, T>> via fpdart
+- Generated 11 use case files across 6 subdirectories with fail-fast validation in LoginUseCase, TopUpUseCase, GetServiceDetailsUseCase, GetTransactionDetailsUseCase, GetNewsByIdUseCase, CreateTicketUseCase
+- Generated 3 core constant files: app_constants.dart (API base, timeouts, auth keys), routes.dart (7 route constants), themes.dart (brand colors #F37021, text styles, padding, shadows)
+- Generated 2 core error files: failures.dart (sealed freezed Failure with @Freezed(unionKey: 'type') discriminator — NetworkFailure, ServerFailure, ValidationFailure, CacheFailure, UnknownFailure), exceptions.dart (DioExceptionMapper with full DioExceptionType coverage)
+- Generated 3 core util files: date_formatter.dart (Russian locale "11 августа 2025"), currency_formatter.dart ("112,50 ₽" via intl), validators.dart (validatePin 6-digit, validatePassword min-6)
+- Generated 4 core widgets: empty_state.dart, error_state.dart (with retry button), loading_spinner.dart, service_card.dart (icon+name+category+cost+warningBadge+statusChip)
+- All imports use package:telecom_dashboard/... convention
+
+Stage Summary:
+- 34 Dart files created (6 entities + 1 Page, 6 repositories, 11 use cases, 3 constants, 2 errors, 3 utils, 4 widgets)
+- Domain layer is pure POCO — zero Flutter dependencies in entities/repositories/usecases
+- Core layer provides cross-cutting concerns: theming, error mapping, formatting, validation, shared widgets
+- Ready for `build_runner` to generate .freezed.dart and .g.dart files
+- Next agent should implement Data layer (models, datasources, repository implementations, API client)
+
+---
+Task ID: 2
+Agent: Agent-Data
+Task: Generate Data layer
+
+Work Log:
+- Read worklog.md and ARCHITECTURE.md for full spec context
+- Read all 6 domain entity files (user, balance, service, transaction, news_item, support_ticket) + page.dart to match field types exactly
+- Read all 6 domain repository abstract classes to match method signatures exactly
+- Read core/errors/failures.dart (sealed Failure hierarchy) and core/errors/exceptions.dart (DioExceptionMapper)
+- Read core/constants/app_constants.dart (apiBaseUrl, timeouts, auth keys)
+- Created directory structure: data/models/, data/datasources/remote/, data/datasources/local/, data/local/, data/repositories/
+- Generated 6 model files with @freezed + @JsonSerializable():
+  - user_model.dart → User entity, with toDomain()/fromDomain()
+  - balance_model.dart → Balance entity, with toDomain()/fromDomain()
+  - service_model.dart → Service entity, ServiceModelStatus enum with @JsonEnum(alwaysCreate: true) lowercase values + bidirectional mapping
+  - transaction_model.dart → Transaction entity, TransactionModelType/TransactionModelStatus enums with @JsonEnum(alwaysCreate: true) + bidirectional mapping
+  - news_model.dart → NewsItem entity, with toDomain()/fromDomain()
+  - support_ticket_model.dart → SupportTicket entity, TicketModelStatus enum with @JsonEnum(alwaysCreate: true) + bidirectional mapping
+- Generated storage_service.dart: SharedPreferences wrapper with init(), getString(), setString(), remove(), clear()
+- Generated api_client.dart: Dio singleton with auth interceptor (Bearer token from StorageService), error-logging interceptor, get/post/put/postMultipart methods, configurable baseUrl defaulting to AppConstants.apiBaseUrl
+- Generated 7 remote datasource files:
+  - api_client.dart (Dio + interceptors)
+  - user_remote_source.dart: getUserProfile() → UserModel, login(pin, password) → Map with token+user
+  - balance_remote_source.dart: getBalance() → BalanceModel, topUp(amount) → Map with newBalance
+  - service_remote_source.dart: getActiveServices() → List<ServiceModel>
+  - transaction_remote_source.dart: getTransactionHistory(page, limit) → List<TransactionModel>
+  - news_remote_source.dart: getNewsList(page, limit) → List<NewsModel>, getNewsById(id) → NewsModel
+  - support_remote_source.dart: createTicket(subject, description) → SupportTicketModel, getMyTickets() → List<SupportTicketModel>
+- Generated user_local_source.dart: SharedPreferences-backed session cache with saveToken/getToken/removeToken/saveUser/getUser/clearSession
+- Generated 6 repository implementation files:
+  - user_repository_impl.dart: implements UserRepository, login() calls remote + saves token/user to local, getCurrentUser() tries local cache first
+  - balance_repository_impl.dart: implements BalanceRepository, getBalance()/topUp() with remote calls
+  - service_repository_impl.dart: implements ServiceRepository, getActiveServices()/getServiceDetails()/renewService()
+  - transaction_repository_impl.dart: implements TransactionRepository, getHistory() wraps flat list in Page<Transaction>
+  - news_repository_impl.dart: implements NewsRepository, getNewsList() wraps in Page<NewsItem>, getNewsById()
+  - support_repository_impl.dart: implements SupportRepository, createTicket()/getMyTickets()/getTicketDetails()
+- All repositories follow pattern: try/catch with DioExceptionMapper, DTO→Domain via toDomain(), return right(entity)/left(failure)
+- All imports use package:telecom_dashboard/... convention
+
+Stage Summary:
+- 21 Dart files created across data/ layer (6 models, 7 remote datasources, 1 local datasource, 1 storage service, 6 repository implementations)
+- Models use separate DTO enums with @JsonEnum(alwaysCreate: true) for safe API serialization + bidirectional toDomain()/fromDomain() mapping
+- ApiClient provides centralised Dio with auth interceptor, error logging, and configurable base URL
+- All repository implementations follow the try/catch + DioExceptionMapper pattern returning Either<Failure, T>
+- Mock API flat-list responses wrapped into Page<T> for paginated repository contracts
+- Ready for `build_runner` codegen, then Presentation layer (providers, screens, widgets, router)
+
+---
+Task ID: 3
+Agent: Agent-Presentation
+Task: Generate Presentation layer
+
+Work Log:
+- Read worklog.md, ARCHITECTURE.md, all 6 entity files, 8 use case files, 4 core widgets, 3 constants, 2 utils, and 6 repository impl files for exact type signatures
+- Created 7 directories under flutter/lib/presentation/ (providers, screens/{home,top_up,history,payment,news,support,login}, widgets/navigation, router)
+- Generated 6 Riverpod provider files:
+  - auth_provider.dart: StateNotifierProvider<AuthNotifier, AsyncValue<User?>> with login/logout/checkAuth, DI chain (StorageService→ApiClient→RemoteSource→LocalSource→Repository→UseCases→AuthNotifier), ApiClient singleton guard, session persistence via UserLocalSource
+  - balance_provider.dart: FutureProvider.autoDispose<Balance> + FutureProvider.autoDispose.family<Balance, double> for topUp, DI chain (ApiClient→RemoteSource→Repository→UseCases)
+  - services_provider.dart: FutureProvider.autoDispose<List<Service>> with DI chain
+  - transactions_provider.dart: FutureProvider.autoDispose<List<Transaction>> with refresh counter pattern for pull-to-refresh
+  - news_provider.dart: FutureProvider.autoDispose<List<NewsItem>> + FutureProvider.autoDispose.family<NewsItem, String> for detail, refresh counter pattern
+  - support_provider.dart: FutureProvider.autoDispose.family<SupportTicket, ({String, String})> record-type arg for create ticket
+- Generated 7 ViewModel files (sealed class state unions + StateNotifiers):
+  - home_view_model.dart: HomeState sealed (initial/loading/loaded/error/empty), HomeNotifier combines auth+balance+services
+  - login_view_model.dart: LoginFormState sealed (initial/submitting/error/success), listens to authProvider for result
+  - top_up_view_model.dart: TopUpState with selectedAmount/customAmount/isSubmitting/result/error, quick-amount selection logic
+  - history_view_model.dart: HistoryState sealed, loadTransactions/refresh via transactionHistoryProvider
+  - payment_view_model.dart: PaymentState sealed, loadRecentTransactions/refresh
+  - news_view_model.dart: NewsListState sealed, loadNews/refresh
+  - support_view_model.dart: SupportFormState sealed, submitTicket with client-side validation
+- Generated bottom_nav_bar.dart: Custom BottomNavigationBar with 4 tabs (Главная/Home, Оплата/CreditCard, Новости/Article, Поддержка/HelpCircle), orange active / gray-400 inactive, white bg with top shadow, SafeArea padding
+- Generated app_router.dart: go_router with ShellRoute wrapping 4 main tabs, _ShellWrapper stateful widget managing tab index and navigation via context.go(), auth redirect (unauthenticated→/login, authenticated+login→/), support route exempt from auth, non-shell routes for /login, /top_up, /history, /news/:id
+- Generated 8 screen files:
+  - login_screen.dart: Full-screen #FFF5F0 bg, gradient avatar with 'S', Starlink title, 'просто с нами проще' subtitle, PIN TextField (numeric, 6-digit, User icon), Password TextField (Lock icon, Eye/EyeOff toggle), Войти button (56px, rounded-16, orange, loading spinner state), error text, «Написать в поддержку» link (blue, Mail icon) → push /support
+  - home_screen.dart: CustomScrollView with gradient avatar header (PIN + fullName + Bell/Settings/Logout icons), white balance card (48px bold amount, paidUntil in green, ПОПОЛНИТЬ orange button + ИСТОРИЯ outline button), ServiceCard widgets, pull-to-refresh, loading/error states
+  - top_up_screen.dart: 3×2 GridView quick-amount buttons (100/200/500/1000/2000/5000 ₽) with orange selected state, custom amount TextField, error text, Пополнить 56px button, SnackBar on success, pop with new balance
+  - history_screen.dart: Transaction list with _TransactionItem widget (colored icon by type, description, type badge, date, signed +green/-red amount), pull-to-refresh, empty/error/loading states
+  - payment_screen.dart: 2×2 GridView quick-action cards (Оплата услуг/wallet, Перевод/send, Привязать карта/smartphone, Промокод/tag) with colored icons, recent transaction list with _TransactionItem widget, pull-to-refresh
+  - news_screen.dart: News list with _NewsListItem (Article icon, title, date, read count with eye icon, chevron), pull-to-refresh, empty/error/loading states
+  - news_detail_screen.dart: ConsumerWidget reading newsDetailProvider, title, date+read count, tags chips, optional network image, summary body
+  - support_screen.dart: Subject + description TextFields, Отправить button with loading state, error text, success state (CheckCircle icon + ticket ID + reset button), 3-item FAQ accordion (Как пополнить?, Забыл пароль, Как изменить тариф?) via ExpansionTile
+- Generated main.dart: WidgetsFlutterBinding.ensureInitialized(), StorageService.init(), ProviderScope with storageService override, MaterialApp.router with Material3 theme, orange colorScheme, Russian locale
+- All imports use package:telecom_dashboard/... convention
+- All screens use ConsumerWidget/ConsumerStatefulWidget with ref.watch for reactive state
+- Design language consistent: orange #F37021 brand, bg #FFF5F0, white cards with shadows, 16px rounded corners, 430px max-width, Russian text throughout
+
+Stage Summary:
+- 24 Dart files created across presentation/ layer (6 providers, 7 view models, 8 screens, 1 widget, 1 router, 1 main.dart)
+- Full Riverpod DI chain: StorageService→ApiClient→RemoteSources→Repositories→UseCases→Providers→ViewModels→Screens
+- go_router with ShellRoute for 4-tab navigation + auth guard redirecting to /login
+- All screens production-ready with loading/error/empty states, pull-to-refresh, mobile-first 430px max-width
+- Presentation layer completes the 3-layer Clean Architecture (Domain→Data→Presentation)
+- Ready for `build_runner` codegen (freezed + json_serializable) and Flutter build
+
+---
+Task ID: 4
+Agent: Agent-Config
+Task: Generate project config and documentation
+
+Work Log:
+- Read worklog.md and ARCHITECTURE.md for full project context
+- Read flutter/lib/main.dart to verify import structure (package:telecom_dashboard/...)
+- Created flutter/pubspec.yaml with all dependencies: flutter_riverpod, go_router, dio, freezed_annotation, json_annotation, fpdart, shared_preferences, intl, lucide_icons; dev: build_runner, freezed, json_serializable, riverpod_generator, flutter_lints
+- Created flutter/analysis_options.yaml with strict linting: strict-casts, strict-inference, strict-raw-types, 21 linter rules, excludes for .g.dart/.freezed.dart
+- Created README_FLUTTER.md (comprehensive Russian documentation) with all required sections:
+  - О проекте: description + tech stack table (11 technologies)
+  - Архитектура: ASCII layer diagram, Dependency Rule explanation, layer-to-file mapping table (60 files)
+  - Структура проекта: full lib/ tree with Russian comments
+  - Быстрый старт: 7-step guide (Flutter SDK install, clone, pub get, build_runner, mock API, run, test credentials)
+  - Экраны приложения: 8-screen table with descriptions
+  - API эндпоинты: 6-endpoint table + request/response examples (auth, profile, transactions, top-up)
+  - Доменные сущности: 6 entity tables with all fields from ARCHITECTURE.md §2
+  - Схема DI: Riverpod provider chain diagram + balance example
+  - Обработка ошибок: Failure sealed hierarchy, DioExceptionMapper table, UI error display
+  - Сборка релизных версий: APK, App Bundle, iOS instructions
+  - Публикация: Google Play Store ($25) and App Store ($99/год) step-by-step
+  - CI/CD: android.yml and ios.yml GitHub Actions workflow examples
+  - Возможные проблемы: 7 problem-solution pairs
+  - Лицензия: MIT
+- Appended worklog entry
+
+Stage Summary:
+- 3 files created: pubspec.yaml, analysis_options.yaml, README_FLUTTER.md
+- README_FLUTTER.md is the main project documentation (~500 lines, Russian, all required sections covered)
+- Project is fully documented and ready for build_runner codegen + first build
