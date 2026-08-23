@@ -5,7 +5,6 @@ part 'news_model.freezed.dart';
 part 'news_model.g.dart';
 
 @freezed
-@JsonSerializable()
 class NewsModel with _$NewsModel {
   const NewsModel._();
 
@@ -22,7 +21,6 @@ class NewsModel with _$NewsModel {
   factory NewsModel.fromJson(Map<String, dynamic> json) =>
       _$NewsModelFromJson(json);
 
-  /// Maps this DTO to the pure domain [NewsItem] entity.
   NewsItem toDomain() {
     return NewsItem(
       id: id,
@@ -35,7 +33,6 @@ class NewsModel with _$NewsModel {
     );
   }
 
-  /// Creates a DTO from a pure domain [NewsItem] entity.
   factory NewsModel.fromDomain(NewsItem newsItem) {
     return NewsModel(
       id: newsItem.id,

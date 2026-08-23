@@ -24,8 +24,7 @@ enum TransactionStatus {
 }
 
 @freezed
-@JsonSerializable()
-class Transaction with _$Transaction {
+sealed class Transaction with _$Transaction {
   const factory Transaction({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)

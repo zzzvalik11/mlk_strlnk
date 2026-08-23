@@ -5,7 +5,6 @@ part 'balance_model.freezed.dart';
 part 'balance_model.g.dart';
 
 @freezed
-@JsonSerializable()
 class BalanceModel with _$BalanceModel {
   const BalanceModel._();
 
@@ -20,7 +19,6 @@ class BalanceModel with _$BalanceModel {
   factory BalanceModel.fromJson(Map<String, dynamic> json) =>
       _$BalanceModelFromJson(json);
 
-  /// Maps this DTO to the pure domain [Balance] entity.
   Balance toDomain() {
     return Balance(
       amount: amount,
@@ -31,7 +29,6 @@ class BalanceModel with _$BalanceModel {
     );
   }
 
-  /// Creates a DTO from a pure domain [Balance] entity.
   factory BalanceModel.fromDomain(Balance balance) {
     return BalanceModel(
       amount: balance.amount,

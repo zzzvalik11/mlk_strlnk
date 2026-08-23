@@ -3,9 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'page.freezed.dart';
 part 'page.g.dart';
 
-@freezed
-@JsonSerializable(genericArgumentFactories: true)
-class Page<T> with _$Page<T> {
+@Freezed(genericArgumentFactories: true)
+sealed class Page<T> with _$Page<T> {
   const factory Page({
     @JsonKey(name: 'items') required List<T> items,
     @JsonKey(name: 'total') required int total,

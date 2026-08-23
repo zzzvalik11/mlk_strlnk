@@ -5,7 +5,6 @@ part 'support_ticket_model.freezed.dart';
 part 'support_ticket_model.g.dart';
 
 @freezed
-@JsonSerializable()
 class SupportTicketModel with _$SupportTicketModel {
   const SupportTicketModel._();
 
@@ -22,7 +21,6 @@ class SupportTicketModel with _$SupportTicketModel {
   factory SupportTicketModel.fromJson(Map<String, dynamic> json) =>
       _$SupportTicketModelFromJson(json);
 
-  /// Maps this DTO to the pure domain [SupportTicket] entity.
   SupportTicket toDomain() {
     return SupportTicket(
       id: id,
@@ -34,7 +32,6 @@ class SupportTicketModel with _$SupportTicketModel {
     );
   }
 
-  /// Creates a DTO from a pure domain [SupportTicket] entity.
   factory SupportTicketModel.fromDomain(SupportTicket ticket) {
     return SupportTicketModel(
       id: ticket.id,
@@ -47,8 +44,6 @@ class SupportTicketModel with _$SupportTicketModel {
   }
 }
 
-/// DTO-specific enum for [TicketStatus] serialization.
-/// JSON values match the API contract (camelCase/lowercase strings).
 @JsonEnum(alwaysCreate: true)
 enum TicketModelStatus {
   @JsonValue('open')
@@ -60,7 +55,6 @@ enum TicketModelStatus {
   @JsonValue('closed')
   closed;
 
-  /// Maps DTO enum to the domain [TicketStatus] enum.
   TicketStatus toDomain() {
     switch (this) {
       case TicketModelStatus.open:
@@ -74,7 +68,6 @@ enum TicketModelStatus {
     }
   }
 
-  /// Maps a domain [TicketStatus] enum to this DTO enum.
   static TicketModelStatus fromDomain(TicketStatus status) {
     switch (status) {
       case TicketStatus.open:

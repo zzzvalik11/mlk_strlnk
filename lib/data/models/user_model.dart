@@ -5,7 +5,6 @@ part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
 @freezed
-@JsonSerializable()
 class UserModel with _$UserModel {
   const UserModel._();
 
@@ -20,7 +19,6 @@ class UserModel with _$UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) =>
       _$UserModelFromJson(json);
 
-  /// Maps this DTO to the pure domain [User] entity.
   User toDomain() {
     return User(
       id: id,
@@ -31,7 +29,6 @@ class UserModel with _$UserModel {
     );
   }
 
-  /// Creates a DTO from a pure domain [User] entity.
   factory UserModel.fromDomain(User user) {
     return UserModel(
       id: user.id,

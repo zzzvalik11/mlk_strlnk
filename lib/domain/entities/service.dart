@@ -15,8 +15,7 @@ enum ServiceStatus {
 }
 
 @freezed
-@JsonSerializable()
-class Service with _$Service {
+sealed class Service with _$Service {
   const factory Service({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'name') required String name,

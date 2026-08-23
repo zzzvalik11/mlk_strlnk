@@ -4,8 +4,7 @@ part 'news_item.freezed.dart';
 part 'news_item.g.dart';
 
 @freezed
-@JsonSerializable()
-class NewsItem with _$NewsItem {
+sealed class NewsItem with _$NewsItem {
   const factory NewsItem({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'title') required String title,

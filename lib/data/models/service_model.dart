@@ -5,7 +5,6 @@ part 'service_model.freezed.dart';
 part 'service_model.g.dart';
 
 @freezed
-@JsonSerializable()
 class ServiceModel with _$ServiceModel {
   const ServiceModel._();
 
@@ -24,7 +23,6 @@ class ServiceModel with _$ServiceModel {
   factory ServiceModel.fromJson(Map<String, dynamic> json) =>
       _$ServiceModelFromJson(json);
 
-  /// Maps this DTO to the pure domain [Service] entity.
   Service toDomain() {
     return Service(
       id: id,
@@ -38,7 +36,6 @@ class ServiceModel with _$ServiceModel {
     );
   }
 
-  /// Creates a DTO from a pure domain [Service] entity.
   factory ServiceModel.fromDomain(Service service) {
     return ServiceModel(
       id: service.id,
@@ -54,7 +51,6 @@ class ServiceModel with _$ServiceModel {
 }
 
 /// DTO-specific enum for [ServiceStatus] serialization.
-/// Uses lowercase JSON values matching the API contract.
 @JsonEnum(valueField: 'value', alwaysCreate: true)
 enum ServiceModelStatus {
   @JsonValue('active')
@@ -69,7 +65,6 @@ enum ServiceModelStatus {
   const ServiceModelStatus(this.value);
   final String value;
 
-  /// Maps DTO enum to the domain [ServiceStatus] enum.
   ServiceStatus toDomain() {
     switch (this) {
       case ServiceModelStatus.active:
@@ -83,7 +78,6 @@ enum ServiceModelStatus {
     }
   }
 
-  /// Maps a domain [ServiceStatus] enum to this DTO enum.
   static ServiceModelStatus fromDomain(ServiceStatus status) {
     switch (status) {
       case ServiceStatus.active:

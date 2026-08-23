@@ -15,8 +15,7 @@ enum TicketStatus {
 }
 
 @freezed
-@JsonSerializable()
-class SupportTicket with _$SupportTicket {
+sealed class SupportTicket with _$SupportTicket {
   const factory SupportTicket({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'subject') required String subject,

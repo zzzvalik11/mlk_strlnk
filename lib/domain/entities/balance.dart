@@ -4,8 +4,7 @@ part 'balance.freezed.dart';
 part 'balance.g.dart';
 
 @freezed
-@JsonSerializable()
-class Balance with _$Balance {
+sealed class Balance with _$Balance {
   const factory Balance({
     @JsonKey(name: 'amount') required double amount,
     @JsonKey(name: 'currency') required String currency,

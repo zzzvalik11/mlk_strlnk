@@ -5,7 +5,6 @@ part 'transaction_model.freezed.dart';
 part 'transaction_model.g.dart';
 
 @freezed
-@JsonSerializable()
 class TransactionModel with _$TransactionModel {
   const TransactionModel._();
 
@@ -24,7 +23,6 @@ class TransactionModel with _$TransactionModel {
   factory TransactionModel.fromJson(Map<String, dynamic> json) =>
       _$TransactionModelFromJson(json);
 
-  /// Maps this DTO to the pure domain [Transaction] entity.
   Transaction toDomain() {
     return Transaction(
       id: id,
@@ -37,7 +35,6 @@ class TransactionModel with _$TransactionModel {
     );
   }
 
-  /// Creates a DTO from a pure domain [Transaction] entity.
   factory TransactionModel.fromDomain(Transaction transaction) {
     return TransactionModel(
       id: transaction.id,
@@ -51,8 +48,6 @@ class TransactionModel with _$TransactionModel {
   }
 }
 
-/// DTO-specific enum for [TransactionType] serialization.
-/// JSON values match the API contract (camelCase, matching domain @JsonValue).
 @JsonEnum(alwaysCreate: true)
 enum TransactionModelType {
   @JsonValue('topUp')
@@ -64,7 +59,6 @@ enum TransactionModelType {
   @JsonValue('bonus')
   bonus;
 
-  /// Maps DTO enum to the domain [TransactionType] enum.
   TransactionType toDomain() {
     switch (this) {
       case TransactionModelType.topUp:
@@ -78,7 +72,6 @@ enum TransactionModelType {
     }
   }
 
-  /// Maps a domain [TransactionType] enum to this DTO enum.
   static TransactionModelType fromDomain(TransactionType type) {
     switch (type) {
       case TransactionType.topUp:
@@ -93,8 +86,6 @@ enum TransactionModelType {
   }
 }
 
-/// DTO-specific enum for [TransactionStatus] serialization.
-/// JSON values match the API contract (lowercase strings).
 @JsonEnum(alwaysCreate: true)
 enum TransactionModelStatus {
   @JsonValue('success')
@@ -104,7 +95,6 @@ enum TransactionModelStatus {
   @JsonValue('failed')
   failed;
 
-  /// Maps DTO enum to the domain [TransactionStatus] enum.
   TransactionStatus toDomain() {
     switch (this) {
       case TransactionModelStatus.success:
@@ -116,7 +106,6 @@ enum TransactionModelStatus {
     }
   }
 
-  /// Maps a domain [TransactionStatus] enum to this DTO enum.
   static TransactionModelStatus fromDomain(TransactionStatus status) {
     switch (status) {
       case TransactionStatus.success:
