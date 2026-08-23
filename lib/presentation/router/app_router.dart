@@ -68,7 +68,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: Routes.home,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeScreen(),
+              child: _HomeDebug(),
             ),
           ),
           GoRoute(
@@ -137,6 +137,24 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 // ─── Shell Wrapper ──────────────────────────────────────────
+
+/// Debug widget to test if shell routing works.
+class _HomeDebug extends StatelessWidget {
+  const _HomeDebug();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.red,
+      child: const Center(
+        child: Text(
+          'HOME DEBUG',
+          style: TextStyle(fontSize: 32, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
 
 /// Wraps shell children with a [BottomNavBar] and manages tab state.
 /// On wide screens, content is constrained to 480px and centered.
