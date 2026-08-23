@@ -1,24 +1,50 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:telecom_dashboard/domain/entities/news_item.dart';
 
-part 'news_model.freezed.dart';
-part 'news_model.g.dart';
+class NewsModel {
+  final String id;
+  final String title;
+  final String summary;
+  final String? imageUrl;
+  final DateTime publishedAt;
+  final int? readCount;
+  final List<String> tags;
 
-@freezed
-class NewsModel with _$NewsModel {
-  const NewsModel._();
-  const factory NewsModel({
-    @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'title') required String title,
-    @JsonKey(name: 'summary') required String summary,
-    @JsonKey(name: 'imageUrl') String? imageUrl,
-    @JsonKey(name: 'publishedAt') required DateTime publishedAt,
-    @JsonKey(name: 'readCount') int? readCount,
-    @JsonKey(name: 'tags') @Default([]) List<String> tags,
-  }) = _NewsModel;
+  const NewsModel({
+    required this.id,
+    required this.title,
+    required this.summary,
+    this.imageUrl,
+    required this.publishedAt,
+    this.readCount,
+    this.tags = const [],
+  });
 
-  factory NewsModel.fromJson(Map<String, dynamic> json) =>
-      _$NewsModelFromJson(json);
+  factory NewsModel.fromJson(Map<String, dynamic> json) {
+    return NewsModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      summary: json['summary'] as String,
+      imageUrl: json['imageUrl'] as String?,
+      publishedAt: _parseDateTime(json['publishedAt']),
+      readCount: json['readCount'] as int?,
+      tags: (json['tags'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'summary': summary,
+      'imageUrl': imageUrl,
+      'publishedAt': publishedAt.toIso8601String(),
+      'readCount': readCount,
+      'tags': tags,
+    };
+  }
 }
 
 extension NewsModelX on NewsModel {
@@ -47,4 +73,10 @@ extension NewsModelFromDomain on NewsItem {
       tags: tags,
     );
   }
+}
+
+DateTime _parseDateTime(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.parse(value);
+  throw ArgumentError('Cannot parse DateTime from $value');
 }

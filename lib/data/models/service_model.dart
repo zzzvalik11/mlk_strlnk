@@ -1,26 +1,51 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:telecom_dashboard/domain/entities/service.dart';
 
-part 'service_model.freezed.dart';
-part 'service_model.g.dart';
+class ServiceModel {
+  final String id;
+  final String name;
+  final String category;
+  final double cost;
+  final ServiceModelStatus status;
+  final String? iconUrl;
+  final String? warningMessage;
+  final String? billingCycle;
 
-@freezed
-class ServiceModel with _$ServiceModel {
-  const ServiceModel._();
-  const factory ServiceModel({
-    @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'name') required String name,
-    @JsonKey(name: 'category') required String category,
-    @JsonKey(name: 'cost') required double cost,
-    @JsonKey(name: 'status', unknownEnumValue: ServiceModelStatus.active)
-    required ServiceModelStatus status,
-    @JsonKey(name: 'iconUrl') String? iconUrl,
-    @JsonKey(name: 'warningMessage') String? warningMessage,
-    @JsonKey(name: 'billingCycle') String? billingCycle,
-  }) = _ServiceModel;
+  const ServiceModel({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.cost,
+    required this.status,
+    this.iconUrl,
+    this.warningMessage,
+    this.billingCycle,
+  });
 
-  factory ServiceModel.fromJson(Map<String, dynamic> json) =>
-      _$ServiceModelFromJson(json);
+  factory ServiceModel.fromJson(Map<String, dynamic> json) {
+    return ServiceModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      category: json['category'] as String,
+      cost: (json['cost'] as num).toDouble(),
+      status: ServiceModelStatus.fromString(json['status'] as String? ?? 'active'),
+      iconUrl: json['iconUrl'] as String?,
+      warningMessage: json['warningMessage'] as String?,
+      billingCycle: json['billingCycle'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'category': category,
+      'cost': cost,
+      'status': status.value,
+      'iconUrl': iconUrl,
+      'warningMessage': warningMessage,
+      'billingCycle': billingCycle,
+    };
+  }
 }
 
 extension ServiceModelX on ServiceModel {
@@ -54,19 +79,21 @@ extension ServiceModelFromDomain on Service {
 }
 
 /// DTO-specific enum for [ServiceStatus] serialization.
-@JsonEnum(valueField: 'value', alwaysCreate: true)
 enum ServiceModelStatus {
-  @JsonValue('active')
   active('active'),
-  @JsonValue('expired')
   expired('expired'),
-  @JsonValue('paused')
   paused('paused'),
-  @JsonValue('error')
   error('error');
 
   const ServiceModelStatus(this.value);
   final String value;
+
+  static ServiceModelStatus fromString(String value) {
+    return ServiceModelStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ServiceModelStatus.active,
+    );
+  }
 
   ServiceStatus toDomain() {
     switch (this) {

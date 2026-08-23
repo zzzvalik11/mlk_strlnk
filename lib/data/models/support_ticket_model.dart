@@ -1,24 +1,43 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:telecom_dashboard/domain/entities/support_ticket.dart';
 
-part 'support_ticket_model.freezed.dart';
-part 'support_ticket_model.g.dart';
+class SupportTicketModel {
+  final String id;
+  final String subject;
+  final String description;
+  final TicketModelStatus status;
+  final DateTime createdAt;
+  final int replyCount;
 
-@freezed
-class SupportTicketModel with _$SupportTicketModel {
-  const SupportTicketModel._();
-  const factory SupportTicketModel({
-    @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'subject') required String subject,
-    @JsonKey(name: 'description') required String description,
-    @JsonKey(name: 'status', unknownEnumValue: TicketModelStatus.open)
-    required TicketModelStatus status,
-    @JsonKey(name: 'createdAt') required DateTime createdAt,
-    @JsonKey(name: 'replyCount') @Default(0) int replyCount,
-  }) = _SupportTicketModel;
+  const SupportTicketModel({
+    required this.id,
+    required this.subject,
+    required this.description,
+    required this.status,
+    required this.createdAt,
+    this.replyCount = 0,
+  });
 
-  factory SupportTicketModel.fromJson(Map<String, dynamic> json) =>
-      _$SupportTicketModelFromJson(json);
+  factory SupportTicketModel.fromJson(Map<String, dynamic> json) {
+    return SupportTicketModel(
+      id: json['id'] as String,
+      subject: json['subject'] as String,
+      description: json['description'] as String,
+      status: TicketModelStatus.fromString(json['status'] as String? ?? 'open'),
+      createdAt: _parseDateTime(json['createdAt']),
+      replyCount: json['replyCount'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'subject': subject,
+      'description': description,
+      'status': status.value,
+      'createdAt': createdAt.toIso8601String(),
+      'replyCount': replyCount,
+    };
+  }
 }
 
 extension SupportTicketModelX on SupportTicketModel {
@@ -47,16 +66,21 @@ extension SupportTicketModelFromDomain on SupportTicket {
   }
 }
 
-@JsonEnum(alwaysCreate: true)
 enum TicketModelStatus {
-  @JsonValue('open')
-  open,
-  @JsonValue('inProgress')
-  inProgress,
-  @JsonValue('resolved')
-  resolved,
-  @JsonValue('closed')
-  closed;
+  open('open'),
+  inProgress('inProgress'),
+  resolved('resolved'),
+  closed('closed');
+
+  const TicketModelStatus(this.value);
+  final String value;
+
+  static TicketModelStatus fromString(String value) {
+    return TicketModelStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => TicketModelStatus.open,
+    );
+  }
 
   TicketStatus toDomain() {
     switch (this) {
@@ -83,4 +107,10 @@ enum TicketModelStatus {
         return TicketModelStatus.closed;
     }
   }
+}
+
+DateTime _parseDateTime(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.parse(value);
+  throw ArgumentError('Cannot parse DateTime from $value');
 }

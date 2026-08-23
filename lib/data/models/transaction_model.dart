@@ -1,26 +1,47 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:telecom_dashboard/domain/entities/transaction.dart';
 
-part 'transaction_model.freezed.dart';
-part 'transaction_model.g.dart';
+class TransactionModel {
+  final String id;
+  final TransactionModelType type;
+  final double amount;
+  final String description;
+  final DateTime date;
+  final TransactionModelStatus status;
+  final String? relatedServiceId;
 
-@freezed
-class TransactionModel with _$TransactionModel {
-  const TransactionModel._();
-  const factory TransactionModel({
-    @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'type', unknownEnumValue: TransactionModelType.payment)
-    required TransactionModelType type,
-    @JsonKey(name: 'amount') required double amount,
-    @JsonKey(name: 'description') required String description,
-    @JsonKey(name: 'date') required DateTime date,
-    @JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
-    required TransactionModelStatus status,
-    @JsonKey(name: 'relatedServiceId') String? relatedServiceId,
-  }) = _TransactionModel;
+  const TransactionModel({
+    required this.id,
+    required this.type,
+    required this.amount,
+    required this.description,
+    required this.date,
+    required this.status,
+    this.relatedServiceId,
+  });
 
-  factory TransactionModel.fromJson(Map<String, dynamic> json) =>
-      _$TransactionModelFromJson(json);
+  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+    return TransactionModel(
+      id: json['id'] as String,
+      type: TransactionModelType.fromString(json['type'] as String? ?? 'payment'),
+      amount: (json['amount'] as num).toDouble(),
+      description: json['description'] as String,
+      date: _parseDateTime(json['date']),
+      status: TransactionModelStatus.fromString(json['status'] as String? ?? 'success'),
+      relatedServiceId: json['relatedServiceId'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type.value,
+      'amount': amount,
+      'description': description,
+      'date': date.toIso8601String(),
+      'status': status.value,
+      'relatedServiceId': relatedServiceId,
+    };
+  }
 }
 
 extension TransactionModelX on TransactionModel {
@@ -51,16 +72,21 @@ extension TransactionModelFromDomain on Transaction {
   }
 }
 
-@JsonEnum(alwaysCreate: true)
 enum TransactionModelType {
-  @JsonValue('topUp')
-  topUp,
-  @JsonValue('payment')
-  payment,
-  @JsonValue('refund')
-  refund,
-  @JsonValue('bonus')
-  bonus;
+  topUp('topUp'),
+  payment('payment'),
+  refund('refund'),
+  bonus('bonus');
+
+  const TransactionModelType(this.value);
+  final String value;
+
+  static TransactionModelType fromString(String value) {
+    return TransactionModelType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => TransactionModelType.payment,
+    );
+  }
 
   TransactionType toDomain() {
     switch (this) {
@@ -89,14 +115,20 @@ enum TransactionModelType {
   }
 }
 
-@JsonEnum(alwaysCreate: true)
 enum TransactionModelStatus {
-  @JsonValue('success')
-  success,
-  @JsonValue('pending')
-  pending,
-  @JsonValue('failed')
-  failed;
+  success('success'),
+  pending('pending'),
+  failed('failed');
+
+  const TransactionModelStatus(this.value);
+  final String value;
+
+  static TransactionModelStatus fromString(String value) {
+    return TransactionModelStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => TransactionModelStatus.success,
+    );
+  }
 
   TransactionStatus toDomain() {
     switch (this) {
@@ -119,4 +151,10 @@ enum TransactionModelStatus {
         return TransactionModelStatus.failed;
     }
   }
+}
+
+DateTime _parseDateTime(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.parse(value);
+  throw ArgumentError('Cannot parse DateTime from $value');
 }

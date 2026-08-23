@@ -1,22 +1,39 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:telecom_dashboard/domain/entities/user.dart';
 
-part 'user_model.freezed.dart';
-part 'user_model.g.dart';
+class UserModel {
+  final String id;
+  final String fullName;
+  final String? phone;
+  final String? avatarUrl;
+  final DateTime createdAt;
 
-@freezed
-class UserModel with _$UserModel {
-  const UserModel._();
-  const factory UserModel({
-    @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'fullName') required String fullName,
-    @JsonKey(name: 'phone') String? phone,
-    @JsonKey(name: 'avatarUrl') String? avatarUrl,
-    @JsonKey(name: 'createdAt') required DateTime createdAt,
-  }) = _UserModel;
+  const UserModel({
+    required this.id,
+    required this.fullName,
+    this.phone,
+    this.avatarUrl,
+    required this.createdAt,
+  });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) =>
-      _$UserModelFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as String,
+      fullName: json['fullName'] as String,
+      phone: json['phone'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
+      createdAt: _parseDateTime(json['createdAt']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fullName': fullName,
+      'phone': phone,
+      'avatarUrl': avatarUrl,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
 }
 
 extension UserModelX on UserModel {
@@ -41,4 +58,10 @@ extension UserModelFromDomain on User {
       createdAt: createdAt,
     );
   }
+}
+
+DateTime _parseDateTime(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.parse(value);
+  throw ArgumentError('Cannot parse DateTime from $value');
 }
