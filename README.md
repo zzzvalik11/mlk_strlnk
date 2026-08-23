@@ -1,8 +1,10 @@
-# Telecom Dashboard
+# Telecom Dashboard — Flutter
 
-Мобильное веб-приложение **«Личный кабинет телеком-абонента»** с дашбордом, пополнением баланса, историей операций, новостями и поддержкой.
+Мобильное приложение **«Личный кабинет телеком-абонента»** (Starlink).
 
-Одностраничное веб-приложение в мобильном формате (max-width 430px), повторяющее UI мобильного приложения телеком-оператора. Состоит из клиентского SPA с таб-навигацией и серверных mock-API на Route Handlers.
+Стек: **Flutter 3.x · Dart 3.x · Riverpod · Dio · Freezed · GoRouter · fpdart**
+
+Архитектура: **Clean Architecture** (Domain ← Data / Presentation)
 
 ---
 
@@ -10,589 +12,315 @@
 
 | Экран | Описание |
 |-------|----------|
-| Авторизация | Форма входа по ПИН + пароль, ссылка «Написать в поддержку» без авторизации |
-| Главная | PIN, ФИО, баланс 112.5 ₽, активные услуги, кнопки «Пополнить» / «История» |
-| Оплата | 4 быстрых действия + список последних транзакций |
-| Новости | Лента новостей с детальным просмотром в bottom-sheet |
-| Поддержка | Форма обращения + FAQ-аккордеон (доступна без авторизации) |
+| Авторизация | Форма входа по ПИН + пароль |
+| Главная | PIN, ФИО, баланс, активные услуги, кнопки «Пополнить» / «История» |
+| Оплата | 4 быстрых действия + список транзакций |
+| Новости | Лента новостей с детальным просмотром |
+| Поддержка | Форма обращения + FAQ (доступна без авторизации) |
+| Пополнение | Выбор суммы + ручной ввод |
+| История | Полный список операций |
 
 ---
 
 ## Стек технологий
 
-| Категория | Технология |
-|-----------|------------|
-| Фреймворк | Next.js 16 (App Router, Turbopack) |
-| Язык | TypeScript 5 |
-| UI | Tailwind CSS 4 + shadcn/ui + Lucide Icons |
-| Уведомления | Sonner (toast) |
-| Модальные окна | Radix Sheet (shadcn/ui) |
-| БД | Prisma ORM 6 + SQLite |
-| API | Next.js Route Handlers (mock) |
-| Пакетный менеджер | Bun |
+| Категория | Технология | Версия |
+|-----------|------------|--------|
+| Фреймворк | Flutter | 3.x |
+| Язык | Dart | 3.x |
+| State Management | Riverpod (flutter_riverpod) | ^2.5.1 |
+| Роутинг | GoRouter | ^14.2.0 |
+| Сеть | Dio | ^5.4.3 |
+| Сериализация | Freezed + json_serializable | ^2.5.2 / ^6.8.0 |
+| Функциональные типы | fpdart (Either) | ^1.1.0 |
+| Локальное хранилище | SharedPreferences | ^2.2.3 |
+| Форматирование | intl | ^0.19.0 |
+| Иконки | lucide_icons | ^0.377.0 |
 
 ---
 
 ## Структура проекта
 
 ```
-src/
-├── app/
-│   ├── layout.tsx                          # Root layout (lang=ru, viewport)
-│   ├── page.tsx                            # Все экраны (4 таба + 3 модалки)
-│   ├── globals.css                         # Глобальные стили + CSS-переменные
-│   └── api/
-│       ├── auth/login/route.ts             # POST — авторизация (ПИН + пароль)
-│       ├── account/profile/route.ts        # GET  — профиль, баланс, услуги
-│       ├── transactions/route.ts           # GET  — история операций
-│       ├── news/route.ts                   # GET  — лента новостей
-│       ├── support/route.ts                # GET  — список тикетов
-│       └── top-up/route.ts                 # POST — пополнение баланса
-├── components/ui/
-│   └── sheet.tsx                           # Bottom-sheet (shadcn/ui)
-└── lib/
-    ├── db.ts                               # Prisma Client
-    └── utils.ts                             # cn() утилита
-
-prisma/
-└── schema.prisma                           # 6 моделей: UserProfile, Balance, Service,
-                                            # Transaction, NewsItem, SupportTicket
+lib/
+├── main.dart                              # Точка входа, ProviderScope
+├── core/
+│   ├── constants/
+│   │   ├── app_constants.dart             # API-бейзы, ключи
+│   │   ├── routes.dart                    # Имена роутов
+│   │   └── themes.dart                    # Цвета, стили
+│   ├── errors/
+│   │   ├── failures.dart                  # sealed Failure
+│   │   └── exceptions.dart                # DioException → Failure
+│   ├── utils/
+│   │   ├── date_formatter.dart
+│   │   ├── currency_formatter.dart
+│   │   └── validators.dart
+│   └── widgets/
+│       ├── empty_state.dart
+│       ├── error_state.dart
+│       ├── loading_spinner.dart
+│       └── service_card.dart
+├── domain/                                # Чистая бизнес-логика (без зависимостей)
+│   ├── entities/                          # Freezed POCO-классы
+│   │   ├── user.dart
+│   │   ├── balance.dart
+│   │   ├── service.dart
+│   │   ├── transaction.dart
+│   │   ├── news_item.dart
+│   │   ├── support_ticket.dart
+│   │   └── page.dart
+│   ├── repositories/                      # Абстрактные контракты
+│   │   ├── user_repository.dart
+│   │   ├── balance_repository.dart
+│   │   ├── service_repository.dart
+│   │   ├── transaction_repository.dart
+│   │   ├── news_repository.dart
+│   │   └── support_repository.dart
+│   └── usecases/                          # Бизнес-сценарии
+│       ├── auth/
+│       ├── balance/
+│       ├── services/
+│       ├── transactions/
+│       ├── news/
+│       └── support/
+├── data/                                  # Реализации и маппинг
+│   ├── models/                            # DTO (json_serializable)
+│   ├── datasources/remote/                # Dio-based API
+│   ├── datasources/local/                 # SharedPreferences кэш
+│   ├── repositories/                      # Impl domain-контрактов
+│   └── local/storage_service.dart
+└── presentation/                          # UI + State
+    ├── providers/                         # Riverpod Providers
+    ├── screens/                           # Экраны + ViewModels
+    │   ├── login/
+    │   ├── home/
+    │   ├── top_up/
+    │   ├── history/
+    │   ├── payment/
+    │   ├── news/
+    │   └── support/
+    ├── widgets/navigation/
+    │   └── bottom_nav_bar.dart
+    └── router/
+        └── app_router.dart
 ```
 
 ---
 
-## Авторизация
+## Быстрый старт (локальный запуск)
 
-Приложение запускается с **экрана авторизации** (ПИН + пароль). Все экраны защищены — доступ к дашборду, оплате, новостям и истории транзакций возможен только после входа.
+### 1. Установить Flutter SDK
 
-Исключение: **форма обращения в техподдержку** доступна без авторизации через ссылку «Написать в поддержку» на экране входа.
+```bash
+# macOS / Linux
+brew install flutter
+
+# Или вручную (все платформы):
+# 1. Скачайте архив с https://docs.flutter.dev/get-started/install
+# 2. Распакуйте в нужную директорию
+# 3. Добавьте bin/ в PATH
+
+# Проверка
+flutter --version
+flutter doctor
+```
+
+**Минимальные требования:**
+- Flutter >= 3.22.0
+- Dart >= 3.4.0
+- Android Studio (для Android) или Xcode (для iOS)
+
+### 2. Клонировать репозиторий
+
+```bash
+git clone https://github.com/zzzvalik11/mlk_strlnk.git
+cd mlk_strlnk/flutter
+```
+
+### 3. Установить зависимости
+
+```bash
+flutter pub get
+```
+
+### 4. Сгенерировать код (Freezed + json_serializable)
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+Эта команда создаст `.freezed.dart` и `.g.dart` файлы для всех сущностей и моделей.
+
+### 5. Запустить на эмуляторе / устройстве
+
+```bash
+# Список доступных устройств
+flutter devices
+
+# Запуск (выберет первое устройство)
+flutter run
+
+# Или конкретное устройство
+flutter run -d chrome        # Веб
+flutter run -d macos        # macOS
+flutter run -d <device_id>  # Конкретный эмулятор/телефон
+```
+
+### 6. (Опционально) Собрать APK / IPA
+
+```bash
+# Android APK (debug)
+flutter build apk --debug
+# Результат: build/app/outputs/flutter-apk/app-debug.apk
+
+# Android APK (release, нужен keystore)
+flutter build apk --release
+
+# Android App Bundle (для Google Play)
+flutter build appbundle --release
+
+# iOS (только на macOS, нужен Xcode)
+flutter build ios --release
+```
+
+---
+
+## Тестовые данные
 
 | Параметр | Значение |
 |----------|----------|
 | ПИН (login) | `039103` |
 | Пароль | `123456` |
-| Хранение сессии | `localStorage` (ключ `telecom_auth`) |
-| Выход | Кнопка в шапке (иконка `LogOut`) |
+
+Приложение использует **mock-данные** — реальный бэкенд не требуется.
 
 ---
 
-## Быстрый старт (разработка)
-
-### Предварительные требования
-
-- [Bun](https://bun.sh/) >= 1.0
-- [Node.js](https://nodejs.org/) >= 18 (альтернатива Bun)
-- Git
-
-### Установка и запуск
-
-```bash
-# 1. Клонировать репозиторий
-git clone https://github.com/zzzvalik11/mlk_strlnk.git
-cd mlk_strlnk
-
-# 2. Установить зависимости
-bun install
-
-# 3. Инициализировать базу данных
-bun run db:push
-bun run db:generate
-
-# 4. Запустить dev-сервер
-bun run dev
-```
-
-Приложение будет доступно на **http://localhost:3000**
-
-### Другие команды
-
-```bash
-# Линтинг
-bun run lint
-
-# Продакшн-сборка
-bun run build
-
-# Запуск продакшн-сборки
-bun run start
-
-# Перегенерация Prisma-клиента
-bun run db:generate
-```
-
----
-
-## API эндпоинты
-
-| Метод | Путь | Описание |
-|-------|------|----------|
-| POST | `/api/auth/login` | Авторизация по ПИН + пароль (body: `{ "pin": "039103", "password": "123456" }`) |
-| GET | `/api/account/profile` | Профиль пользователя, баланс, активные услуги |
-| GET | `/api/transactions` | История транзакций |
-| GET | `/api/news` | Лента новостей |
-| GET | `/api/support` | Список обращений в поддержку |
-| POST | `/api/top-up` | Пополнение баланса (body: `{ "amount": 500 }`) |
-
-### Пример запроса `/api/auth/login`
-
-```json
-// Request
-{ "pin": "039103", "password": "123456" }
-
-// Response (200 OK)
-{
-  "success": true,
-  "token": "mock-jwt-039103-1719000000000",
-  "user": { "pin": "039103", "fullName": "Примеров-Заде П." }
-}
-
-// Error (401 Unauthorized)
-{ "error": "Неверный ПИН или пароль" }
-```
-
-**Тестовые данные:** ПИН — `039103`, пароль — `123456`
-
-### Пример ответа `/api/account/profile`
-
-```json
-{
-  "user": {
-    "pin": "039103",
-    "fullName": "Примеров-Заде П."
-  },
-  "balance": {
-    "amount": 112.5,
-    "currency": "RUB",
-    "paidUntilLabel": "до 11 августа"
-  },
-  "activeServices": [
-    {
-      "id": "svc-1",
-      "name": "100/100 30 day 250 руб",
-      "category": "Интернет",
-      "cost": 225.0,
-      "warningMessage": "!"
-    }
-  ]
-}
-```
-
----
-
-## Схема базы данных (Prisma)
-
-| Модель | Описание |
-|--------|----------|
-| `UserProfile` | ПИН, ФИО, телефон, аватар |
-| `Balance` | Сумма, валюта, дата оплаты, статус |
-| `Service` | Название, категория, стоимость, статус |
-| `Transaction` | Тип, сумма, описание, дата, статус |
-| `NewsItem` | Заголовок, текст, дата, просмотры |
-| `SupportTicket` | Тема, описание, статус, ответы |
-
-Связи: `UserProfile` 1→N `Service`, `Transaction`, `SupportTicket`
-
----
-
-## Получение мобильных сборок (APK / iOS)
-
-> **Важно:** текущий проект — это **веб-приложение** (Next.js). Для получения нативных APK и IPA-файлов его необходимо обернуть в мобильную оболочку. Существует **три основных подхода**.
-
----
-
-### Подход 1: Capacitor (рекомендуемый)
-
-[Capacitor](https://capacitorjs.com/) от Ionic — это стандартный способ превратить веб-приложение в нативное. Генерирует полноценные Xcode/Android Studio проекты.
-
-#### Установка
-
-```bash
-# 1. Собрать веб-приложение
-bun run build
-
-# 2. Установить Capacitor
-bun add @capacitor/core @capacitor/cli
-bun add @capacitor/android @capacitor/ios
-
-# 3. Инициализировать Capacitor
-npx cap init "Telecom Dashboard" "com.telecom.dashboard" --web-dir .next/standalone
-
-# 4. Добавить платформы
-npx cap add android
-npx cap add ios
-
-# 5. Синхронизировать веб-код в нативные проекты
-npx cap sync
-```
-
-#### Сборка APK (Android)
-
-```bash
-# Синхронизировать
-npx cap sync android
-
-# Открыть в Android Studio
-npx cap open android
-```
-
-В Android Studio:
-1. **Build → Generate Signed Bundle / APK**
-2. Выбрать **APK**
-3. Выбрать или создать keystore (для релиза)
-4. **Build** → файл `app-debug.apk` или `app-release.apk` появится в `android/app/build/outputs/apk/`
-
-#### Сборка IPA (iOS)
-
-```bash
-# Синхронизировать
-npx cap sync ios
-
-# Открыть в Xcode
-npx cap open ios
-```
-
-В Xcode (только на macOS):
-1. **Product → Archive**
-2. **Distribute App** → **App Store Connect** или **Ad Hoc**
-3. IPA-файл будет сохранён в папке `~/Library/Developer/Xcode/Archives/`
-
----
-
-### Подход 2: PWA (Progressive Web App)
-
-Самый простой путь — никаких нативных сборок. Приложение устанавливается прямо из браузера.
-
-#### Настройка
-
-```bash
-# 1. Установить next-pwa
-bun add @ducanh2912/next-pwa
-
-# 2. Добавить в next.config.ts:
-```
-
-```ts
-// next.config.ts
-import withPWA from "@ducanh2912/next-pwa";
-
-const pwaConfig = {
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
-};
-
-export default withPWA(pwaConfig)(
-  // ... ваши настройки next.config
-);
-```
-
-```bash
-# 3. Собрать
-bun run build
-
-# 4. Разместить на любом хостинге с HTTPS
-```
-
-Пользователь открывает сайт в Chrome/Safari → видит предложение **«Добавить на главный экран»** → приложение работает как нативное (оффлайн, иконка на рабочем столе, полноэкранный режим).
-
----
-
-### Подход 3: Trusted Web Activity (TWA) — только Android
-
-[Trusted Web Activity](https://developer.chrome.com/docs/android/trusted-web-activity/) оборачивает PWA в полноценный APK через [Bubblewrap](https://github.com/nicedoc/nicedoc.io). Основное преимущество — публикация в Google Play **без Java/Kotlin кода**.
-
-#### Инструмент Bubblewrap
-
-```bash
-# 1. Установить
-npm install -g @nicolo-ribaudo/nice2rep @nicolo-nicolo/bubblewrap
-npm install -g @nicolo-nicolo/bubblewrap
-
-# 2. Инициализация проекта TWA
-bubblewrap init --manifest https://your-domain.com/manifest.json
-
-# 3. Сборка APK
-bubblewrap build
-
-# Результат: app-release-signed.apk
-```
-
-Требования: домен с **HTTPS**, файл `manifest.json` и `assetlinks.json` на сервере.
-
----
-
-## Сравнение подходов
-
-| Критерий | Capacitor | PWA | TWA |
-|----------|-----------|-----|-----|
-| APK (Android) | Да | Нет (из Chrome) | Да |
-| IPA (iOS) | Да (нужен macOS) | Нет (из Safari) | Нет |
-| Доступ к нативным API | Полный | Ограниченный | Нет |
-| Скорость запуска | Быстрая | Средняя | Быстрая |
-| Размер установки | ~15-30 МБ | ~2 МБ (кэш) | ~5 МБ |
-| Сложность | Средняя | Низкая | Низкая |
-| Google Play | Да | Нет | Да |
-| App Store | Да | Нет | Нет |
-
----
-
-## Публикация в магазинах приложений
-
-### Google Play Store
-
-#### Инструменты
-
-| Инструмент | Назначение |
-|------------|----------|
-| [Google Play Console](https://play.google.com/console) | Панель управления (загрузка APK, монетизация, аналитика) |
-| [Android Studio](https://developer.android.com/studio) | Среда разработки, отладка, подпись APK |
-| [jarsigner / apksigner](https://developer.android.com/studio/publish/app-signing) | Подпись APK релизным ключом |
-| [Bundletool](https://developer.android.com/studio/command-line/bundletool) | Проверка и конвертация AAB ↔ APK |
-| [Google Play Badge](https://play.google.com/intl/ru/badges/) | Бейдж для сайта «Доступно в Google Play» |
-
-#### Пошаговый процесс
-
-```
-1. Создать аккаунт разработчика Google Play
-   → https://play.google.com/console/signup
-   → Разовый платёж $25 (USD)
-
-2. Подготовить APK/AAB
-   → Android Studio → Build → Generate Signed Bundle / APK
-   → Выбрать Android App Bundle (.aab) — рекомендуемый формат
-   → Подписать релизным keystore (создать при первом релизе, хранить вечно!)
-
-3. Создать приложение в Play Console
-   → «Создать приложение» → заполнить форму
-   → Название, описание (русский + английский), скриншоты, иконка 512×512
-
-4. Загрузить AAB
-   → «Выпуск» → «Создать выпуск» → «Сборка» → загрузить файл
-
-5. Заполнить контент-рейтинг
-   → Вопросник о контенте приложения
-   → Целевая аудитория (все ages или 3+)
-
-6. Тестирование
-   → Internal Testing → загрузить APK для проверки
-   → Closed Track → ограниченный круг тестировщиков
-   → Open Testing → бета-тестирование для всех желающих
-
-7. Релиз
-   → «Выпуск» → «Создать выпуск» → «Production» → загрузить AAB
-   → Отправить на ревью (обычно 1-3 дня)
-   → После одобрения — публикация (может быть поэтапная в течение 7 дней)
-```
-
-#### Автоматизация (CI/CD)
-
-```yaml
-# GitHub Actions (.github/workflows/android.yml)
-name: Android Build & Deploy
-
-on:
-  push:
-    tags: ['v*']
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - uses: bun/setup-bun@v2
-      - run: bun install
-      - run: bun run build
-      - run: npx cap sync android
-      - run: cd android && ./gradlew assembleRelease
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app-release.apk
-          path: android/app/build/outputs/apk/release/
-```
-
----
-
-### Apple App Store
-
-#### Инструменты
-
-| Инструмент | Назначение |
-|------------|----------|
-| [App Store Connect](https://appstoreconnect.apple.com) | Панель управления (загрузка IPA, метрики, отзывы) |
-| [Xcode](https://developer.apple.com/xcode/) | IDE для iOS-разработки, архивация, отправка в Store |
-| [Transporter](https://apps.apple.com/app/transporter/id1450874784) | Альтернативная загрузка IPA без Xcode |
-| [Fastlane](https://fastlane.tools/) | Автоматизация сборки, скриншотов, загрузки |
-| [TestFlight](https://developer.apple.com/testflight/) | Бета-тестирование (внутреннее + внешнее) |
-| [App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) | Правила проверки приложений |
-
-#### Требования
-
-- **macOS** (обязательно для сборки IPA)
-- **Apple Developer Program** — $99/год
-- **Xcode** (бесплатно из Mac App Store)
-- **Mac с процессором Apple Silicon или Intel**
-
-#### Пошаговый процесс
-
-```
-1. Регистрация в Apple Developer Program
-   → https://developer.apple.com/programs/enroll/
-   → $99 в год
-   → Подтверждение личности (паспорт / Apple ID)
-
-2. Создать App ID и Provisioning Profile
-   → Xcode → Preferences → Accounts → Manage Certificates
-   → App Store Connect → Identifiers → создать App ID
-   → Profiles → создать Distribution Profile
-
-3. Настроить проект в Xcode
-   → npx cap open ios
-   → Установить Bundle Identifier (com.telecom.dashboard)
-   → Signing & Capabilities → выбрать Team и Provisioning Profile
-   → Deployment Target → iOS 15.0+ (рекомендуется)
-
-4. Добавить иконки и скриншоты
-   → Иконки: 1024×1024 (App Store), набор 20×20 — 1024×1024 (приложение)
-   → Скриншоты: 6.5" (iPhone 14 Pro Max) и 5.5" (минимум)
-   → Можно использовать [Fastlane Snapshot](https://docs.fastlane.tools/actions/snapshots/) или [Screenshot Creator](https://search.itunes.apple.com/WebObjects/MZContentLink.woa/wa/link?path=/apps/939854486)
-
-5. Архивация
-   → Xcode → Product → Archive
-   → Organizer → выбрать архив → Distribute App
-
-6. Загрузка в TestFlight
-   → «TestFlight» → «Internal Testing» → загрузить для команды
-   → «External Testing» → пригласить до 10 000 тестировщиков
-   → Обязательное ожидание обработки (~24 часа для первого билда)
-
-7. Отправка на ревью App Store
-   → App Store Connect → «Мои приложения» → «Создать приложение»
-   → Заполнить: название, описание, категория, возрастной рейтинг, ключевые слова
-   → Xcode → Archive → Distribute App → App Store Connect
-   → Статус: «Ожидает ревью» → «Одобрено» / «Отклонено» (обычно 1-2 дня)
-
-8. Релиз
-   → После одобрения выбрать: автоматический выпуск или ручной
-   → Ручной: нажать «Выпустить эту версию» в App Store Connect
-```
-
-#### Автоматизация (Fastlane + GitHub Actions)
-
-```ruby
-# Fastfile
-lane :release do
-  setup_ci if ENV['CI']
-  sync_code_signing(type: "appstore", readonly: true)
-  build_app(workspace: "App.xcworkspace", scheme: "App")
-  upload_to_testflight(skip_waiting_for_build_processing: true)
-end
-```
-
-```yaml
-# GitHub Actions (.github/workflows/ios.yml)
-name: iOS Build & Deploy
-
-on:
-  push:
-    tags: ['v*']
-
-jobs:
-  build:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '15.4'
-      - uses: bun/setup-bun@v2
-      - run: bun install
-      - run: bun run build
-      - run: npx cap sync ios
-      - name: Build & Upload to TestFlight
-        uses: yukiarrr/ios-build-action@v1.12.0
-        with:
-          project-path: ios/App/App.xcodeproj
-          p12-base64: ${{ secrets.P12_BASE64 }}
-          mobileprovision-base64: ${{ secrets.MOBILEPROVISION_BASE64 }}
-          team-id: ${{ secrets.TEAM_ID }}
-          export-method: app-store
-```
-
----
-
-## Развертывание веб-версии
-
-Для продакшн-размещения (Vercel, Netlify, Docker):
-
-```bash
-# Сборка
-bun run build
-
-# Запуск
-bun run start
-# Сервер на порту 3000, обслуживает статику + API
-```
-
-### Vercel (рекомендуется)
-
-```bash
-# Установить Vercel CLI
-bun add -g vercel
-
-# Деплой
-vercel --prod
-```
-
-### Docker
-
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY package.json bun.lock ./
-RUN npm install -g bun && bun install --frozen-lockfile
-COPY . .
-RUN bun run build
-EXPOSE 3000
-CMD ["bun", "run", "start"]
-```
-
-```bash
-docker build -t telecom-dashboard .
-docker run -p 3000:3000 -e DATABASE_URL=file:/app/db/custom.db telecom-dashboard
-```
+## Авторизация
+
+- Экран входа показывается при запуске
+- Все экраны защищены (GoRouter redirect)
+- Исключение: экран **Поддержки** доступен без авторизации
+- Сессия хранится в SharedPreferences
+- Выход — иконка в шапке (HomeScreen)
 
 ---
 
 ## Архитектура
 
 ```
-┌─────────────────────────────────────────────┐
-│              Presentation Layer             │
-│  page.tsx — 4 таба + 3 модалки              │
-│  Доменные типы (TypeScript interfaces)       │
-│  Loading / Error / Empty states             │
-├─────────────────────────────────────────────┤
-│              API Layer (Route Handlers)      │
-│  POST /api/auth/login                       │
-│  GET  /api/account/profile                  │
-│  GET  /api/transactions                     │
-│  GET  /api/news                             │
-│  GET  /api/support                          │
-│  POST /api/top-up                           │
-├─────────────────────────────────────────────┤
-│              Data Layer                      │
-│  Prisma ORM → SQLite                        │
-│  6 моделей (schema.prisma)                  │
-├─────────────────────────────────────────────┤
-│              Domain Layer                    │
-│  UserProfile, Balance, Service,             │
-│  Transaction, NewsItem, SupportTicket       │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│           Presentation Layer                  │
+│  Screens (StatefulWidget + ConsumerState)    │
+│  ViewModels (StateNotifier)                  │
+│  Providers (Riverpod)                        │
+│  Router (GoRouter + auth redirect)           │
+├──────────────────────────────────────────────┤
+│             Domain Layer                      │
+│  Entities (Freezed POCO)                     │
+│  Repository Contracts (abstract class)       │
+│  UseCases (business scenarios)               │
+│  Failures (sealed hierarchy)                 │
+├──────────────────────────────────────────────┤
+│              Data Layer                       │
+│  Models (DTO, @JsonSerializable)             │
+│  Remote Sources (Dio)                        │
+│  Local Sources (SharedPreferences)           │
+│  Repository Implementations                  │
+│  StorageService                              │
+└──────────────────────────────────────────────┘
+
+Dependency Rule: presentation → domain ← data
+Domain не зависит ни от чего.
+```
+
+---
+
+## Обработка ошибок
+
+```
+DioException
+    ↓ (ExceptionMapper в data/datasources/remote/)
+Failure (sealed class)
+    ├── NetworkFailure          — нет соединения, timeout
+    ├── ServerFailure(status)   — 4xx, 5xx
+    ├── ValidationFailure       — ошибка ввода
+    └── UnknownFailure          — непредвиденное
+    ↓ (UseCase / Repository)
+Either<Failure, T>  (fpdart)
+    ↓ (ViewModel)
+ScreenState.error(message)  → ErrorState widget
+```
+
+---
+
+## Линтинг и анализ
+
+```bash
+# Статический анализ
+flutter analyze
+
+# Форматирование
+dart format lib/
+
+# Запустить тесты
+flutter test
+```
+
+---
+
+## Полезные команды
+
+```bash
+# Очистить сгенерированные файлы
+dart run build_runner clean
+
+# Перегенерировать при изменении сущностей
+dart run build_runner build --delete-conflicting-outputs
+
+# Watch-режим (автогенерация при сохранении)
+dart run build_runner watch --delete-conflicting-outputs
+
+# Обновить зависимости
+flutter pub upgrade
+
+# Проверить наличие обновлений
+flutter pub outdated
+```
+
+---
+
+## Публикация в stores
+
+### Google Play
+
+```bash
+# 1. Создать keystore (один раз)
+keytool -genkey -v -keystore ~/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+
+# 2. Настроить android/key.properties:
+# storePassword=<пароль>
+# keyPassword=<пароль>
+# keyAlias=upload
+# storeFile=<путь к key.jks>
+
+# 3. Собрать signed bundle
+flutter build appbundle --release
+
+# 4. Загрузить в Google Play Console
+# https://play.google.com/console
+```
+
+### App Store
+
+```bash
+# 1. Настроить ios/Runner.xcworkspace (Xcode)
+# 2. Собрать
+flutter build ios --release
+
+# 3. Архивировать и загрузить через Xcode → Product → Archive
+# 4. Или через Transporter / Fastlane
 ```
 
 ---

@@ -1,27 +1,60 @@
-# Dependencies
-node_modules/
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+*.iml
+.metadata
+pubspec.lock
 
-# Next.js
-.next/
-out/
+# Generated files
+*.freezed.dart
+*.g.dart
+*.config.dart
 
-# Database
-*.db
-*.db-journal
-db/
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Android
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/build/
+android/local.properties
+android/**/*.iml
+*.keystore
+!debug.keystore
+android/key.properties
+*.jks
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+*.dSYM.zip
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+
+# Web
+web/favicon.png
+lib/generated_plugin_registrant.dart
+
+# Test
+coverage/
+test/.test_coverage.dart
 
 # Environment
 .env
-.env.local
-.env.*.local
-
-# Logs
-dev.log
-server.log
-*.log
-
-# Uploads (dev artifacts)
-upload/
+.env.*
 
 # OS
 .DS_Store
@@ -33,7 +66,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# Build
-dist/
-build/
+# Misc
+*.log
 tool-results/
