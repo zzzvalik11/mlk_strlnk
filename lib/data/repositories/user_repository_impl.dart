@@ -92,7 +92,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, User>> updateProfile(User profile) async {
     try {
-      final model = UserModel.fromDomain(profile);
+      final model = profile.toModel();
       await _localSource.saveUser(model);
       return right(profile);
     } on DioException catch (e) {

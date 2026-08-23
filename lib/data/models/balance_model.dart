@@ -5,9 +5,7 @@ part 'balance_model.freezed.dart';
 part 'balance_model.g.dart';
 
 @freezed
-class BalanceModel with _$BalanceModel {
-  const BalanceModel._();
-
+sealed class BalanceModel with _$BalanceModel {
   const factory BalanceModel({
     @JsonKey(name: 'amount') required double amount,
     @JsonKey(name: 'currency') required String currency,
@@ -18,7 +16,9 @@ class BalanceModel with _$BalanceModel {
 
   factory BalanceModel.fromJson(Map<String, dynamic> json) =>
       _$BalanceModelFromJson(json);
+}
 
+extension BalanceModelX on BalanceModel {
   Balance toDomain() {
     return Balance(
       amount: amount,
@@ -28,14 +28,16 @@ class BalanceModel with _$BalanceModel {
       lastUpdated: lastUpdated,
     );
   }
+}
 
-  factory BalanceModel.fromDomain(Balance balance) {
+extension BalanceModelFromDomain on Balance {
+  BalanceModel toModel() {
     return BalanceModel(
-      amount: balance.amount,
-      currency: balance.currency,
-      paidUntil: balance.paidUntil,
-      isPaid: balance.isPaid,
-      lastUpdated: balance.lastUpdated,
+      amount: amount,
+      currency: currency,
+      paidUntil: paidUntil,
+      isPaid: isPaid,
+      lastUpdated: lastUpdated,
     );
   }
 }

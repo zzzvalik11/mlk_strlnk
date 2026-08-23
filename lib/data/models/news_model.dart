@@ -5,9 +5,7 @@ part 'news_model.freezed.dart';
 part 'news_model.g.dart';
 
 @freezed
-class NewsModel with _$NewsModel {
-  const NewsModel._();
-
+sealed class NewsModel with _$NewsModel {
   const factory NewsModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'title') required String title,
@@ -20,7 +18,9 @@ class NewsModel with _$NewsModel {
 
   factory NewsModel.fromJson(Map<String, dynamic> json) =>
       _$NewsModelFromJson(json);
+}
 
+extension NewsModelX on NewsModel {
   NewsItem toDomain() {
     return NewsItem(
       id: id,
@@ -32,16 +32,18 @@ class NewsModel with _$NewsModel {
       tags: tags,
     );
   }
+}
 
-  factory NewsModel.fromDomain(NewsItem newsItem) {
+extension NewsModelFromDomain on NewsItem {
+  NewsModel toModel() {
     return NewsModel(
-      id: newsItem.id,
-      title: newsItem.title,
-      summary: newsItem.summary,
-      imageUrl: newsItem.imageUrl,
-      publishedAt: newsItem.publishedAt,
-      readCount: newsItem.readCount,
-      tags: newsItem.tags,
+      id: id,
+      title: title,
+      summary: summary,
+      imageUrl: imageUrl,
+      publishedAt: publishedAt,
+      readCount: readCount,
+      tags: tags,
     );
   }
 }

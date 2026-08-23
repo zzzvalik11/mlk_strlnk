@@ -5,9 +5,7 @@ part 'transaction_model.freezed.dart';
 part 'transaction_model.g.dart';
 
 @freezed
-class TransactionModel with _$TransactionModel {
-  const TransactionModel._();
-
+sealed class TransactionModel with _$TransactionModel {
   const factory TransactionModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'type', unknownEnumValue: TransactionModelType.payment)
@@ -22,7 +20,9 @@ class TransactionModel with _$TransactionModel {
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) =>
       _$TransactionModelFromJson(json);
+}
 
+extension TransactionModelX on TransactionModel {
   Transaction toDomain() {
     return Transaction(
       id: id,
@@ -34,16 +34,18 @@ class TransactionModel with _$TransactionModel {
       relatedServiceId: relatedServiceId,
     );
   }
+}
 
-  factory TransactionModel.fromDomain(Transaction transaction) {
+extension TransactionModelFromDomain on Transaction {
+  TransactionModel toModel() {
     return TransactionModel(
-      id: transaction.id,
-      type: TransactionModelType.fromDomain(transaction.type),
-      amount: transaction.amount,
-      description: transaction.description,
-      date: transaction.date,
-      status: TransactionModelStatus.fromDomain(transaction.status),
-      relatedServiceId: transaction.relatedServiceId,
+      id: id,
+      type: TransactionModelType.fromDomain(type),
+      amount: amount,
+      description: description,
+      date: date,
+      status: TransactionModelStatus.fromDomain(status),
+      relatedServiceId: relatedServiceId,
     );
   }
 }

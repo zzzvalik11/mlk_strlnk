@@ -5,9 +5,7 @@ part 'service_model.freezed.dart';
 part 'service_model.g.dart';
 
 @freezed
-class ServiceModel with _$ServiceModel {
-  const ServiceModel._();
-
+sealed class ServiceModel with _$ServiceModel {
   const factory ServiceModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'name') required String name,
@@ -22,7 +20,9 @@ class ServiceModel with _$ServiceModel {
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) =>
       _$ServiceModelFromJson(json);
+}
 
+extension ServiceModelX on ServiceModel {
   Service toDomain() {
     return Service(
       id: id,
@@ -35,17 +35,19 @@ class ServiceModel with _$ServiceModel {
       billingCycle: billingCycle,
     );
   }
+}
 
-  factory ServiceModel.fromDomain(Service service) {
+extension ServiceModelFromDomain on Service {
+  ServiceModel toModel() {
     return ServiceModel(
-      id: service.id,
-      name: service.name,
-      category: service.category,
-      cost: service.cost,
-      status: ServiceModelStatus.fromDomain(service.status),
-      iconUrl: service.iconUrl,
-      warningMessage: service.warningMessage,
-      billingCycle: service.billingCycle,
+      id: id,
+      name: name,
+      category: category,
+      cost: cost,
+      status: ServiceModelStatus.fromDomain(status),
+      iconUrl: iconUrl,
+      warningMessage: warningMessage,
+      billingCycle: billingCycle,
     );
   }
 }

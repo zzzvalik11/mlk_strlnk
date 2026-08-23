@@ -5,9 +5,7 @@ part 'support_ticket_model.freezed.dart';
 part 'support_ticket_model.g.dart';
 
 @freezed
-class SupportTicketModel with _$SupportTicketModel {
-  const SupportTicketModel._();
-
+sealed class SupportTicketModel with _$SupportTicketModel {
   const factory SupportTicketModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'subject') required String subject,
@@ -20,7 +18,9 @@ class SupportTicketModel with _$SupportTicketModel {
 
   factory SupportTicketModel.fromJson(Map<String, dynamic> json) =>
       _$SupportTicketModelFromJson(json);
+}
 
+extension SupportTicketModelX on SupportTicketModel {
   SupportTicket toDomain() {
     return SupportTicket(
       id: id,
@@ -31,15 +31,17 @@ class SupportTicketModel with _$SupportTicketModel {
       replyCount: replyCount,
     );
   }
+}
 
-  factory SupportTicketModel.fromDomain(SupportTicket ticket) {
+extension SupportTicketModelFromDomain on SupportTicket {
+  SupportTicketModel toModel() {
     return SupportTicketModel(
-      id: ticket.id,
-      subject: ticket.subject,
-      description: ticket.description,
-      status: TicketModelStatus.fromDomain(ticket.status),
-      createdAt: ticket.createdAt,
-      replyCount: ticket.replyCount,
+      id: id,
+      subject: subject,
+      description: description,
+      status: TicketModelStatus.fromDomain(status),
+      createdAt: createdAt,
+      replyCount: replyCount,
     );
   }
 }

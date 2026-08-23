@@ -50,7 +50,7 @@ class BottomNavBar extends StatelessWidget {
                 onTap: () => onTap(2),
               ),
               _NavItem(
-                icon: Icons.help_circle_rounded,
+                icon: Icons.help_rounded,
                 label: 'Поддержка',
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
