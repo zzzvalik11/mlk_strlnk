@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/errors/failures.dart';
+import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/data/datasources/remote/balance_remote_source.dart';
 import 'package:telecom_dashboard/data/repositories/balance_repository_impl.dart';
 import 'package:telecom_dashboard/domain/entities/balance.dart';
@@ -18,6 +19,7 @@ final balanceRemoteSourceProvider = Provider<BalanceRemoteSource>((ref) {
 final balanceRepositoryProvider = Provider<BalanceRepository>((ref) {
   return BalanceRepositoryImpl(
     remoteSource: ref.watch(balanceRemoteSourceProvider),
+    localSource: ref.watch(userLocalSourceProvider),
   );
 });
 

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/errors/failures.dart';
+import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/data/datasources/remote/support_remote_source.dart';
 import 'package:telecom_dashboard/data/repositories/support_repository_impl.dart';
 import 'package:telecom_dashboard/domain/entities/support_ticket.dart';
@@ -17,6 +18,7 @@ final supportRemoteSourceProvider = Provider<SupportRemoteSource>((ref) {
 final supportRepositoryProvider = Provider<SupportRepository>((ref) {
   return SupportRepositoryImpl(
     remoteSource: ref.watch(supportRemoteSourceProvider),
+    localSource: ref.watch(userLocalSourceProvider),
   );
 });
 

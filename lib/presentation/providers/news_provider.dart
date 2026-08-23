@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/errors/failures.dart';
+import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/data/datasources/remote/news_remote_source.dart';
 import 'package:telecom_dashboard/data/repositories/news_repository_impl.dart';
 import 'package:telecom_dashboard/domain/entities/news_item.dart';
@@ -18,6 +19,7 @@ final newsRemoteSourceProvider = Provider<NewsRemoteSource>((ref) {
 final newsRepositoryProvider = Provider<NewsRepository>((ref) {
   return NewsRepositoryImpl(
     remoteSource: ref.watch(newsRemoteSourceProvider),
+    localSource: ref.watch(userLocalSourceProvider),
   );
 });
 

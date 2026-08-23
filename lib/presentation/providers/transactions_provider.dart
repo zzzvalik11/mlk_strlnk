@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/errors/failures.dart';
+import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/data/datasources/remote/transaction_remote_source.dart';
 import 'package:telecom_dashboard/data/repositories/transaction_repository_impl.dart';
 import 'package:telecom_dashboard/domain/entities/transaction.dart';
@@ -19,6 +20,7 @@ final transactionRepositoryProvider =
     Provider<TransactionRepository>((ref) {
   return TransactionRepositoryImpl(
     remoteSource: ref.watch(transactionRemoteSourceProvider),
+    localSource: ref.watch(userLocalSourceProvider),
   );
 });
 

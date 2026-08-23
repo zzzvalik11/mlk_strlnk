@@ -16,6 +16,7 @@ class AppConstants {
   static const String authMethodKey = 'telecom_auth_method';
   static const String firstLoginDoneKey = 'telecom_first_login_done';
   static const String isLockedKey = 'telecom_is_locked';
+  static const String isMockUserKey = 'telecom_is_mock_user';
   static const Duration tokenValidity = Duration(days: 365);
 
   // Pagination

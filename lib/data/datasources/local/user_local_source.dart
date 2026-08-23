@@ -107,6 +107,15 @@ class UserLocalSource {
     return _storageService.getBool(AppConstants.isLockedKey) ?? false;
   }
 
+  // ─── Mock User Flag ─────────────────────────────
+  Future<bool> setMockUser(bool isMock) {
+    return _storageService.setBool(AppConstants.isMockUserKey, isMock);
+  }
+
+  bool isMockUser() {
+    return _storageService.getBool(AppConstants.isMockUserKey) ?? false;
+  }
+
   // ─── Clear Session ─────────────────────────────
   Future<void> clearSession() async {
     await removeToken();
@@ -115,5 +124,6 @@ class UserLocalSource {
     await _storageService.remove(AppConstants.authMethodKey);
     await _storageService.remove(AppConstants.firstLoginDoneKey);
     await _storageService.remove(AppConstants.isLockedKey);
+    await _storageService.remove(AppConstants.isMockUserKey);
   }
 }

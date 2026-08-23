@@ -146,19 +146,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             onPressed: () => context.push(Routes.settings),
           ),
-          // Lock toggle
-          IconButton(
-            icon: Icon(
-              isLocked
-                  ? Icons.lock_rounded
-                  : Icons.lock_open_rounded,
-              color: isLocked ? AppTheme.orange500 : AppTheme.gray400,
-              size: 22,
-            ),
-            onPressed: () {
-              ref.read(homeViewModelProvider.notifier).toggleLock();
-            },
-          ),
           // Logout
           IconButton(
             icon: Icon(
@@ -228,6 +215,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ─── Dashboard Content ───────────────────────────────────
 
   Widget _buildContent(HomeLoaded state) {
+    final isLocked = state.isLocked;
     return Padding(
       padding: AppTheme.screenPadding,
       child: Column(
@@ -293,6 +281,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
+          // ─── Lock toggle (visible when no services) ──
+          if (state.services.isEmpty) ...[
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: Icon(
+                  isLocked
+                      ? Icons.lock_rounded
+                      : Icons.lock_open_rounded,
+                  color: isLocked ? AppTheme.orange500 : AppTheme.gray400,
+                  size: 22,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                onPressed: () {
+                  ref.read(homeViewModelProvider.notifier).toggleLock();
+                },
+              ),
+            ),
+          ],
           // ─── Active Services ──────────────
           if (state.services.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -306,6 +315,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: AppTheme.titleMedium,
                   ),
                   const Spacer(),
+                  // Lock toggle near tariff card
+                  IconButton(
+                    icon: Icon(
+                      isLocked
+                          ? Icons.lock_rounded
+                          : Icons.lock_open_rounded,
+                      color: isLocked ? AppTheme.orange500 : AppTheme.gray400,
+                      size: 22,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    onPressed: () {
+                      ref.read(homeViewModelProvider.notifier).toggleLock();
+                    },
+                  ),
                   Icon(
                     Icons.chevron_right_rounded,
                     color: AppTheme.gray400,

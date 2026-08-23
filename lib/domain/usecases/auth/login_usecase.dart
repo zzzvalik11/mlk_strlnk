@@ -13,18 +13,18 @@ class LoginUseCase {
     required String pin,
     String? password,
   }) async {
-    final pinError = validatePin(pin);
+    final pinError = Validators.validatePin(pin);
     if (pinError != null) {
       return left(Failure.validation(message: pinError));
     }
 
     if (password != null) {
-      final passwordError = validatePassword(password);
+      final passwordError = Validators.validatePassword(password);
       if (passwordError != null) {
         return left(Failure.validation(message: passwordError));
       }
     }
 
-    return _repository.login(pin);
+    return _repository.login(pin, password: password);
   }
 }

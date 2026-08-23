@@ -2,17 +2,23 @@ import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:telecom_dashboard/core/errors/exceptions.dart';
 import 'package:telecom_dashboard/core/errors/failures.dart';
+import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/data/datasources/remote/transaction_remote_source.dart';
 import 'package:telecom_dashboard/domain/entities/page.dart';
 import 'package:telecom_dashboard/domain/entities/transaction.dart';
 import 'package:telecom_dashboard/domain/repositories/transaction_repository.dart';
 
 /// [TransactionRepository] implementation backed by the remote API.
+/// Returns mock data when the current user is the test user (039103).
 class TransactionRepositoryImpl implements TransactionRepository {
   final TransactionRemoteSource _remoteSource;
+  final UserLocalSource _localSource;
 
-  TransactionRepositoryImpl({required TransactionRemoteSource remoteSource})
-      : _remoteSource = remoteSource;
+  TransactionRepositoryImpl({
+    required TransactionRemoteSource remoteSource,
+    required UserLocalSource localSource,
+  })  : _remoteSource = remoteSource,
+        _localSource = localSource;
 
   @override
   Future<Either<Failure, Page<Transaction>>> getHistory({
@@ -20,17 +26,25 @@ class TransactionRepositoryImpl implements TransactionRepository {
     int limit = 20,
   }) async {
     try {
+      if (_localSource.isMockUser()) {
+        final items = _createMockTransactions();
+        return right(Page<Transaction>(
+          items: items,
+          total: items.length,
+          page: page,
+          limit: limit,
+          hasMore: false,
+        ));
+      }
+
       final models = await _remoteSource.getTransactionHistory(
         page: page,
         limit: limit,
       );
       final entities = models.map((m) => m.toDomain()).toList();
-
-      // The mock API returns a flat list.  Wrap it in a [Page] object.
-      final total = entities.length;
       final domainPage = Page<Transaction>(
         items: entities,
-        total: total,
+        total: entities.length,
         page: page,
         limit: limit,
         hasMore: false,
@@ -46,8 +60,15 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<Either<Failure, Transaction>> getTransactionDetails(String id) async {
     try {
-      // The mock API does not expose a single-transaction endpoint.
-      // Fetch the full list and locate by id.
+      if (_localSource.isMockUser()) {
+        final all = _createMockTransactions();
+        final match = all.where((t) => t.id == id).firstOrNull;
+        if (match == null) {
+          return left(const Failure.server(statusCode: 404, message: 'Транзакция не найдена'));
+        }
+        return right(match);
+      }
+
       final models = await _remoteSource.getTransactionHistory();
       final match = models.where((m) => m.id == id).firstOrNull;
       if (match == null) {
@@ -61,5 +82,44 @@ class TransactionRepositoryImpl implements TransactionRepository {
     } catch (e) {
       return left(Failure.unknown(message: e.toString()));
     }
+  }
+
+  // ── Mock transactions data ───────────────────────────────────
+
+  List<Transaction> _createMockTransactions() {
+    return [
+      Transaction(
+        id: 't1',
+        type: TransactionType.payment,
+        amount: -890.0,
+        description: 'Оплата тарифа «Интернет 100»',
+        date: DateTime(2025, 7, 1),
+        status: TransactionStatus.success,
+      ),
+      Transaction(
+        id: 't2',
+        type: TransactionType.topUp,
+        amount: 1000.0,
+        description: 'Пополнение через Сбербанк',
+        date: DateTime(2025, 6, 28),
+        status: TransactionStatus.success,
+      ),
+      Transaction(
+        id: 't3',
+        type: TransactionType.payment,
+        amount: -890.0,
+        description: 'Оплата тарифа «Интернет 100»',
+        date: DateTime(2025, 6, 1),
+        status: TransactionStatus.success,
+      ),
+      Transaction(
+        id: 't4',
+        type: TransactionType.bonus,
+        amount: 200.0,
+        description: 'Бонус за обращение в поддержку',
+        date: DateTime(2025, 5, 15),
+        status: TransactionStatus.success,
+      ),
+    ];
   }
 }
