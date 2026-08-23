@@ -5,7 +5,8 @@ part 'service_model.freezed.dart';
 part 'service_model.g.dart';
 
 @freezed
-sealed class ServiceModel with _$ServiceModel {
+class ServiceModel with _$ServiceModel {
+  const ServiceModel._();
   const factory ServiceModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'name') required String name,

@@ -5,7 +5,8 @@ part 'news_model.freezed.dart';
 part 'news_model.g.dart';
 
 @freezed
-sealed class NewsModel with _$NewsModel {
+class NewsModel with _$NewsModel {
+  const NewsModel._();
   const factory NewsModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'title') required String title,

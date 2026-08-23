@@ -5,7 +5,8 @@ part 'support_ticket_model.freezed.dart';
 part 'support_ticket_model.g.dart';
 
 @freezed
-sealed class SupportTicketModel with _$SupportTicketModel {
+class SupportTicketModel with _$SupportTicketModel {
+  const SupportTicketModel._();
   const factory SupportTicketModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'subject') required String subject,

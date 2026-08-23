@@ -5,7 +5,8 @@ part 'balance_model.freezed.dart';
 part 'balance_model.g.dart';
 
 @freezed
-sealed class BalanceModel with _$BalanceModel {
+class BalanceModel with _$BalanceModel {
+  const BalanceModel._();
   const factory BalanceModel({
     @JsonKey(name: 'amount') required double amount,
     @JsonKey(name: 'currency') required String currency,

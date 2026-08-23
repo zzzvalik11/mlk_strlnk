@@ -5,7 +5,8 @@ part 'transaction_model.freezed.dart';
 part 'transaction_model.g.dart';
 
 @freezed
-sealed class TransactionModel with _$TransactionModel {
+class TransactionModel with _$TransactionModel {
+  const TransactionModel._();
   const factory TransactionModel({
     @JsonKey(name: 'id') required String id,
     @JsonKey(name: 'type', unknownEnumValue: TransactionModelType.payment)
