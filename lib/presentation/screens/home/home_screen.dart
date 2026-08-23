@@ -35,38 +35,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: RefreshIndicator(
-        color: AppTheme.orange500,
-        onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
-        child: CustomScrollView(
-          slivers: [
-            // ─── App Bar ─────────────────────────
-            SliverToBoxAdapter(
-              child: _buildAppBar(user),
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            color: AppTheme.orange500,
+            onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
+            child: CustomScrollView(
+              slivers: [
+                // ─── App Bar ─────────────────────────
+                SliverToBoxAdapter(
+                  child: _buildAppBar(user, homeState),
+                ),
+                // ─── Content ──────────────────────────
+                if (homeState is HomeLoading || homeState is HomeInitial)
+                  const SliverFillRemaining(
+                    child: LoadingSpinner(),
+                  )
+                else if (homeState is HomeError)
+                  SliverFillRemaining(
+                    child: _buildErrorState(homeState.message),
+                  )
+                else if (homeState is HomeLoaded)
+                  SliverToBoxAdapter(
+                    child: _buildContent(homeState),
+                  ),
+                const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+              ],
             ),
-            // ─── Content ──────────────────────────
-            if (homeState is HomeLoading || homeState is HomeInitial)
-              const SliverFillRemaining(
-                child: LoadingSpinner(),
-              )
-            else if (homeState is HomeError)
-              SliverFillRemaining(
-                child: _buildErrorState(homeState.message),
-              )
-            else if (homeState is HomeLoaded)
-              SliverToBoxAdapter(
-                child: _buildContent(homeState),
-              ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-          ],
-        ),
+          ),
+          // ─── Lock Overlay ────────────────────────
+          if (homeState is HomeLoaded && homeState.isLocked)
+            _buildLockOverlay(homeState),
+        ],
       ),
     );
   }
 
   // ─── AppBar ──────────────────────────────────────────────
 
-  Widget _buildAppBar(User? user) {
+  Widget _buildAppBar(User? user, HomeState homeState) {
+    final isLocked = homeState is HomeLoaded && homeState.isLocked;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Row(
@@ -135,7 +144,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: AppTheme.gray600,
               size: 24,
             ),
-            onPressed: () {},
+            onPressed: () => context.push(Routes.settings),
+          ),
+          // Lock toggle
+          IconButton(
+            icon: Icon(
+              isLocked
+                  ? Icons.lock_rounded
+                  : Icons.lock_open_rounded,
+              color: isLocked ? AppTheme.orange500 : AppTheme.gray400,
+              size: 22,
+            ),
+            onPressed: () {
+              ref.read(homeViewModelProvider.notifier).toggleLock();
+            },
           ),
           // Logout
           IconButton(
@@ -150,6 +172,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  // ─── Lock Overlay ─────────────────────────────────────────
+
+  Widget _buildLockOverlay(HomeLoaded state) {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.75),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.lock_rounded,
+                size: 72,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Приложение заблокировано',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(homeViewModelProvider.notifier).toggleLock();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.orange500,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Разблокировать',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -225,9 +296,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // ─── Active Services ──────────────
           if (state.services.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Text(
-              'Активные услуги',
-              style: AppTheme.titleMedium,
+            GestureDetector(
+              onTap: () => context.push(Routes.services),
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  Text(
+                    'Активные услуги',
+                    style: AppTheme.titleMedium,
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.gray400,
+                    size: 24,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             ...state.services.map(

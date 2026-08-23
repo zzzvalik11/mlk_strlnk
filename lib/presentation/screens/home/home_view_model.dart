@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/domain/entities/balance.dart';
 import 'package:telecom_dashboard/domain/entities/service.dart';
 import 'package:telecom_dashboard/domain/entities/user.dart';
@@ -24,12 +25,23 @@ class HomeLoaded extends HomeState {
   final User user;
   final Balance balance;
   final List<Service> services;
+  final bool isLocked;
 
   const HomeLoaded({
     required this.user,
     required this.balance,
     required this.services,
+    this.isLocked = false,
   });
+
+  HomeLoaded copyWith({bool? isLocked}) {
+    return HomeLoaded(
+      user: user,
+      balance: balance,
+      services: services,
+      isLocked: isLocked ?? this.isLocked,
+    );
+  }
 }
 
 class HomeError extends HomeState {
@@ -64,17 +76,22 @@ class HomeNotifier extends StateNotifier<HomeState> {
       final balanceResult = await _ref.read(balanceProvider.future);
       final servicesResult = await _ref.read(activeServicesProvider.future);
 
+      final localSource = _ref.read(userLocalSourceProvider);
+      final locked = localSource.isLocked();
+
       if (servicesResult.isEmpty) {
         state = HomeLoaded(
           user: user,
           balance: balanceResult,
           services: const [],
+          isLocked: locked,
         );
       } else {
         state = HomeLoaded(
           user: user,
           balance: balanceResult,
           services: servicesResult,
+          isLocked: locked,
         );
       }
     } catch (e) {
@@ -88,6 +105,16 @@ class HomeNotifier extends StateNotifier<HomeState> {
     _ref.invalidate(balanceProvider);
     _ref.invalidate(activeServicesProvider);
     await loadDashboard();
+  }
+
+  /// Toggle app lock state.
+  Future<void> toggleLock() async {
+    if (state is! HomeLoaded) return;
+    final current = (state as HomeLoaded).isLocked;
+    final newLocked = !current;
+    final localSource = _ref.read(userLocalSourceProvider);
+    await localSource.setLocked(newLocked);
+    state = (state as HomeLoaded).copyWith(isLocked: newLocked);
   }
 }
 

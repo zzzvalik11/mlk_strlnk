@@ -1,21 +1,26 @@
 class AppConstants {
   AppConstants._();
 
-  /// API
+  // API
   static const String apiBaseUrl = 'http://10.0.2.2:3000/api';
 
-  /// Timeouts
+  // Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
   static const Duration sendTimeout = Duration(seconds: 15);
 
-  /// Auth
+  // Auth
   static const String authTokenKey = 'telecom_auth';
   static const String authHeaderPrefix = 'Bearer ';
+  static const String tokenExpiryKey = 'telecom_token_expiry';
+  static const String authMethodKey = 'telecom_auth_method';
+  static const String firstLoginDoneKey = 'telecom_first_login_done';
+  static const String isLockedKey = 'telecom_is_locked';
+  static const Duration tokenValidity = Duration(days: 365);
 
-  /// Pagination
+  // Pagination
   static const int defaultPageLimit = 20;
 
-  /// Cache
+  // Cache
   static const int cacheTtlSeconds = 300;
 }

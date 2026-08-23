@@ -15,4 +15,10 @@ class Routes {
 
   /// Auth
   static const String login = '/login';
+  static const String quickLogin = '/quick_login';
+  static const String authMethodSelection = '/auth_method_selection';
+
+  /// App
+  static const String settings = '/settings';
+  static const String services = '/services';
 }

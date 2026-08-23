@@ -18,23 +18,19 @@ class StorageService {
     return _prefs!;
   }
 
-  /// Reads a string value for [key], or null if not found.
-  String? getString(String key) {
-    return _instance.getString(key);
-  }
+  // ─── String ─────────────────────────────────────
+  String? getString(String key) => _instance.getString(key);
+  Future<bool> setString(String key, String value) => _instance.setString(key, value);
 
-  /// Persists a string [value] under [key].
-  Future<bool> setString(String key, String value) {
-    return _instance.setString(key, value);
-  }
+  // ─── Bool ──────────────────────────────────────
+  bool? getBool(String key) => _instance.getBool(key);
+  Future<bool> setBool(String key, bool value) => _instance.setBool(key, value);
 
-  /// Removes the value stored under [key].
-  Future<bool> remove(String key) {
-    return _instance.remove(key);
-  }
+  // ─── Int ───────────────────────────────────────
+  int? getInt(String key) => _instance.getInt(key);
+  Future<bool> setInt(String key, int value) => _instance.setInt(key, value);
 
-  /// Clears all entries from local storage.
-  Future<bool> clear() {
-    return _instance.clear();
-  }
+  // ─── Remove / Clear ────────────────────────────
+  Future<bool> remove(String key) => _instance.remove(key);
+  Future<bool> clear() => _instance.clear();
 }

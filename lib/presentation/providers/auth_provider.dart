@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:telecom_dashboard/core/constants/app_constants.dart';
 import 'package:telecom_dashboard/core/errors/failures.dart';
 import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/data/datasources/remote/api_client.dart';
@@ -18,7 +19,6 @@ ApiClient _createApiClient(StorageService storageService) {
   return ApiClient(storageService: storageService);
 }
 
-/// Resets the ApiClient singleton — useful after logout.
 void resetApiClient() {
   _apiClientSingleton = null;
 }
@@ -27,7 +27,6 @@ void resetApiClient() {
 
 final storageServiceProvider = Provider<StorageService>((ref) {
   final service = StorageService();
-  // Note: init() must be called once in main() before the app starts.
   return service;
 });
 
@@ -86,25 +85,30 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     _checkAuth();
   }
 
-  /// Attempt to load a cached user from local storage.
   Future<void> _checkAuth() async {
     try {
-      final cached = _localSource.getUser();
       final token = _localSource.getToken();
-      if (cached != null && token != null) {
-        state = AsyncValue.data(cached.toDomain());
-      } else {
-        state = const AsyncValue.data(null);
+      // Check if token exists and has not expired
+      if (token != null && _localSource.isTokenValid()) {
+        final cached = _localSource.getUser();
+        if (cached != null) {
+          state = AsyncValue.data(cached.toDomain());
+          return;
+        }
       }
+      // Token expired or missing — clear session
+      if (token != null) {
+        await _localSource.clearSession();
+      }
+      state = const AsyncValue.data(null);
     } catch (_) {
       state = const AsyncValue.data(null);
     }
   }
 
-  /// Public method to re-check auth (e.g. after app resume).
   Future<void> checkAuth() => _checkAuth();
 
-  /// Authenticate with PIN + password.
+  /// Full login with PIN + password. Sets token expiry to 365 days.
   Future<void> login({
     required String pin,
     required String password,
@@ -117,14 +121,61 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           _mapFailureToException(failure),
           StackTrace.current,
         ),
-        (user) => state = AsyncValue.data(user),
+        (user) async {
+          // Set token expiry to 365 days from now
+          final expiry = DateTime.now().add(AppConstants.tokenValidity);
+          await _localSource.saveTokenExpiry(expiry);
+          state = AsyncValue.data(user);
+        },
       );
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
-  /// Clear session and reset state.
+  /// Quick re-login with PIN only (for returning users).
+  /// Validates PIN matches cached user and token is still valid.
+  Future<void> authenticateWithPin({required String pin}) async {
+    state = const AsyncValue.loading();
+    try {
+      if (!_localSource.isTokenValid()) {
+        await _localSource.clearSession();
+        state = const AsyncValue.data(null);
+        throw Exception('Сессия истекла. Войдите заново.');
+      }
+      final cached = _localSource.getUser();
+      if (cached == null) {
+        throw Exception('Нет сохранённых данных. Войдите заново.');
+      }
+      if (cached.id != pin) {
+        throw Exception('Неверный ПИН-код');
+      }
+      state = AsyncValue.data(cached.toDomain());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Biometric re-login. Token validity is checked; biometric prompt
+  /// is handled at UI level via local_auth package.
+  Future<void> authenticateWithBiometric() async {
+    state = const AsyncValue.loading();
+    try {
+      if (!_localSource.isTokenValid()) {
+        await _localSource.clearSession();
+        state = const AsyncValue.data(null);
+        throw Exception('Сессия истекла. Войдите заново.');
+      }
+      final cached = _localSource.getUser();
+      if (cached == null) {
+        throw Exception('Нет сохранённых данных. Войдите заново.');
+      }
+      state = AsyncValue.data(cached.toDomain());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
   Future<void> logout() async {
     await _localSource.clearSession();
     resetApiClient();

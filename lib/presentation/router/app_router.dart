@@ -5,10 +5,14 @@ import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/home/home_screen.dart';
+import 'package:telecom_dashboard/presentation/screens/login/auth_method_selection_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/login/login_screen.dart';
+import 'package:telecom_dashboard/presentation/screens/login/quick_login_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/news/news_detail_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/news/news_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/payment/payment_screen.dart';
+import 'package:telecom_dashboard/presentation/screens/services/services_screen.dart';
+import 'package:telecom_dashboard/presentation/screens/settings/settings_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/support/support_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_screen.dart';
 import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar.dart';
@@ -26,16 +30,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isLoginRoute = state.matchedLocation == Routes.login;
       final isSupportRoute = state.matchedLocation == Routes.support;
+      final isQuickLoginRoute = state.matchedLocation == Routes.quickLogin;
+      final isAuthMethodRoute = state.matchedLocation == Routes.authMethodSelection;
 
-      // Allow support without auth
-      if (isSupportRoute) return null;
+      // Public routes (no auth required)
+      if (isSupportRoute || isQuickLoginRoute || isAuthMethodRoute) return null;
 
-      // If not authenticated and not already on login, redirect
+      // Not authenticated → login
       if (!isAuthenticated && !isLoading && !isLoginRoute) {
         return Routes.login;
       }
 
-      // If authenticated and on login, go home
+      // Authenticated and on login → home
       if (isAuthenticated && isLoginRoute) {
         return Routes.home;
       }
@@ -84,10 +90,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      // Auth routes
       GoRoute(
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
       ),
+      GoRoute(
+        path: Routes.quickLogin,
+        builder: (context, state) => const QuickLoginScreen(),
+      ),
+      GoRoute(
+        path: Routes.authMethodSelection,
+        builder: (context, state) => const AuthMethodSelectionScreen(),
+      ),
+      // App routes
       GoRoute(
         path: Routes.topUp,
         builder: (context, state) => const TopUpScreen(),
@@ -95,6 +111,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.history,
         builder: (context, state) => const HistoryScreen(),
+      ),
+      GoRoute(
+        path: Routes.settings,
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: Routes.services,
+        builder: (context, state) => const ServicesScreen(),
       ),
       GoRoute(
         path: '${Routes.news}/:id',

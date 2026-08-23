@@ -55,6 +55,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<LoginFormState>(loginViewModelProvider, (prev, next) {
       if (next is LoginFormSuccess) {
         context.go(Routes.home);
+      } else if (next is LoginFormNeedsMethodSelection) {
+        context.go(Routes.authMethodSelection);
       }
     });
 
