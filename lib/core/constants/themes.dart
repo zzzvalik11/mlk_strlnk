@@ -44,6 +44,13 @@ class AppTheme {
     height: 1.3,
   );
 
+  static const TextStyle headlineSmall = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    color: gray900,
+    height: 1.3,
+  );
+
   static const TextStyle titleLarge = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,

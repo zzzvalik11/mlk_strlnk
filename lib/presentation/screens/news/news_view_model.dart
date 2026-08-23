@@ -45,9 +45,8 @@ class NewsListNotifier extends StateNotifier<NewsListState> {
   Future<void> loadNews() async {
     state = const NewsListLoading();
     try {
-      final page = await _ref.read(newsListProvider.future);
-      final allItems = page.items;
-      _hasMore = page.hasMore;
+      final allItems = await _ref.read(newsListProvider.future);
+      _hasMore = allItems.length > _currentPage * _pageSize;
       final visibleItems = allItems.take(_currentPage * _pageSize).toList();
       if (visibleItems.isEmpty) {
         state = const NewsListEmpty();
@@ -63,9 +62,8 @@ class NewsListNotifier extends StateNotifier<NewsListState> {
     if (state is! NewsListLoaded) return;
     _currentPage++;
     try {
-      final page = await _ref.read(newsListProvider.future);
-      final allItems = page.items;
-      _hasMore = page.hasMore;
+      final allItems = await _ref.read(newsListProvider.future);
+      _hasMore = allItems.length > _currentPage * _pageSize;
       final visibleItems = allItems.take(_currentPage * _pageSize).toList();
       state = NewsListLoaded(visibleItems, page: _currentPage, hasMore: _hasMore);
     } catch (e) {

@@ -68,9 +68,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _markAllRead() {
     setState(() {
-      for (var n in _notifications) {
-        n.isRead = true;
-      }
+      _notifications.setAll(
+        0,
+        _notifications.map((n) => PushNotification(
+          id: n.id,
+          title: n.title,
+          body: n.body,
+          createdAt: n.createdAt,
+          isRead: true,
+          type: n.type,
+        )).toList(),
+      );
     });
   }
 
