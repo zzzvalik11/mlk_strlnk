@@ -66,9 +66,20 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                     subtitle: 'Здесь появятся новости и обновления',
                   ),
                 ),
-              NewsListLoaded(:final items) => SliverList(
+              NewsListLoaded(:final items, :final hasMore) => SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
+                      if (index == items.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: TextButton(
+                              onPressed: () => ref.read(newsListViewModelProvider.notifier).loadMore(),
+                              child: const Text('Загрузить ещё'),
+                            ),
+                          ),
+                        );
+                      }
                       final item = items[index];
                       return Padding(
                         padding: EdgeInsets.only(
@@ -82,7 +93,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                         ),
                       );
                     },
-                    childCount: items.length,
+                    childCount: items.length + (hasMore ? 1 : 0),
                   ),
                 ),
               NewsListInitial() =>

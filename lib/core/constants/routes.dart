@@ -21,4 +21,5 @@ class Routes {
   /// App
   static const String settings = '/settings';
   static const String services = '/services';
+  static const String notifications = '/notifications';
 }

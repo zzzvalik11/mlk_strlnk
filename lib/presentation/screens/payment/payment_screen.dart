@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
@@ -58,23 +60,24 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   childAspectRatio: 1.4,
-                  children: const [
+                  children: [
                     _QuickAction(
                       icon: Icons.account_balance_wallet_rounded,
                       label: 'Оплата услуг',
                       color: AppTheme.orange500,
+                      onTap: () => context.push(Routes.topUp),
                     ),
-                    _QuickAction(
+                    const _QuickAction(
                       icon: Icons.send_rounded,
                       label: 'Перевод',
                       color: AppTheme.info,
                     ),
-                    _QuickAction(
+                    const _QuickAction(
                       icon: Icons.smartphone_rounded,
                       label: 'Привязать карту',
                       color: AppTheme.success,
                     ),
-                    _QuickAction(
+                    const _QuickAction(
                       icon: Icons.local_offer_rounded,
                       label: 'Промокод',
                       color: AppTheme.warning,
@@ -139,11 +142,13 @@ class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   const _QuickAction({
     required this.icon,
     required this.label,
     required this.color,
+    this.onTap,
   });
 
   @override
@@ -158,14 +163,15 @@ class _QuickAction extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: AppTheme.cardRadius,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$label — скоро'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
+          onTap: onTap ??
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label — скоро'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
           child: Padding(
             padding: AppTheme.cardPaddingSmall,
             child: Column(

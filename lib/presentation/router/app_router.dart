@@ -10,6 +10,7 @@ import 'package:telecom_dashboard/presentation/screens/login/login_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/login/quick_login_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/news/news_detail_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/news/news_screen.dart';
+import 'package:telecom_dashboard/presentation/screens/notifications/notifications_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/payment/payment_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/services/services_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/settings/settings_screen.dart';
@@ -121,6 +122,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ServicesScreen(),
       ),
       GoRoute(
+        path: Routes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
         path: '${Routes.news}/:id',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
@@ -134,6 +139,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 // ─── Shell Wrapper ──────────────────────────────────────────
 
 /// Wraps shell children with a [BottomNavBar] and manages tab state.
+/// On wide screens, content is constrained to 480px and centered.
 class _ShellWrapper extends StatefulWidget {
   final Widget child;
   final int initialIndex;
@@ -164,19 +170,29 @@ class _ShellWrapperState extends State<_ShellWrapper> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: widget.child,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-          final routes = [
-            Routes.home,
-            Routes.payment,
-            Routes.news,
-            Routes.support,
-          ];
-          context.go(routes[index]);
-        },
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: widget.child,
+        ),
+      ),
+      bottomNavigationBar: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: BottomNavBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() => _currentIndex = index);
+              final routes = [
+                Routes.home,
+                Routes.payment,
+                Routes.news,
+                Routes.support,
+              ];
+              context.go(routes[index]);
+            },
+          ),
+        ),
       ),
     );
   }

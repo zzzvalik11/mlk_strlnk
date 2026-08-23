@@ -19,6 +19,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// Simulated unread notifications count.
+  static const int _unreadNotifications = 2;
+
   @override
   void initState() {
     super.initState();
@@ -42,30 +45,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
             child: CustomScrollView(
               slivers: [
-                // ─── App Bar ─────────────────────────
-                SliverToBoxAdapter(
-                  child: _buildAppBar(user, homeState),
-                ),
-                // ─── Content ──────────────────────────
+                SliverToBoxAdapter(child: _buildAppBar(user, homeState)),
                 if (homeState is HomeLoading || homeState is HomeInitial)
-                  const SliverFillRemaining(
-                    child: LoadingSpinner(),
-                  )
+                  const SliverFillRemaining(child: LoadingSpinner())
                 else if (homeState is HomeError)
-                  SliverFillRemaining(
-                    child: _buildErrorState(homeState.message),
-                  )
+                  SliverFillRemaining(child: _buildErrorState(homeState.message))
                 else if (homeState is HomeLoaded)
-                  SliverToBoxAdapter(
-                    child: _buildContent(homeState),
-                  ),
+                  SliverToBoxAdapter(child: _buildContent(homeState)),
                 const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
               ],
             ),
           ),
-          // ─── Lock Overlay ────────────────────────
-          if (homeState is HomeLoaded && homeState.isLocked)
-            _buildLockOverlay(homeState),
         ],
       ),
     );
@@ -74,19 +64,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ─── AppBar ──────────────────────────────────────────────
 
   Widget _buildAppBar(User? user, HomeState homeState) {
-    final isLocked = homeState is HomeLoaded && homeState.isLocked;
+    final isFrozen = homeState is HomeLoaded && homeState.isLocked;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Row(
         children: [
-          // Gradient avatar
+          // Avatar
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [AppTheme.orange500, Color(0xFFE91E63)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -94,19 +84,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: Center(
               child: Text(
-                user?.fullName.isNotEmpty == true
-                    ? user!.fullName[0]
-                    : 'S',
+                user?.fullName.isNotEmpty == true ? user!.fullName[0] : 'S',
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
+                  color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
           const SizedBox(width: 12),
-          // PIN + name
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,45 +99,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(
                   user?.id ?? '------',
                   style: AppTheme.labelSmall.copyWith(
-                    color: AppTheme.gray500,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
+                    color: AppTheme.gray500, fontWeight: FontWeight.w600, letterSpacing: 1.5,
                   ),
                 ),
-                Text(
-                  user?.fullName ?? '',
-                  style: AppTheme.titleMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(user?.fullName ?? '', style: AppTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
-          // Bell
-          IconButton(
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: AppTheme.gray600,
-              size: 24,
-            ),
-            onPressed: () {},
+          // Bell with unread dot
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _unreadNotifications > 0
+                      ? Icons.notifications_rounded
+                      : Icons.notifications_none_rounded,
+                  color: _unreadNotifications > 0 ? AppTheme.orange500 : AppTheme.gray600,
+                  size: 24,
+                ),
+                onPressed: () => context.push(Routes.notifications),
+              ),
+              if (_unreadNotifications > 0)
+                Positioned(
+                  right: 8, top: 8,
+                  child: Container(
+                    width: 10, height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
           // Settings
           IconButton(
-            icon: Icon(
-              Icons.settings_outlined,
-              color: AppTheme.gray600,
-              size: 24,
-            ),
+            icon: const Icon(Icons.settings_outlined, color: AppTheme.gray600, size: 24),
             onPressed: () => context.push(Routes.settings),
           ),
           // Logout
           IconButton(
-            icon: Icon(
-              Icons.logout_rounded,
-              color: AppTheme.gray400,
-              size: 22,
-            ),
+            icon: const Icon(Icons.logout_rounded, color: AppTheme.gray400, size: 22),
             onPressed: () {
               ref.read(authProvider.notifier).logout();
               context.go(Routes.login);
@@ -163,100 +150,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ─── Lock Overlay ─────────────────────────────────────────
-
-  Widget _buildLockOverlay(HomeLoaded state) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withOpacity(0.75),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.lock_rounded,
-                size: 72,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Приложение заблокировано',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  ref.read(homeViewModelProvider.notifier).toggleLock();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.orange500,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Разблокировать',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ─── Dashboard Content ───────────────────────────────────
 
   Widget _buildContent(HomeLoaded state) {
-    final isLocked = state.isLocked;
+    final isFrozen = state.isLocked;
     return Padding(
       padding: AppTheme.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ─── Balance ───────────────────────
+          // ─── Balance Card ───────────────
           Container(
             padding: AppTheme.cardPadding,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: AppTheme.cardRadius,
-              boxShadow: AppTheme.cardShadow,
+              color: Colors.white, borderRadius: AppTheme.cardRadius, boxShadow: AppTheme.cardShadow,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Баланс',
-                  style: AppTheme.bodySmall,
-                ),
+                Text('Баланс', style: AppTheme.bodySmall),
                 const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      CurrencyFormatter.formatCurrency(state.balance.amount),
-                      style: AppTheme.balanceAmount.copyWith(fontSize: 48),
-                    ),
-                  ],
+                Text(
+                  CurrencyFormatter.formatCurrency(state.balance.amount),
+                  style: AppTheme.balanceAmount.copyWith(fontSize: 48),
                 ),
                 if (state.balance.paidUntil != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     'Оплачено ${DateFormatter.formatPaidUntil(state.balance.paidUntil!)}',
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.success,
-                    ),
+                    style: AppTheme.bodyMedium.copyWith(color: AppTheme.success),
                   ),
                 ],
+                if (isFrozen)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warning.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_rounded, size: 14, color: AppTheme.warning),
+                        const SizedBox(width: 4),
+                        Text('Тариф заморожен', style: AppTheme.bodySmall.copyWith(color: AppTheme.warning, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 20),
-                // Action buttons
                 Row(
                   children: [
                     Expanded(
@@ -281,27 +223,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
-          // ─── Lock toggle (visible when no services) ──
-          if (state.services.isEmpty) ...[
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: Icon(
-                  isLocked
-                      ? Icons.lock_rounded
-                      : Icons.lock_open_rounded,
-                  color: isLocked ? AppTheme.orange500 : AppTheme.gray400,
-                  size: 22,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                onPressed: () {
-                  ref.read(homeViewModelProvider.notifier).toggleLock();
-                },
-              ),
-            ),
-          ],
           // ─── Active Services ──────────────
           if (state.services.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -310,31 +231,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               behavior: HitTestBehavior.opaque,
               child: Row(
                 children: [
-                  Text(
-                    'Активные услуги',
-                    style: AppTheme.titleMedium,
-                  ),
+                  Text('Активные услуги', style: AppTheme.titleMedium),
                   const Spacer(),
-                  // Lock toggle near tariff card
+                  // Freeze/unfreeze lock
                   IconButton(
                     icon: Icon(
-                      isLocked
-                          ? Icons.lock_rounded
-                          : Icons.lock_open_rounded,
-                      color: isLocked ? AppTheme.orange500 : AppTheme.gray400,
+                      isFrozen ? Icons.lock_rounded : Icons.lock_open_rounded,
+                      color: isFrozen ? AppTheme.orange500 : AppTheme.gray400,
                       size: 22,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    onPressed: () {
-                      ref.read(homeViewModelProvider.notifier).toggleLock();
-                    },
+                    onPressed: () => _showFreezeDialog(isFrozen),
                   ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppTheme.gray400,
-                    size: 24,
-                  ),
+                  const Icon(Icons.chevron_right_rounded, color: AppTheme.gray400, size: 24),
                 ],
               ),
             ),
@@ -349,6 +259,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
+  }
+
+  // ─── Freeze / Unfreeze Dialog ─────────────────────────────
+
+  void _showFreezeDialog(bool isFrozen) {
+    if (isFrozen) {
+      _showUnfreezeDialog();
+    } else {
+      _showFreezePeriodPicker();
+    }
+  }
+
+  void _showUnfreezeDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Отменить заморозку'),
+        content: const Text('Вы уверены, что хотите отменить заморозку тарифного плана? Услуги будут возобновлены.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(homeViewModelProvider.notifier).toggleLock();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.orange500, foregroundColor: Colors.white, elevation: 0,
+            ),
+            child: const Text('Отменить заморозку'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFreezePeriodPicker() {
+    int selectedDays = 7;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Заморозка тарифа'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Выберите период заморозки. Заморозка начнётся с завтрашнего дня. Во время заморозки услуги будут приостановлены.',
+                style: TextStyle(fontSize: 14, color: AppTheme.gray700),
+              ),
+              const SizedBox(height: 20),
+              const Text('Период:', style: AppTheme.titleMedium),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [7, 14, 30, 60, 90].map((days) {
+                  final isSelected = selectedDays == days;
+                  return ChoiceChip(
+                    label: Text('$days дн.'),
+                    selected: isSelected,
+                    onSelected: (_) => setDialogState(() => selectedDays = days),
+                    selectedColor: AppTheme.orange500.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppTheme.orange500 : AppTheme.gray700,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Заморозка до: ${_formatDate(DateTime.now().add(Duration(days: selectedDays + 1)))}',
+                style: AppTheme.bodySmall.copyWith(color: AppTheme.gray500),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Отмена'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ref.read(homeViewModelProvider.notifier).toggleLock();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.orange500, foregroundColor: Colors.white, elevation: 0,
+              ),
+              child: const Text('Заморозить'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) {
+    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
   }
 
   Widget _buildErrorState(String message) {
@@ -396,19 +412,13 @@ class _ActionButton extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             borderRadius: AppTheme.buttonRadius,
-            border: isPrimary
-                ? null
-                : Border.all(color: AppTheme.gray200),
+            border: isPrimary ? null : Border.all(color: AppTheme.gray200),
             color: isPrimary ? AppTheme.orange500 : Colors.white,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: isPrimary ? Colors.white : AppTheme.gray600,
-                size: 20,
-              ),
+              Icon(icon, color: isPrimary ? Colors.white : AppTheme.gray600, size: 20),
               const SizedBox(width: 8),
               Text(
                 label,
