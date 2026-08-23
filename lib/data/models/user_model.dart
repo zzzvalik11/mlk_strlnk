@@ -34,9 +34,7 @@ class UserModel {
       'createdAt': createdAt.toIso8601String(),
     };
   }
-}
 
-extension UserModelX on UserModel {
   User toDomain() {
     return User(
       id: id,

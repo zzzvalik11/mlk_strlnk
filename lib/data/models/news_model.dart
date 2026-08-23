@@ -45,9 +45,7 @@ class NewsModel {
       'tags': tags,
     };
   }
-}
 
-extension NewsModelX on NewsModel {
   NewsItem toDomain() {
     return NewsItem(
       id: id,

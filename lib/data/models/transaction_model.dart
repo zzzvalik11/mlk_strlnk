@@ -42,9 +42,7 @@ class TransactionModel {
       'relatedServiceId': relatedServiceId,
     };
   }
-}
 
-extension TransactionModelX on TransactionModel {
   Transaction toDomain() {
     return Transaction(
       id: id,

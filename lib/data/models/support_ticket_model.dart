@@ -38,9 +38,7 @@ class SupportTicketModel {
       'replyCount': replyCount,
     };
   }
-}
 
-extension SupportTicketModelX on SupportTicketModel {
   SupportTicket toDomain() {
     return SupportTicket(
       id: id,

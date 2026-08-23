@@ -36,9 +36,7 @@ class BalanceModel {
       'lastUpdated': lastUpdated.toIso8601String(),
     };
   }
-}
 
-extension BalanceModelX on BalanceModel {
   Balance toDomain() {
     return Balance(
       amount: amount,

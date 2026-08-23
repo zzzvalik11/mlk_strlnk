@@ -46,9 +46,7 @@ class ServiceModel {
       'billingCycle': billingCycle,
     };
   }
-}
 
-extension ServiceModelX on ServiceModel {
   Service toDomain() {
     return Service(
       id: id,
