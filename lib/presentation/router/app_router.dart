@@ -169,31 +169,28 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomNav = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: BottomNavBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() => _currentIndex = index);
+            final routes = [
+              Routes.home,
+              Routes.payment,
+              Routes.news,
+              Routes.support,
+            ];
+            context.go(routes[index]);
+          },
+        ),
+      ),
+    );
+
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: widget.child,
-        ),
-      ),
-      bottomNavigationBar: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: BottomNavBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() => _currentIndex = index);
-              final routes = [
-                Routes.home,
-                Routes.payment,
-                Routes.news,
-                Routes.support,
-              ];
-              context.go(routes[index]);
-            },
-          ),
-        ),
-      ),
+      body: widget.child,
+      bottomNavigationBar: bottomNav,
     );
   }
 }
