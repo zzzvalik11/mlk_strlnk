@@ -36,7 +36,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -48,7 +47,31 @@ dev.log
 dev.out.log
 test
 prompt
-
 server.log
+
 # Skills directory
 /skills/
+
+# ── Non-Flutter project files (Next.js env) ──
+.zscripts/
+Caddyfile
+bun.lock
+bun.lockb
+components.json
+db/
+eslint.config.mjsexamples/
+mini-services/
+next.config.ts
+package.json
+package-lock.json
+postcss.config.mjs
+prisma/
+public/
+src/
+tailwind.config.ts
+tsconfig.json
+upload/
+tool-results/
+tests/
+worklog.md
+*.pid
