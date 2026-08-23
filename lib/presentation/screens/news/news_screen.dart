@@ -30,12 +30,10 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(newsListViewModelProvider);
 
-    return Scaffold(
-      backgroundColor: AppTheme.orange50,
-      body: RefreshIndicator(
-        color: AppTheme.orange500,
-        onRefresh: () => ref.read(newsListViewModelProvider.notifier).refresh(),
-        child: CustomScrollView(
+    return RefreshIndicator(
+      color: AppTheme.orange500,
+      onRefresh: () => ref.read(newsListViewModelProvider.notifier).refresh(),
+      child: CustomScrollView(
           slivers: [
             // ─── Title ───────────────────────
             SliverToBoxAdapter(

@@ -36,26 +36,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final authState = ref.watch(authProvider);
     final user = authState.valueOrNull;
 
-    return Scaffold(
-      backgroundColor: AppTheme.orange50,
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            color: AppTheme.orange500,
-            onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: _buildAppBar(user, homeState)),
-                if (homeState is HomeLoading || homeState is HomeInitial)
-                  const SliverFillRemaining(child: LoadingSpinner())
-                else if (homeState is HomeError)
-                  SliverFillRemaining(child: _buildErrorState(homeState.message))
-                else if (homeState is HomeLoaded)
-                  SliverToBoxAdapter(child: _buildContent(homeState)),
-                const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-              ],
-            ),
-          ),
+    return RefreshIndicator(
+      color: AppTheme.orange500,
+      onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildAppBar(user, homeState)),
+          if (homeState is HomeLoading || homeState is HomeInitial)
+            const SliverFillRemaining(child: LoadingSpinner())
+          else if (homeState is HomeError)
+            SliverFillRemaining(child: _buildErrorState(homeState.message))
+          else if (homeState is HomeLoaded)
+            SliverToBoxAdapter(child: _buildContent(homeState)),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),
     );

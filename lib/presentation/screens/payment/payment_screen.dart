@@ -31,13 +31,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(paymentViewModelProvider);
 
-    return Scaffold(
-      backgroundColor: AppTheme.orange50,
-      body: RefreshIndicator(
-        color: AppTheme.orange500,
-        onRefresh: () => ref.read(paymentViewModelProvider.notifier).refresh(),
-        child: CustomScrollView(
-          slivers: [
+    return RefreshIndicator(
+      color: AppTheme.orange500,
+      onRefresh: () => ref.read(paymentViewModelProvider.notifier).refresh(),
+      child: CustomScrollView(
+        slivers: [
             // ─── Title ─────────────────────────
             SliverToBoxAdapter(
               child: Padding(

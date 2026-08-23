@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
+import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/home/home_screen.dart';
@@ -68,7 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: Routes.home,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _HomeDebug(),
+              child: HomeScreen(),
             ),
           ),
           GoRoute(
@@ -138,26 +139,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 // ─── Shell Wrapper ──────────────────────────────────────────
 
-/// Debug widget to test if shell routing works.
-class _HomeDebug extends StatelessWidget {
-  const _HomeDebug();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.red,
-      child: const Center(
-        child: Text(
-          'HOME DEBUG',
-          style: TextStyle(fontSize: 32, color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
-
 /// Wraps shell children with a [BottomNavBar] and manages tab state.
-/// On wide screens, content is constrained to 480px and centered.
 class _ShellWrapper extends StatefulWidget {
   final Widget child;
   final int initialIndex;
@@ -187,28 +169,22 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomNav = Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: BottomNavBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() => _currentIndex = index);
-            final routes = [
-              Routes.home,
-              Routes.payment,
-              Routes.news,
-              Routes.support,
-            ];
-            context.go(routes[index]);
-          },
-        ),
-      ),
-    );
-
     return Scaffold(
+      backgroundColor: AppTheme.orange50,
       body: widget.child,
-      bottomNavigationBar: bottomNav,
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          final routes = [
+            Routes.home,
+            Routes.payment,
+            Routes.news,
+            Routes.support,
+          ];
+          context.go(routes[index]);
+        },
+      ),
     );
   }
 }

@@ -33,9 +33,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     final state = ref.watch(supportViewModelProvider);
     final isSubmitting = state is SupportFormSubmitting;
 
-    return Scaffold(
-      backgroundColor: AppTheme.orange50,
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: AppTheme.screenPadding,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 430),
@@ -188,7 +186,6 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 
