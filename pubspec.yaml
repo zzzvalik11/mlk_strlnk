@@ -52,5 +52,4 @@ flutter:
   uses-material-design: true
 
 dependency_overrides:
-  analyzer: ^7.0.0
-  dart_style: ^3.3.0
+  dart_style: 3.1.0
