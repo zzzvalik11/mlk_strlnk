@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
-import 'package:telecom_dashboard/core/utils/responsive.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/home/home_screen.dart';
@@ -77,7 +76,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (location.startsWith(Routes.support)) idx = 3;
 
           return _ShellWrapper(
-            key: ValueKey(location),
             initialIndex: idx,
             child: child,
           );
@@ -85,19 +83,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: Routes.home,
-            builder: (context, state) => const HomeScreen(),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: HomeScreen(),
+            ),
           ),
           GoRoute(
             path: Routes.payment,
-            builder: (context, state) => const PaymentScreen(),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: PaymentScreen(),
+            ),
           ),
           GoRoute(
             path: Routes.news,
-            builder: (context, state) => const NewsScreen(),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: NewsScreen(),
+            ),
           ),
           GoRoute(
             path: Routes.support,
-            builder: (context, state) => const SupportScreen(),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: SupportScreen(),
+            ),
           ),
         ],
       ),
@@ -181,7 +187,7 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: child,
+      body: widget.child,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         screenWidth: screenWidth,
@@ -196,28 +202,6 @@ class _ShellWrapperState extends State<_ShellWrapper> {
           context.go(routes[index]);
         },
       ),
-    );
-  }
-
-  /// Responsive wrapper for wide screens only.
-  Widget get child {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth <= AppBreakpoints.maxContentWidth) {
-          return widget.child;
-        }
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
-            child: SizedBox(
-              width: double.infinity,
-              height: constraints.maxHeight,
-              child: widget.child,
-            ),
-          ),
-        );
-      },
     );
   }
 }

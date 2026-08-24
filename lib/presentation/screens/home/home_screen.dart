@@ -25,13 +25,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Defer to first frame so ref is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _tryLoadDashboard();
     });
   }
 
-  /// Load dashboard data only when user is authenticated.
   void _tryLoadDashboard() {
     final authState = ref.read(authProvider);
     final user = authState.valueOrNull;
@@ -53,26 +51,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
-    return RefreshIndicator(
-      color: AppTheme.orange500,
-      onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ─── AppBar (always visible) ───
-            _buildAppBar(user),
-            // ─── State Content ───
-            if (homeState is HomeLoaded)
-              _buildContent(homeState)
-            else if (homeState is HomeError)
-              _buildErrorState(homeState.message)
-            else
-              _buildLoadingState(),
-            const SizedBox(height: 100),
-          ],
-        ),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ─── AppBar (always visible) ───
+          _buildAppBar(user),
+          // ─── State Content ───
+          if (homeState is HomeLoaded)
+            _buildContent(homeState)
+          else if (homeState is HomeError)
+            _buildErrorState(homeState.message)
+          else
+            _buildLoadingState(),
+          const SizedBox(height: 100),
+        ],
       ),
     );
   }
