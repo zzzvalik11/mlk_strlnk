@@ -24,7 +24,6 @@ import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(this._ref) {
     _ref.listen(authProvider, (_, next) {
-      debugPrint('🔵 AUTH CHANGE: ${next.runtimeType}');
       notifyListeners();
     });
   }
@@ -49,33 +48,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == Routes.quickLogin ||
           loc == Routes.authMethodSelection;
 
-      debugPrint('🔵 REDIRECT: loc=$loc auth=$isAuthenticated isLoading=$isLoading');
-
       // Public routes — always accessible
       if (isPublicRoute) return null;
 
       // Not authenticated and not loading → redirect to login
       if (!isAuthenticated && !isLoading && !isLoginRoute) {
-        debugPrint('🔵 REDIRECT → login');
         return Routes.login;
       }
 
       // Authenticated and on login → redirect to home
       if (isAuthenticated && isLoginRoute) {
-        debugPrint('🔵 REDIRECT → home');
         return Routes.home;
       }
 
       return null;
     },
     routes: [
-      // ─── Main screen — DIAGNOSTIC: HomeScreen only, no nav ───
+      // ─── Main screen ───
       GoRoute(
         path: Routes.home,
-        builder: (context, state) => Scaffold(
-          backgroundColor: AppTheme.orange50,
-          body: const HomeScreen(),
-        ),
+        builder: (context, state) => const MainScreen(),
       ),
       // ─── Auth routes ───
       GoRoute(
@@ -90,12 +82,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.authMethodSelection,
         builder: (context, state) => const AuthMethodSelectionScreen(),
       ),
-      // ─── Public route (accessible from login) ───
+      // ─── Public route (from login screen link) ───
       GoRoute(
         path: Routes.support,
-        builder: (context, state) => const SupportScreen(),
+        builder: (context, state) => Scaffold(
+          backgroundColor: AppTheme.orange50,
+          appBar: AppBar(
+            backgroundColor: AppTheme.orange50,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () => context.go(Routes.login),
+            ),
+            title: const Text('Поддержка'),
+          ),
+          body: const SupportScreen(),
+        ),
       ),
-      // ─── Detail / push routes ───
+      // ─── Detail routes ───
       GoRoute(
         path: Routes.topUp,
         builder: (context, state) => const TopUpScreen(),
@@ -145,15 +150,7 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: IndexedStack(
-        index: _currentTab,
-        children: const [
-          HomeScreen(),
-          PaymentScreen(),
-          NewsScreen(),
-          SupportScreen(),
-        ],
-      ),
+      body: _buildCurrentTab(),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentTab,
         screenWidth: screenWidth,
@@ -162,5 +159,20 @@ class _MainScreenState extends State<MainScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildCurrentTab() {
+    switch (_currentTab) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const PaymentScreen();
+      case 2:
+        return const NewsScreen();
+      case 3:
+        return const SupportScreen();
+      default:
+        return const HomeScreen();
+    }
   }
 }
