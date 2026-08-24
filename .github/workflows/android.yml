@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       flutter_version:
-        description: 'Flutter SDK version (e.g. 3.27.4)'
+        description: 'Flutter SDK version (leave empty for latest stable)'
         required: false
-        default: '3.27.4'
+        default: ''
       build_type:
         description: 'Build type'
         required: false
@@ -39,7 +39,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ github.event.inputs.flutter_version || '3.27.4' }}
+          flutter-version: ${{ github.event.inputs.flutter_version }}
           channel: 'stable'
           cache: true
 
