@@ -35,11 +35,57 @@ jobs:
         run: flutter pub get
 
       - name: Generate iOS platform files
+        run: flutter create --platforms=ios,android .
+
+      - name: Ensure Podfile exists
         run: |
-          flutter create --platforms=ios,android .
-          echo "--- ios/ contents after flutter create ---"
-          ls -la ios/ || echo "ios/ directory NOT created"
-          test -f ios/Podfile || (echo "FATAL: ios/Podfile still missing" && exit 1)
+          if [ ! -f ios/Podfile ]; then
+            echo "Podfile missing after flutter create — creating from template"
+            cat > ios/Podfile << 'PODFILE'
+          platform :ios, '14.0'
+
+          ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+          project 'Runner', {
+            'Debug' => :debug,
+            'Profile' => :release,
+            'Release' => :release,
+          }
+
+          def flutter_root
+            generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+            unless File.exist?(generated_xcode_build_settings_path)
+              raise "#{generated_xcode_build_settings_path} must exist."
+            end
+            File.foreach(generated_xcode_build_settings_path) do |line|
+              matches = line.match(/FLUTTER_ROOT\=(.*)/)
+              return matches[1].strip if matches
+            end
+            raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}."
+          end
+
+          require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+          flutter_ios_podfile_setup
+
+          target 'Runner' do
+            use_frameworks!
+            use_modular_headers!
+            flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+            target 'RunnerTests' do
+              inherit! :search_paths
+            end
+          end
+
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              flutter_additional_ios_build_settings(target)
+            end
+          end
+          PODFILE
+          fi
+          echo "Podfile contents:"
+          head -5 ios/Podfile
 
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
