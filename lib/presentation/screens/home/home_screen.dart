@@ -33,6 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _tryLoadDashboard() {
     final authState = ref.read(authProvider);
     final user = authState.valueOrNull;
+    debugPrint('🟡 _tryLoadDashboard: user=${user != null} loaded=$_dashboardLoaded');
     if (user != null && !_dashboardLoaded) {
       ref.read(homeViewModelProvider.notifier).loadDashboard();
     }
@@ -43,6 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final homeState = ref.watch(homeViewModelProvider);
     final authState = ref.watch(authProvider);
     final user = authState.valueOrNull;
+    debugPrint('🟡 HomeScreen.build(): state=${homeState.runtimeType} user=${user?.fullName}');
 
     // Re-trigger load when user becomes available
     ref.listen(authProvider, (prev, next) {

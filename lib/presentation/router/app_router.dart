@@ -48,16 +48,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isQuickLoginRoute = loc == Routes.quickLogin;
       final isAuthMethodRoute = loc == Routes.authMethodSelection;
 
+      debugPrint('🔵 REDIRECT: loc=$loc auth=$isAuthenticated isLoading=$isLoading');
+
       // Public routes (no auth required)
       if (isSupportRoute || isQuickLoginRoute || isAuthMethodRoute) return null;
 
       // Not authenticated and not loading → login
       if (!isAuthenticated && !isLoading && !isLoginRoute) {
+        debugPrint('🔵 REDIRECT → login');
         return Routes.login;
       }
 
       // Authenticated and on login → main
       if (isAuthenticated && isLoginRoute) {
+        debugPrint('🔵 REDIRECT → home (user authenticated)');
         return Routes.home;
       }
 
@@ -149,6 +153,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
+    debugPrint('🟢 MainScreen.build() tab=$_currentTab');
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
