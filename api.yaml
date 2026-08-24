@@ -7,9 +7,18 @@ info:
     Аутентификация осуществляется via JWT Bearer Token.
     Токен получается при авторизации и действует 365 дней.
     
+    ## Внешние интеграции
+
+    Бэкенд выступает оркестратором между приложением и сторонними сервисами:
+    - **Платёжные шлюзы**: Payme, Click, Uzum
+    - **СБП**: быстрые банковские переводы через Payme/Click
+    - **Push-уведомления**: Firebase Cloud Messaging (FCM)
+    - **SMS-шлюз**: Eskiz (Uzmobile)
+    - **Биллинг**: BSS (Business Support System)
+    
     **Базовый URL для продакшена:** `https://api.starlink.uz/api`
     **Базовый URL для эмулятора:** `http://10.0.2.2:3000/api`
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: Starlink API Support
 
@@ -24,18 +33,26 @@ security:
 
 tags:
   - name: Auth
-    description: Авторизация
+    description: Авторизация и верификация
   - name: Account
     description: Профиль, баланс, услуги
+  - name: Payments
+    description: Платёжные шлюзы, СБП, пополнение
   - name: Transactions
     description: История транзакций
   - name: News
     description: Новости и уведомления
   - name: Support
     description: Обращения в техподдержку
+  - name: Push
+    description: Firebase Cloud Messaging
+  - name: Billing
+    description: Биллинговая система (BSS)
 
 paths:
-  # ─── Auth ─────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════
+  #  AUTH
+  # ═══════════════════════════════════════════════════════
   /auth/login:
     post:
       operationId: login
@@ -67,7 +84,64 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ─── Account Profile ───────────────────────────────────
+  /auth/request-otp:
+    post:
+      operationId: requestOtp
+      tags: [Auth]
+      summary: Запросить SMS с OTP-кодом
+      description: |
+        Отправляет 6-значный SMS-код на привязанный номер телефона.
+        Бэкенд вызывает SMS-шлюз (Eskiz). Код валиден 3 минуты.
+        Rate limit: 1 запрос в 60 секунд на номер.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestOtpRequest'
+      responses:
+        '200':
+          description: SMS отправлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestOtpResponse'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [Auth]
+      summary: Проверить OTP-код
+      description: |
+        Проверяет введённый пользователем OTP-код.
+        При успехе возвращает JWT-токен (как /auth/login).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: Код верный
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Неверный или просроченный код
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpError'
+
+  # ═══════════════════════════════════════════════════════
+  #  ACCOUNT
+  # ═══════════════════════════════════════════════════════
   /account/profile:
     get:
       operationId: getAccountProfile
@@ -75,8 +149,7 @@ paths:
       summary: Получить профиль аккаунта
       description: |
         Возвращает профиль пользователя, текущий баланс и список
-        активных услуг одним запросом. Клиент извлекает нужные
-        секции из ответа (`user`, `balance`, `activeServices`).
+        активных услуг. Баланс запрашивается из BSS в реальном времени.
       responses:
         '200':
           description: Профиль загружен
@@ -87,43 +160,152 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ─── Top Up ────────────────────────────────────────────
-  /top-up:
+  # ═══════════════════════════════════════════════════════
+  #  PAYMENTS
+  # ═══════════════════════════════════════════════════════
+  /payments/create:
     post:
-      operationId: topUpBalance
-      tags: [Account]
-      summary: Пополнить баланс
-      description: Начисляет указанную сумму на баланс пользователя.
+      operationId: createPayment
+      tags: [Payments]
+      summary: Создать платёжную сессию
+      description: |
+        Создаёт транзакцию в биллинге и инициирует платёжную сессию
+        в выбранном шлюзе. Возвращает URL для редиректа (WebView).
+
+        **Поток:** Приложение -> Бэкенд -> Платёжный шлюз -> URL -> WebView
+
+        Поддерживаемые методы:
+        - `payme` — Payme (payme.uz)
+        - `click` — Click (click.uz)
+        - `uzum` — Uzum Pay (uzum.uz)
+        - `sbp` — СБП через Payme (перевод из банковского приложения)
+        - `promise` — Обещанный платёж (внутренний, без шлюза)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TopUpRequest'
-            example:
-              amount: 50000
+              $ref: '#/components/schemas/CreatePaymentRequest'
+            examples:
+              payme:
+                summary: Оплата через Payme
+                value:
+                  amount: 169000
+                  method: payme
+                  description: "Оплата тарифа: Интернет 100 Мбит/с"
+              sbp:
+                summary: Оплата через СБП
+                value:
+                  amount: 50000
+                  method: sbp
+                  description: "Пополнение баланса"
       responses:
         '200':
-          description: Баланс пополнен
+          description: Платёжная сессия создана
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TopUpResponse'
+                $ref: '#/components/schemas/CreatePaymentResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Метод оплаты недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
 
-  # ─── Transactions ──────────────────────────────────────
+  /payments/{paymentId}/status:
+    get:
+      operationId: getPaymentStatus
+      tags: [Payments]
+      summary: Статус платежа
+      description: |
+        Возвращает текущий статус платёжной сессии.
+        Бэкенд проверяет статус у платёжного шлюза.
+        Приложение должно поллить этот эндпоинт после возврата из WebView.
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID платёжной сессии (из /payments/create)
+          example: "pay_a1b2c3d4"
+      responses:
+        '200':
+          description: Статус платежа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payments/webhook/{provider}:
+    post:
+      operationId: paymentWebhook
+      tags: [Payments]
+      summary: Webhook от платёжного шлюза
+      description: |
+        Callback-эндпоинт, который вызывают платёжные шлюзы при изменении
+        статуса платежа. Бэкенд верифицирует подпись, обновляет статус
+        транзакции в BSS и отправляет push-уведомление пользователю.
+        **Вызывается платёжным шлюзом, НЕ приложением.**
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [payme, click, uzum]
+          description: Идентификатор платёжного шлюза
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: |
+                Тело зависит от провайдера. Бэкенд парсит
+                согласно спецификации каждого шлюза.
+      responses:
+        '200':
+          description: Webhook обработан
+
+  # ═══════════════════════════════════════════════════════
+  #  TRANSACTIONS
+  # ═══════════════════════════════════════════════════════
   /transactions:
     get:
       operationId: getTransactions
       tags: [Transactions]
       summary: История транзакций
       description: |
-        Возвращает список транзакций с пагинацией.
-        Клиент фильтрует по дате на своей стороне.
+        Возвращает список транзакций из BSS с пагинацией.
+        Поддерживает фильтрацию по типу и дате.
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Limit'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [topUp, payment, refund, bonus]
+          description: Фильтр по типу транзакции
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Начало периода (ISO 8601)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Конец периода (ISO 8601)
       responses:
         '200':
           description: Список транзакций
@@ -136,7 +318,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ─── News ──────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════
+  #  NEWS
+  # ═══════════════════════════════════════════════════════
   /news:
     get:
       operationId: getNewsList
@@ -184,7 +368,9 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  # ─── Support ───────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════
+  #  SUPPORT
+  # ═══════════════════════════════════════════════════════
   /support:
     get:
       operationId: getMyTickets
@@ -208,7 +394,7 @@ paths:
       summary: Создать обращение
       description: |
         Создаёт новое обращение в техподдержку.
-        Начальное значение статуса — `open`.
+        Бэкенд отправляет SMS-уведомление оператору через Eskiz.
       requestBody:
         required: true
         content:
@@ -217,7 +403,7 @@ paths:
               $ref: '#/components/schemas/CreateTicketRequest'
             example:
               subject: "Не работает интернет"
-              description: "С yesterday evening there is no connection, router shows red light"
+              description: "С yesterday evening there is no connection"
       responses:
         '200':
           description: Обращение создано
@@ -225,6 +411,182 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SupportTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ═══════════════════════════════════════════════════════
+  #  PUSH (FCM)
+  # ═══════════════════════════════════════════════════════
+  /devices/register:
+    post:
+      operationId: registerDevice
+      tags: [Push]
+      summary: Зарегистрировать устройство для push-уведомлений
+      description: |
+        Приложение вызывает при первом запуске и при каждом обновлении FCM-токена.
+        Бэкенд сохраняет токен в базе и привязывает к пользователю.
+        Токены используются для отправки push через Firebase Cloud Messaging.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceRequest'
+      responses:
+        '200':
+          description: Устройство зарегистрировано
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /devices/unregister:
+    post:
+      operationId: unregisterDevice
+      tags: [Push]
+      summary: Отвязать устройство от push-уведомлений
+      description: |
+        Вызывается при выходе из аккаунта.
+        Бэкенд удаляет FCM-токен.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnregisterDeviceRequest'
+      responses:
+        '200':
+          description: Устройство отвязано
+
+  /notifications/preferences:
+    get:
+      operationId: getNotificationPreferences
+      tags: [Push]
+      summary: Получить настройки уведомлений
+      description: Возвращает текущие настройки push-уведомлений пользователя.
+      responses:
+        '200':
+          description: Настройки уведомлений
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: updateNotificationPreferences
+      tags: [Push]
+      summary: Обновить настройки уведомлений
+      description: |
+        Пользователь управляет категориями push-уведомлений.
+        Изменения сохраняются в биллинге и используются при отправке.
+      requestBody:
+        required: true
+        content:
+          application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+      responses:
+        '200':
+          description: Настройки обновлены
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ═══════════════════════════════════════════════════════
+  #  BILLING (BSS)
+  # ═══════════════════════════════════════════════════════
+  /billing/invoice:
+    get:
+      operationId: getCurrentInvoice
+      tags: [Billing]
+      summary: Текущий счёт
+      description: |
+        Возвращает детализацию текущего расчётного периода из BSS:
+        список услуг, стоимость каждой, скидки, итоговая сумма.
+      responses:
+        '200':
+          description: Счёт загружен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /billing/invoice/history:
+    get:
+      operationId: getInvoiceHistory
+      tags: [Billing]
+      summary: История счетов
+      description: Возвращает список прошлых счетов из BSS.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Список счетов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /billing/services/{serviceId}/activate:
+    post:
+      operationId: activateService
+      tags: [Billing]
+      summary: Активировать услугу
+      description: |
+        Отправляет запрос на активацию услуги в BSS.
+        Биллинг проверяет возможность подключения и возвращает результат.
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID услуги
+          example: "srv_internet_200"
+      responses:
+        '200':
+          description: Услуга активирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceActionResponse'
+        '409':
+          description: Услуга уже активна или конфликт
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceActionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /billing/services/{serviceId}/deactivate:
+    post:
+      operationId: deactivateService
+      tags: [Billing]
+      summary: Деактивировать услугу
+      description: |
+        Отправляет запрос на деактивацию в BSS.
+        Биллинг рассчитывает компенсацию и прекращает начисление.
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID услуги
+          example: "srv_internet_100"
+      responses:
+        '200':
+          description: Услуга деактивирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceActionResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -236,9 +598,8 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        JWT-токен, полученный из `POST /auth/login`.
+        JWT-токен, полученный из `POST /auth/login` или `POST /auth/verify-otp`.
         Срок действия — 365 дней.
-        Передаётся в заголовке `Authorization: Bearer <token>`.
 
   parameters:
     Page:
@@ -260,69 +621,351 @@ components:
       description: Количество элементов на странице
 
   schemas:
-    # ─── Request Schemas ────────────────────────────────
+    # ─── Auth ──────────────────────────────────────
     LoginRequest:
       type: object
       required: [pin, password]
       properties:
         pin:
           type: string
-          description: 6-значный ПИН-код пользователя
           minLength: 6
           maxLength: 6
           pattern: '^[0-9]{6}$'
           example: "039103"
         password:
           type: string
-          description: Пароль пользователя
           example: "123456"
 
-    TopUpRequest:
+    RequestOtpRequest:
       type: object
-      required: [amount]
+      required: [phone]
       properties:
-        amount:
-          type: number
-          format: double
-          description: Сумма пополнения
-          minimum: 0.01
-          example: 50000
+        phone:
+          type: string
+          description: Номер телефона в международном формате
+          pattern: '^\+998[0-9]{9}$'
+          example: "+998901234567"
 
-    CreateTicketRequest:
+    RequestOtpResponse:
       type: object
-      required: [subject, description]
       properties:
-        subject:
-          type: string
-          description: Тема обращения
-          minLength: 1
-          maxLength: 200
-          example: "Не работает интернет"
-        description:
-          type: string
-          description: Описание проблемы
-          minLength: 1
-          example: "С yesterday evening there is no connection"
+        expiresIn:
+          type: integer
+          description: Время жизни OTP-кода в секундах
+          example: 180
+        attemptsLeft:
+          type: integer
+          description: Оставшееся количество попыток ввода
+          example: 3
 
-    # ─── Response Schemas ───────────────────────────────
+    VerifyOtpRequest:
+      type: object
+      required: [phone, code]
+      properties:
+        phone:
+          type: string
+          example: "+998901234567"
+        code:
+          type: string
+          description: 6-значный OTP-код
+          pattern: '^[0-9]{6}$'
+          example: "482916"
+
+    OtpError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [invalid_code, expired, too_many_attempts]
+        message:
+          type: string
+          example: "Неверный код. Осталось попыток: 2"
+
     LoginResponse:
       type: object
       required: [token, user]
       properties:
         token:
           type: string
-          description: JWT-токен (срок действия 365 дней)
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         user:
           $ref: '#/components/schemas/User'
 
+    # ─── Payments ───────────────────────────────────
+    CreatePaymentRequest:
+      type: object
+      required: [amount, method]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 1000
+          maximum: 5000000
+          description: Сумма в сумах
+          example: 169000
+        method:
+          type: string
+          enum: [payme, click, uzum, sbp, promise]
+          description: |
+            Способ оплаты:
+            - `payme` — Payme (card / QR)
+            - `click` — Click (card)
+            - `uzum` — Uzum Pay (card / instalment)
+            - `sbp` — СБП через Payme (из банковского приложения)
+            - `promise` — Обещанный платёж (кредит от оператора)
+          example: "payme"
+        description:
+          type: string
+          description: Комментарий платежа (отображается в истории)
+          example: "Оплата тарифа: Интернет 100 Мбит/с"
+        serviceId:
+          type: string
+          nullable: true
+          description: ID услуги для привязки платежа (опционально)
+
+    CreatePaymentResponse:
+      type: object
+      required: [paymentId, status, paymentUrl]
+      properties:
+        paymentId:
+          type: string
+          description: Уникальный ID платёжной сессии
+          example: "pay_a1b2c3d4"
+        status:
+          type: string
+          enum: [pending, created]
+          example: "pending"
+        paymentUrl:
+          type: string
+          format: uri
+          description: |
+            URL для открытия в WebView.
+            Для `promise` — null (оплата внутренняя, без редиректа).
+          example: "https://checkout.payme.uz/pay_a1b2c3d4"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Время жизни платёжной ссылки
+          example: "2025-08-24T16:30:00Z"
+
+    PaymentStatusResponse:
+      type: object
+      required: [paymentId, status]
+      properties:
+        paymentId:
+          type: string
+          example: "pay_a1b2c3d4"
+        status:
+          type: string
+          enum: [pending, success, failed, expired, refunded]
+          description: |
+            - `pending` — ожидает оплаты
+            - `success` — оплачено
+            - `failed` — ошибка оплаты
+            - `expired` — ссылка просрочена
+            - `refunded` — возврат
+          example: "success"
+        amount:
+          type: number
+          format: double
+          example: 169000
+        newBalance:
+          type: number
+          format: double
+          nullable: true
+          description: Обновлённый баланс (при status=success)
+          example: 269500
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время оплаты (при status=success)
+        providerTransactionId:
+          type: string
+          nullable: true
+          description: ID транзакции в платёжном шлюзе
+          example: "clk_5f6e7d8c"
+        errorMessage:
+          type: string
+          nullable: true
+          description: Описание ошибки (при status=failed)
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "validation_error"
+        message:
+          type: string
+          example: "Метод оплаты 'sbp' недоступен для данной суммы"
+
+    # ─── Push / Devices ─────────────────────────────
+    RegisterDeviceRequest:
+      type: object
+      required: [fcmToken, platform]
+      properties:
+        fcmToken:
+          type: string
+          description: Firebase Cloud Messaging токен устройства
+          example: "dGhpcyBpcyBhIGZha2UgdG9rZW4="
+        platform:
+          type: string
+          enum: [android, ios]
+          example: "android"
+        deviceId:
+          type: string
+          description: Уникальный идентификатор устройства
+          example: "a1b2c3d4e5f6"
+        appVersion:
+          type: string
+          description: Версия приложения
+          example: "1.0.0"
+
+    UnregisterDeviceRequest:
+      type: object
+      required: [fcmToken]
+      properties:
+        fcmToken:
+          type: string
+          example: "dGhpcyBpcyBhIGZha2UgdG9rZW4="
+
+    NotificationPreferences:
+      type: object
+      properties:
+        paymentSuccess:
+          type: boolean
+          default: true
+          description: Успешный платёж
+        paymentFailed:
+          type: boolean
+          default: true
+          description: Ошибка платежа
+        balanceLow:
+          type: boolean
+          default: true
+          description: Низкий баланс
+        serviceExpiring:
+          type: boolean
+          default: true
+          description: Услуга скоро истечёт
+        newsAndPromo:
+          type: boolean
+          default: true
+          description: Новости и акции
+        supportReply:
+          type: boolean
+          default: true
+          description: Ответ техподдержки
+
+    # ─── Billing ─────────────────────────────────────
+    InvoiceResponse:
+      type: object
+      required: [invoiceId, period, items, subtotal, total]
+      properties:
+        invoiceId:
+          type: string
+          example: "inv_2025-08"
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+              example: "2025-08-01"
+            to:
+              type: string
+              format: date
+              example: "2025-08-31"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+        subtotal:
+          type: number
+          format: double
+          example: 238000
+        discount:
+          type: number
+          format: double
+          example: 0
+        total:
+          type: number
+          format: double
+          example: 238000
+        dueDate:
+          type: string
+          format: date
+          example: "2025-09-05"
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+          example: "pending"
+
+    InvoiceItem:
+      type: object
+      properties:
+        serviceId:
+          type: string
+          example: "srv_internet_100"
+        serviceName:
+          type: string
+          example: "Интернет 100 Мбит/с"
+        cost:
+          type: number
+          format: double
+          example: 169000
+        daysUsed:
+          type: integer
+          description: Количество дней использования в периоде
+          example: 31
+        dailyRate:
+          type: number
+          format: double
+          description: Дневная ставка
+          example: 5451.61
+
+    InvoiceSummary:
+      type: object
+      properties:
+        invoiceId:
+          type: string
+          example: "inv_2025-07"
+        period:
+          type: string
+          example: "Июль 2025"
+        total:
+          type: number
+          format: double
+          example: 238000
+        status:
+          type: string
+          enum: [paid, pending, overdue]
+          example: "paid"
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-07-28T10:00:00Z"
+
+    ServiceActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          example: "Услуга 'Интернет 100 Мбит/с' активирована"
+        effectiveFrom:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-08-24T16:00:00Z"
+
+    # ─── Account ─────────────────────────────────────
     AccountProfileResponse:
       type: object
       required: [user, balance, activeServices]
-      description: |
-        Композитный ответ — клиент извлекает нужную секцию.
-        `user` — для профиля, `balance` — для баланса,
-        `activeServices` — для списка услуг.
       properties:
         user:
           $ref: '#/components/schemas/User'
@@ -333,43 +976,28 @@ components:
           items:
             $ref: '#/components/schemas/Service'
 
-    TopUpResponse:
-      type: object
-      required: [newBalance]
-      properties:
-        newBalance:
-          type: number
-          format: double
-          description: Обновлённый баланс после пополнения
-          example: 150000
-
-    # ─── Entity Schemas ─────────────────────────────────
+    # ─── Entities ────────────────────────────────────
     User:
       type: object
       required: [id, fullName, createdAt]
       properties:
         id:
           type: string
-          description: Уникальный идентификатор пользователя
           example: "039103"
         fullName:
           type: string
-          description: Полное имя пользователя
           example: "Валиев Закир"
         phone:
           type: string
           nullable: true
-          description: Номер телефона
           example: "+998 90 123 45 67"
         avatarUrl:
           type: string
           format: uri
           nullable: true
-          description: URL аватара
         createdAt:
           type: string
           format: date-time
-          description: Дата регистрации (ISO 8601)
           example: "2024-01-15T10:30:00Z"
 
     Balance:
@@ -379,26 +1007,21 @@ components:
         amount:
           type: number
           format: double
-          description: Текущий баланс
           example: 100500
         currency:
           type: string
-          description: Код валюты
           example: "UZS"
         paidUntil:
           type: string
           format: date-time
           nullable: true
-          description: Дата, до которой оплачен тариф
           example: "2025-09-01T00:00:00Z"
         isPaid:
           type: boolean
-          description: Оплачен ли текущий период
           example: true
         lastUpdated:
           type: string
           format: date-time
-          description: Последнее обновление баланса
           example: "2025-08-24T12:00:00Z"
 
     Service:
@@ -407,40 +1030,31 @@ components:
       properties:
         id:
           type: string
-          description: ID услуги
           example: "srv_internet_100"
         name:
           type: string
-          description: Название услуги
           example: "Интернет 100 Мбит/с"
         category:
           type: string
-          description: Категория услуги
           example: "internet"
         cost:
           type: number
           format: double
-          description: Стоимость за расчётный период
           example: 169000
         status:
           type: string
           enum: [active, expired, paused, error]
           default: active
-          description: Текущий статус услуги
-          example: "active"
         iconUrl:
           type: string
           format: uri
           nullable: true
-          description: URL иконки услуги
         warningMessage:
           type: string
           nullable: true
-          description: Предупреждение (например, «осталось 3 дня»)
         billingCycle:
           type: string
           nullable: true
-          description: Расчётный период
           example: "monthly"
 
     Transaction:
@@ -449,39 +1063,38 @@ components:
       properties:
         id:
           type: string
-          description: ID транзакции
           example: "txn_20250824_001"
         type:
           type: string
           enum: [topUp, payment, refund, bonus]
           default: payment
-          description: Тип транзакции
-          example: "payment"
         amount:
           type: number
           format: double
-          description: Сумма транзакции
           example: 169000
         description:
           type: string
-          description: Описание транзакции
-          example: "Оплата: Интернет 100 Мбит/с"
+          example: "Оплата через Payme"
         date:
           type: string
           format: date-time
-          description: Дата и время транзакции (ISO 8601)
           example: "2025-08-24T14:30:00Z"
         status:
           type: string
           enum: [success, pending, failed]
           default: success
-          description: Статус транзакции
-          example: "success"
+        paymentMethod:
+          type: string
+          nullable: true
+          enum: [payme, click, uzum, sbp, promise, internal]
+          description: Способ оплаты
+        providerTransactionId:
+          type: string
+          nullable: true
+          description: ID транзакции в платёжном шлюзе
         relatedServiceId:
           type: string
           nullable: true
-          description: ID связанной услуги
-          example: "srv_internet_100"
 
     NewsItem:
       type: object
@@ -489,37 +1102,40 @@ components:
       properties:
         id:
           type: string
-          description: ID новости
           example: "news_001"
         title:
           type: string
-          description: Заголовок
-          example: "Новое тарифное предложение "Безлимит""
+          example: "Новое тарифное предложение"
         summary:
           type: string
-          description: Краткое содержание
-          example: "Запущен новый безлимитный тариф для абонентов..."
+          example: "Запущен новый безлимитный тариф..."
         imageUrl:
           type: string
           format: uri
           nullable: true
-          description: URL изображения
         publishedAt:
           type: string
           format: date-time
-          description: Дата публикации (ISO 8601)
           example: "2025-08-20T09:00:00Z"
         readCount:
           type: integer
           nullable: true
-          description: Количество просмотров
-          example: 1234
         tags:
           type: array
           items:
             type: string
-          description: Теги новости
-          example: ["тариф", "акция"]
+
+    CreateTicketRequest:
+      type: object
+      required: [subject, description]
+      properties:
+        subject:
+          type: string
+          maxLength: 200
+          example: "Не работает интернет"
+        description:
+          type: string
+          example: "С yesterday evening there is no connection"
 
     SupportTicket:
       type: object
@@ -527,36 +1143,27 @@ components:
       properties:
         id:
           type: string
-          description: ID обращения
           example: "ticket_001"
         subject:
           type: string
-          description: Тема обращения
           example: "Не работает интернет"
         description:
           type: string
-          description: Описание проблемы
-          example: "С yesterday evening there is no connection"
         status:
           type: string
           enum: [open, inProgress, resolved, closed]
           default: open
-          description: Статус обращения
-          example: "open"
         createdAt:
           type: string
           format: date-time
-          description: Дата создания (ISO 8601)
           example: "2025-08-24T16:00:00Z"
         replyCount:
           type: integer
           default: 0
-          description: Количество ответов поддержки
-          example: 0
 
   responses:
     Unauthorized:
-      description: Не авторизован — отсутствует или недействителен токен
+      description: Не авторизован
       content:
         application/json:
           schema:
@@ -575,3 +1182,17 @@ components:
               error:
                 type: string
                 example: "Not found"
+    TooManyRequests:
+      description: Слишком много запросов (rate limit)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "too_many_requests"
+              retryAfter:
+                type: integer
+                description: Секунд до следующей попытки
+                example: 60
