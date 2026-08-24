@@ -22,15 +22,31 @@ import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar
 
 // ─── Router Provider ────────────────────────────────────────
 
+/// Notifies GoRouter when auth state changes, without recreating
+/// the router instance. This prevents the entire widget tree from
+/// being torn down and rebuilt on every auth transition.
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(this._ref) {
+    _ref.listen(authProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+  final Ref _ref;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  final isAuthenticated = authState.valueOrNull != null;
-  final isLoading = authState is AsyncLoading;
+  final authNotifier = _AuthChangeNotifier(ref);
 
   return GoRouter(
     initialLocation: Routes.home,
     debugLogDiagnostics: true,
+    refreshListenable: authNotifier,
     redirect: (context, state) {
+      // Use ref.read (not ref.watch) — we are notified via refreshListenable.
+      final authState = ref.read(authProvider);
+      final isAuthenticated = authState.valueOrNull != null;
+      final isLoading = authState is AsyncLoading;
+
       final isLoginRoute = state.matchedLocation == Routes.login;
       final isSupportRoute = state.matchedLocation == Routes.support;
       final isQuickLoginRoute = state.matchedLocation == Routes.quickLogin;
@@ -174,27 +190,23 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth <= AppBreakpoints.maxContentWidth) {
-              return widget.child;
-            }
-            return Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: constraints.maxHeight,
-                  child: widget.child,
-                ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth <= AppBreakpoints.maxContentWidth) {
+            return widget.child;
+          }
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
+              child: SizedBox(
+                width: double.infinity,
+                height: constraints.maxHeight,
+                child: widget.child,
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,

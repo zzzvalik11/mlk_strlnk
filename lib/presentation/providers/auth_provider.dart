@@ -116,11 +116,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     state = const AsyncValue.loading();
     try {
       final result = await _loginUseCase.call(pin: pin, password: password);
-      result.fold(
-        (failure) => state = AsyncValue.error(
-          _mapFailureToException(failure),
-          StackTrace.current,
-        ),
+      await result.fold(
+        (failure) async {
+          state = AsyncValue.error(
+            _mapFailureToException(failure),
+            StackTrace.current,
+          );
+        },
         (user) async {
           // Set token expiry to 365 days from now
           final expiry = DateTime.now().add(AppConstants.tokenValidity);
