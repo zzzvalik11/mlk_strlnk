@@ -1,0 +1,85 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.4'
+          channel: 'stable'
+          cache: true
+
+      - name: Ensure platform directories
+        run: flutter create . --platforms=ios --project-name telecom_dashboard
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code (freezed / json_serializable)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # ─── Вариант А: без подписи (только для тестирования) ───
+      # Собирает .app для симулятора. Для реального устройства
+      # нужны сертификаты (см. Вариант Б ниже).
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Create IPA from .app
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ipa/Payload/
+          cd build/ipa && zip -r ../telecom_dashboard.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-nosign
+          path: build/telecom_dashboard.ipa
+
+      # ─── Вариант Б: с подписью (для App Store / TestFlight) ───
+      # Закомментирован. Раскомментируй и добавь секреты в GitHub:
+      #   CERTIFICATE_BASE64  — содержимое .p12 сертификата (base64)
+      #   CERTIFICATE_PASSWORD — пароль от сертификата
+      #   PROVISIONING_PROFILE_BASE64 — содержимое .mobileprovision (base64)
+      #   KEYCHAIN_PASSWORD — любой пароль для keychain в CI
+      #
+      # - name: Install Apple Certificate
+      #   run: |
+      #     CERT_PATH=$RUNNER_TEMP/certificate.p12
+      #     PP_PATH=$RUNNER_TEMP/profile.mobileprovision
+      #     KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+      #
+      #     echo "$CERTIFICATE_BASE64" | base64 --decode > $CERT_PATH
+      #     echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > $PP_PATH
+      #
+      #     security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+      #     security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+      #     security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+      #     security import $CERT_PATH -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12
+      #     security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+      #     security default-keychain -s $KEYCHAIN_PATH
+      #     mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+      #     cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+      #
+      # - name: Build iOS (signed)
+      #   run: flutter build ipa --release
+      #
+      # - name: Upload IPA (signed)
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ios-ipa-signed
+      #     path: build/ios/ipa/*.ipa
