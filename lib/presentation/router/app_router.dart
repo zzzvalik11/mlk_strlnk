@@ -150,7 +150,12 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: _buildCurrentTab(),
+      body: Container(
+        color: Colors.yellow,
+        child: const Center(
+          child: Text('BODY TEST', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        ),
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentTab,
         screenWidth: screenWidth,
