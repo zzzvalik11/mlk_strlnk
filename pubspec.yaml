@@ -53,3 +53,4 @@ flutter:
 
 dependency_overrides:
   analyzer: ^7.0.0
+  dart_style: ^4.0.0
