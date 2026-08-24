@@ -1,7 +1,3 @@
-# ────────────────────────────────────────────────────────────────
-# Build iOS IPA on push to main (requires macOS runner)
-# ────────────────────────────────────────────────────────────────
-
 name: Build iOS
 
 on:
@@ -10,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       flutter_version:
-        description: 'Flutter SDK version (leave empty for 3.38.10)'
+        description: 'Flutter SDK version (leave empty for latest stable)'
         required: false
-        default: '3.38.10'
+        default: ''
 
 concurrency:
   group: ios-${{ github.ref }}
@@ -31,7 +27,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ github.event.inputs.flutter_version || '3.38.10' }}
+          flutter-version: ${{ github.event.inputs.flutter_version }}
           channel: 'stable'
           cache: true
 
@@ -46,24 +42,6 @@ jobs:
 
       - name: Install CocoaPods dependencies
         run: cd ios && pod install
-
-      # ── Code Signing (optional) ─────────────────────────────
-      # Uncomment when Apple Developer account + certificates ready.
-      # Required secrets:
-      #   IOS_CERTIFICATE_BASE64
-      #   IOS_CERTIFICATE_PASSWORD
-      #   IOS_PROVISIONING_PROFILE_BASE64
-      #
-      # - name: Install Apple Certificate
-      #   uses: apple-actions/import-codesign-certs@v2
-      #   with:
-      #     p12-file-base64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-      #     p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-      #
-      # - name: Install Provisioning Profile
-      #   run: |
-      #     mkdir -p ~/Library/MobileDevice/Provisioning Profiles
-      #     echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning Profiles/profile.mobileprovision
 
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
