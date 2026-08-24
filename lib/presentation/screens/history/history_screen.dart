@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
 import 'package:telecom_dashboard/core/widgets/empty_state.dart';
@@ -62,15 +63,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      appBar: AppBar(
-        backgroundColor: AppTheme.orange50,
-        elevation: 0,
-        foregroundColor: AppTheme.gray900,
-        title: const Text('История операций'),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(showBackButton: true, title: 'История операций'),
           // ─── Period Filter ──────────────
           SizedBox(
             height: 48,
@@ -111,8 +107,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ),
           const SizedBox(height: 4),
           // ─── Content ──────────────────────
-          Expanded(
-            child: switch (state) {
+            Expanded(
+              child: switch (state) {
               HistoryLoading() => const LoadingSpinner(),
               HistoryError(:final message) => ErrorState(
                   message: message,
@@ -154,6 +150,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

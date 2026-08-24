@@ -5,6 +5,7 @@ import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/core/widgets/loading_spinner.dart';
 import 'package:telecom_dashboard/core/widgets/service_card.dart';
 import 'package:telecom_dashboard/domain/entities/user.dart';
@@ -19,9 +20,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// Simulated unread notifications count.
-  static const int _unreadNotifications = 2;
-
   @override
   void initState() {
     super.initState();
@@ -41,7 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: _buildAppBar(user, homeState)),
+          SliverToBoxAdapter(child: AppHeader(title: user?.fullName)),
           if (homeState is HomeLoading || homeState is HomeInitial)
             const SliverFillRemaining(child: LoadingSpinner())
           else if (homeState is HomeError)
@@ -49,95 +47,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           else if (homeState is HomeLoaded)
             SliverToBoxAdapter(child: _buildContent(homeState)),
           const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-        ],
-      ),
-    );
-  }
-
-  // ─── AppBar ──────────────────────────────────────────────
-
-  Widget _buildAppBar(User? user, HomeState homeState) {
-    final isFrozen = homeState is HomeLoaded && homeState.isLocked;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [AppTheme.orange500, Color(0xFFE91E63)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                user?.fullName.isNotEmpty == true ? user!.fullName[0] : 'S',
-                style: const TextStyle(
-                  color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user?.id ?? '------',
-                  style: AppTheme.labelSmall.copyWith(
-                    color: AppTheme.gray500, fontWeight: FontWeight.w600, letterSpacing: 1.5,
-                  ),
-                ),
-                Text(user?.fullName ?? '', style: AppTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-          // Bell with unread dot
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(
-                  _unreadNotifications > 0
-                      ? Icons.notifications_rounded
-                      : Icons.notifications_none_rounded,
-                  color: _unreadNotifications > 0 ? AppTheme.orange500 : AppTheme.gray600,
-                  size: 24,
-                ),
-                onPressed: () => context.push(Routes.notifications),
-              ),
-              if (_unreadNotifications > 0)
-                Positioned(
-                  right: 8, top: 8,
-                  child: Container(
-                    width: 10, height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          // Settings
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppTheme.gray600, size: 24),
-            onPressed: () => context.push(Routes.settings),
-          ),
-          // Logout
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, color: AppTheme.gray400, size: 22),
-            onPressed: () {
-              ref.read(authProvider.notifier).logout();
-              context.go(Routes.login);
-            },
-          ),
         ],
       ),
     );

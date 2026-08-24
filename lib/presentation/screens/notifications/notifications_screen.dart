@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 
 /// Mock notification model.
 class PushNotification {
@@ -21,14 +23,14 @@ class PushNotification {
   });
 }
 
-class NotificationsScreen extends StatefulWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   final List<PushNotification> _notifications = [
     PushNotification(
       id: 'n1',
@@ -99,37 +101,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      appBar: AppBar(
-        backgroundColor: AppTheme.orange50,
-        elevation: 0,
-        foregroundColor: AppTheme.gray900,
-        title: const Text('Уведомления'),
-        centerTitle: true,
-        actions: [
-          if (_unreadCount > 0)
-            TextButton(
-              onPressed: _markAllRead,
-              child: Text(
-                'Прочитать все',
-                style: AppTheme.bodySmall.copyWith(
-                  color: AppTheme.orange500,
-                  fontWeight: FontWeight.w600,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(showBackButton: true, title: 'Уведомления'),
+            if (_unreadCount > 0)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16, bottom: 8),
+                  child: TextButton(
+                    onPressed: _markAllRead,
+                    child: Text(
+                      'Прочитать все',
+                      style: AppTheme.bodySmall.copyWith(
+                        color: AppTheme.orange500,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+            Expanded(
+              child: ListView.separated(
+                padding: AppTheme.screenPadding.copyWith(bottom: 32),
+                itemCount: _notifications.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final n = _notifications[index];
+                  return _NotificationTile(
+                    notification: n,
+                    onTap: () => _markRead(index),
+                  );
+                },
+              ),
             ),
-        ],
-      ),
-      body: ListView.separated(
-        padding: AppTheme.screenPadding.copyWith(bottom: 32),
-        itemCount: _notifications.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final n = _notifications[index];
-          return _NotificationTile(
-            notification: n,
-            onTap: () => _markRead(index),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 
@@ -43,14 +44,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      appBar: AppBar(
-        title: const Text('Настройки'),
-        backgroundColor: AppTheme.orange50,
-        foregroundColor: AppTheme.gray900,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-      body: ListView(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(showBackButton: true, title: 'Настройки'),
+            Expanded(
+              child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // ─── Auth Method Section ─────────────
@@ -147,6 +146,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    ),
+  ],
+        ),
       ),
     );
   }

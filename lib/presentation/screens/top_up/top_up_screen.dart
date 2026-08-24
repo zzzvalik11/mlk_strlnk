@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
 import 'package:telecom_dashboard/presentation/providers/balance_provider.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_view_model.dart';
@@ -46,14 +47,12 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      appBar: AppBar(
-        backgroundColor: AppTheme.orange50,
-        elevation: 0,
-        foregroundColor: AppTheme.gray900,
-        title: const Text('Пополнить баланс'),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(showBackButton: true, title: 'Пополнить баланс'),
+            Expanded(
+              child: SingleChildScrollView(
         padding: AppTheme.screenPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,6 +181,10 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
               ),
             ),
             const SizedBox(height: 16),
+          ],
+        ),
+      ),
+            ),
           ],
         ),
       ),

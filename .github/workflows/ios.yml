@@ -37,11 +37,16 @@ jobs:
       - name: Generate iOS platform files
         run: flutter create --platforms=ios .
 
+      - name: Verify iOS platform files
+        run: |
+          test -f ios/Podfile || (echo "Error: ios/Podfile not found after flutter create" && exit 1)
+          echo "iOS platform files OK"
+
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Install CocoaPods dependencies
-        run: cd ios && pod install
+        run: cd ios && pod install --repo-update
 
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign

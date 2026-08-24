@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
 import 'package:telecom_dashboard/core/widgets/error_state.dart';
 import 'package:telecom_dashboard/core/widgets/loading_spinner.dart';
@@ -17,14 +18,12 @@ class NewsDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      appBar: AppBar(
-        backgroundColor: AppTheme.orange50,
-        elevation: 0,
-        foregroundColor: AppTheme.gray900,
-        title: const Text('Новость'),
-        centerTitle: true,
-      ),
-      body: detailAsync.when(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppHeader(showBackButton: true, title: 'Новость'),
+            Expanded(
+              child: detailAsync.when(
         loading: () => const LoadingSpinner(),
         error: (e, _) => ErrorState(
           message: e.toString(),
@@ -117,6 +116,10 @@ class NewsDetailScreen extends ConsumerWidget {
               ],
             ),
           ),
+        ),
+      ),
+            ),
+          ],
         ),
       ),
     );

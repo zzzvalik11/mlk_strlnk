@@ -7,6 +7,7 @@ import 'package:telecom_dashboard/core/utils/date_formatter.dart';
 import 'package:telecom_dashboard/core/widgets/empty_state.dart';
 import 'package:telecom_dashboard/core/widgets/error_state.dart';
 import 'package:telecom_dashboard/core/widgets/loading_spinner.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/domain/entities/news_item.dart';
 import 'package:telecom_dashboard/presentation/screens/news/news_view_model.dart';
 
@@ -36,15 +37,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       child: CustomScrollView(
           slivers: [
             // ─── Title ───────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                child: Text(
-                  'Новости',
-                  style: AppTheme.headlineLarge,
-                ),
-              ),
-            ),
+            SliverToBoxAdapter(child: AppHeader(title: 'Новости')),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
             // ─── Content ──────────────────────
             switch (state) {

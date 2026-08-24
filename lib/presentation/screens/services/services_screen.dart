@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 
 /// Mock service plans for demonstration.
 class ServicePlan {
@@ -111,30 +113,34 @@ class _ServicesScreenState extends State<ServicesScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      appBar: AppBar(
-        title: const Text('Услуги и тарифы'),
-        backgroundColor: AppTheme.orange50,
-        foregroundColor: AppTheme.gray900,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppTheme.orange500,
-          unselectedLabelColor: AppTheme.gray500,
-          indicatorColor: AppTheme.orange500,
-          indicatorSize: TabBarIndicatorSize.label,
-          tabs: const [
-            Tab(text: 'Основные'),
-            Tab(text: 'Дополнительные'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Consumer(
+              builder: (context, ref, _) => const AppHeader(showBackButton: true, title: 'Услуги и тарифы'),
+            ),
+            TabBar(
+              controller: _tabController,
+              labelColor: AppTheme.orange500,
+              unselectedLabelColor: AppTheme.gray500,
+              indicatorColor: AppTheme.orange500,
+              indicatorSize: TabBarIndicatorSize.label,
+              tabs: const [
+                Tab(text: 'Основные'),
+                Tab(text: 'Дополнительные'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildPlanList(_mainPlans),
+                  _buildPlanList(_additionalPlans),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildPlanList(_mainPlans),
-          _buildPlanList(_additionalPlans),
-        ],
       ),
     );
   }
