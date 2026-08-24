@@ -69,10 +69,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // ─── Main screen — single route, tabs are LOCAL state ───
+      // ─── Main screen — DIAGNOSTIC RED TEST ───
       GoRoute(
         path: Routes.home,
-        builder: (context, state) => const MainScreen(),
+        builder: (context, state) => Scaffold(
+          backgroundColor: Colors.red,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.check_circle, color: Colors.white, size: 80),
+                SizedBox(height: 16),
+                Text('HOME ROUTE WORKS', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('If you see this, GoRouter redirect is fine.', style: TextStyle(color: Colors.white70, fontSize: 16)),
+              ],
+            ),
+          ),
+        ),
       ),
       // ─── Auth routes ───
       GoRoute(
