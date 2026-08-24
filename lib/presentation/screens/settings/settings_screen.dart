@@ -112,17 +112,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
             ),
-            child: ListTile(
-              leading: const Icon(Icons.logout_rounded, color: AppTheme.error),
-              title: const Text(
-                'Выйти из аккаунта',
-                style: TextStyle(
-                    color: AppTheme.error, fontWeight: FontWeight.w500),
+            clipBehavior: Clip.antiAlias,
+            child: Material(
+              color: Colors.transparent,
+              child: ListTile(
+                leading: const Icon(Icons.logout_rounded, color: AppTheme.error),
+                title: const Text(
+                  'Выйти из аккаунта',
+                  style: TextStyle(
+                      color: AppTheme.error, fontWeight: FontWeight.w500),
+                ),
+                onTap: () async {
+                  await ref.read(authProvider.notifier).logout();
+                  if (mounted) Navigator.of(context).pop();
+                },
               ),
-              onTap: () async {
-                await ref.read(authProvider.notifier).logout();
-                if (mounted) Navigator.of(context).pop();
-              },
             ),
           ),
           const SizedBox(height: 32),
@@ -167,7 +171,9 @@ class _AuthMethodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
       leading: Container(
         width: 44,
         height: 44,
@@ -189,6 +195,7 @@ class _AuthMethodTile extends StatelessWidget {
           ? const Icon(Icons.check_circle, color: AppTheme.orange500, size: 24)
           : const Icon(Icons.circle_outlined, color: AppTheme.gray300, size: 24),
       onTap: enabled ? onTap : null,
+    ),
     );
   }
 }

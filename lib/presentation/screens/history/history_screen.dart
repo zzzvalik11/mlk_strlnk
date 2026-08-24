@@ -25,6 +25,36 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     });
   }
 
+  Future<void> _pickDateRange(BuildContext context, HistoryNotifier notifier) async {
+    final initial = notifier.customRange ??
+        DateTimeRange(
+          start: DateTime.now().subtract(const Duration(days: 30)),
+          end: DateTime.now(),
+        );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      initialDateRange: initial,
+      locale: const Locale('ru'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.orange500,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.gray900,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      notifier.setCustomRange(picked);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(historyViewModelProvider);
@@ -42,21 +72,31 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       body: Column(
         children: [
           // ─── Period Filter ──────────────
-          Container(
+          SizedBox(
             height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: HistoryPeriod.values.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final p = HistoryPeriod.values[index];
                 final isActive = notifier.period == p;
+
+                // Build label: show date range for custom period
+                String label = p.label;
+                if (p == HistoryPeriod.custom && notifier.customRange != null) {
+                  final r = notifier.customRange!;
+                  label = '${DateFormatter.formatDate(r.start)} – ${DateFormatter.formatDate(r.end)}';
+                }
+
                 return Center(
                   child: ChoiceChip(
-                    label: Text(p.label),
+                    label: Text(label),
                     selected: isActive,
-                    onSelected: (_) => notifier.setPeriod(p),
+                    onSelected: p == HistoryPeriod.custom
+                        ? (_) => _pickDateRange(context, notifier)
+                        : (_) => notifier.setPeriod(p),
                     selectedColor: AppTheme.orange500.withOpacity(0.2),
                     labelStyle: TextStyle(
                       color: isActive ? AppTheme.orange500 : AppTheme.gray600,

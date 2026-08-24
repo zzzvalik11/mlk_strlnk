@@ -7,18 +7,21 @@ enum HistoryPeriod {
   month('Месяц'),
   quarter('Квартал'),
   year('Год'),
+  custom('Произвольно'),
   all('Всё время');
 
   const HistoryPeriod(this.label);
   final String label;
 
-  DateTime get from {
+  /// For custom period the caller must pass [customFrom].
+  DateTime from({DateTime? customFrom}) {
     final now = DateTime.now();
     return switch (this) {
       HistoryPeriod.week => now.subtract(const Duration(days: 7)),
       HistoryPeriod.month => DateTime(now.year, now.month - 1, now.day),
       HistoryPeriod.quarter => DateTime(now.year, now.month - 3, now.day),
       HistoryPeriod.year => DateTime(now.year - 1, now.month, now.day),
+      HistoryPeriod.custom => (customFrom ?? DateTime(now.year, now.month - 1, now.day)),
       HistoryPeriod.all => DateTime(2000),
     };
   }
@@ -70,6 +73,7 @@ class HistoryEmpty extends HistoryState {
 class HistoryNotifier extends StateNotifier<HistoryState> {
   final Ref _ref;
   HistoryPeriod _period = HistoryPeriod.month;
+  DateTimeRange? _customRange;
   int _page = 1;
   bool _hasMore = false;
   List<Transaction> _allTransactions = [];
@@ -77,6 +81,7 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
   HistoryNotifier(this._ref) : super(const HistoryInitial());
 
   HistoryPeriod get period => _period;
+  DateTimeRange? get customRange => _customRange;
 
   void setPeriod(HistoryPeriod newPeriod) {
     if (newPeriod == _period) return;
@@ -86,11 +91,19 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
     loadTransactions();
   }
 
+  void setCustomRange(DateTimeRange range) {
+    _period = HistoryPeriod.custom;
+    _customRange = range;
+    _page = 1;
+    _allTransactions = [];
+    loadTransactions();
+  }
+
   Future<void> loadTransactions() async {
     state = const HistoryLoading();
     try {
       final transactions = await _ref.read(transactionHistoryProvider.future);
-      final from = _period.from;
+      final from = _period.from(customFrom: _customRange?.start);
       _allTransactions = transactions.where((t) => !t.date.isBefore(from)).toList();
       _allTransactions.sort((a, b) => b.date.compareTo(a.date));
       _hasMore = _allTransactions.length > _page * 10;
