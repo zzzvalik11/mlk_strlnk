@@ -187,7 +187,16 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: widget.child,
+      body: Container(
+        color: Colors.red,
+        child: Center(
+          child: Text(
+            'SHELL BODY TEST',
+            style: TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+      // body: widget.child,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         screenWidth: screenWidth,
