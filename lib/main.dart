@@ -1,82 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
-import 'package:telecom_dashboard/data/local/storage_service.dart';
-import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
-import 'package:telecom_dashboard/presentation/router/app_router.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize SharedPreferences-backed storage before any provider uses it.
-  final storageService = StorageService();
-  await storageService.init();
-
-  runApp(
-    ProviderScope(
-      overrides: [
-        storageServiceProvider.overrideWithValue(storageService),
-      ],
-      child: const TelecomApp(),
-    ),
-  );
+void main() {
+  runApp(const _DiagnosticApp());
 }
 
-class TelecomApp extends ConsumerWidget {
-  const TelecomApp({super.key});
+/// DIAGNOSTIC: If you see GREEN screen with white text → code delivery works.
+/// If you still see orange/white blank screen → you are NOT running this code.
+class _DiagnosticApp extends StatelessWidget {
+  const _DiagnosticApp();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
-
-    return MaterialApp.router(
-      title: 'Starlink',
+  Widget build(BuildContext context) {
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      routerConfig: router,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: AppTheme.orange500,
-        scaffoldBackgroundColor: AppTheme.orange50,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppTheme.orange50,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.orange500,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: AppTheme.inputRadius,
-            borderSide: BorderSide(color: AppTheme.gray200),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: AppTheme.inputRadius,
-            borderSide: BorderSide(color: AppTheme.gray200),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: AppTheme.inputRadius,
-            borderSide: BorderSide(color: AppTheme.orange500, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-        ),
-        snackBarTheme: SnackBarThemeData(
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      home: Scaffold(
+        backgroundColor: Colors.green,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.check_circle, color: Colors.white, size: 80),
+              SizedBox(height: 24),
+              Text(
+                'CODE DELIVERY OK',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'If you see this, git pull works.',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+            ],
           ),
         ),
       ),
