@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/core/utils/responsive.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final double screenWidth;
 
   const BottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.screenWidth = 480,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isWide = screenWidth > AppBreakpoints.maxContentWidth;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -26,36 +31,41 @@ class BottomNavBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: AppTheme.bottomNavPadding,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.home_rounded,
-                label: 'Главная',
-                isActive: currentIndex == 0,
-                onTap: () => onTap(0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
+            child: Padding(
+              padding: AppTheme.bottomNavPadding,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _NavItem(
+                    icon: Icons.home_rounded,
+                    label: 'Главная',
+                    isActive: currentIndex == 0,
+                    onTap: () => onTap(0),
+                  ),
+                  _NavItem(
+                    icon: Icons.credit_card_rounded,
+                    label: 'Оплата',
+                    isActive: currentIndex == 1,
+                    onTap: () => onTap(1),
+                  ),
+                  _NavItem(
+                    icon: Icons.article_rounded,
+                    label: 'Новости',
+                    isActive: currentIndex == 2,
+                    onTap: () => onTap(2),
+                  ),
+                  _NavItem(
+                    icon: Icons.help_rounded,
+                    label: 'Поддержка',
+                    isActive: currentIndex == 3,
+                    onTap: () => onTap(3),
+                  ),
+                ],
               ),
-              _NavItem(
-                icon: Icons.credit_card_rounded,
-                label: 'Оплата',
-                isActive: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-              _NavItem(
-                icon: Icons.article_rounded,
-                label: 'Новости',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
-              ),
-              _NavItem(
-                icon: Icons.help_rounded,
-                label: 'Поддержка',
-                isActive: currentIndex == 3,
-                onTap: () => onTap(3),
-              ),
-            ],
+            ),
           ),
         ),
       ),

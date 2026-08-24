@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/core/utils/responsive.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/home/home_screen.dart';
@@ -169,11 +170,22 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = screenWidth > AppBreakpoints.maxContentWidth;
+
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: widget.child,
+      body: isWide
+          ? Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
+                child: widget.child,
+              ),
+            )
+          : widget.child,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
+        screenWidth: screenWidth,
         onTap: (index) {
           setState(() => _currentIndex = index);
           final routes = [

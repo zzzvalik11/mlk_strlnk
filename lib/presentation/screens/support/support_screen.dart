@@ -255,35 +255,41 @@ class _FaqItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: AppTheme.cardRadius,
-        boxShadow: AppTheme.cardShadow,
-      ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        shape: const Border(),
-        collapsedShape: const Border(),
-        title: Text(
-          question,
-          style: AppTheme.bodyLarge.copyWith(
-            fontWeight: FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: AppTheme.cardRadius,
+          boxShadow: AppTheme.cardShadow,
+        ),
+        child: Material(
+          color: Colors.white,
+          borderRadius: AppTheme.cardRadius,
+          clipBehavior: Clip.antiAlias,
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            shape: const Border(),
+            collapsedShape: const Border(),
+            title: Text(
+              question,
+              style: AppTheme.bodyLarge.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            trailing: Icon(
+              Icons.expand_more_rounded,
+              color: AppTheme.gray400,
+              size: 20,
+            ),
+            children: [
+              Text(
+                answer,
+                style: AppTheme.bodyMedium,
+              ),
+            ],
           ),
         ),
-        trailing: Icon(
-          Icons.expand_more_rounded,
-          color: AppTheme.gray400,
-          size: 20,
-        ),
-        children: [
-          Text(
-            answer,
-            style: AppTheme.bodyMedium,
-          ),
-        ],
       ),
     );
   }
