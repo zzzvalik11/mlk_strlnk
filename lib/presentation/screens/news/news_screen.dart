@@ -98,7 +98,6 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                 const SliverFillRemaining(child: LoadingSpinner()),
             },
           ],
-        ),
       ),
     );
   }

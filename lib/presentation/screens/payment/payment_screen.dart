@@ -128,7 +128,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               PaymentInitial() => const SliverFillRemaining(child: LoadingSpinner()),
             },
           ],
-        ),
       ),
     );
   }
