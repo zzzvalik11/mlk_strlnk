@@ -193,10 +193,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Баланс', style: AppTheme.bodySmall),
+                const Text('Баланс', style: AppTheme.bodySmall),
                 const SizedBox(height: 4),
                 Text(
-                  CurrencyFormatter.formatCurrency(state.balance.amount),
+                  '${state.balance.amount}',
                   style: AppTheme.balanceAmount.copyWith(fontSize: 48),
                 ),
                 if (state.balance.paidUntil != null) ...[
@@ -217,7 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.lock_rounded, size: 14, color: AppTheme.warning),
+                        const Icon(Icons.lock_rounded, size: 14, color: AppTheme.warning),
                         const SizedBox(width: 4),
                         Text('Тариф заморожен', style: AppTheme.bodySmall.copyWith(color: AppTheme.warning, fontWeight: FontWeight.w600)),
                       ],
@@ -256,7 +256,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               behavior: HitTestBehavior.opaque,
               child: Row(
                 children: [
-                  Text('Активные услуги', style: AppTheme.titleMedium),
+                  const Text('Активные услуги', style: AppTheme.titleMedium),
                   const Spacer(),
                   IconButton(
                     icon: Icon(
@@ -273,12 +273,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            ...state.services.map(
-              (s) => Padding(
+            for (int i = 0; i < state.services.length; i++)
+              Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: ServiceCard(service: s),
+                child: Text('Service ${i + 1}: ${state.services[i].name} (${state.services[i].cost})'),
               ),
-            ),
           ],
         ],
       ),
