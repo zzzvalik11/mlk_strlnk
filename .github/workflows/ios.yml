@@ -35,12 +35,11 @@ jobs:
         run: flutter pub get
 
       - name: Generate iOS platform files
-        run: flutter create --platforms=ios .
-
-      - name: Verify iOS platform files
         run: |
-          test -f ios/Podfile || (echo "Error: ios/Podfile not found after flutter create" && exit 1)
-          echo "iOS platform files OK"
+          flutter create --platforms=ios,android .
+          echo "--- ios/ contents after flutter create ---"
+          ls -la ios/ || echo "ios/ directory NOT created"
+          test -f ios/Podfile || (echo "FATAL: ios/Podfile still missing" && exit 1)
 
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs

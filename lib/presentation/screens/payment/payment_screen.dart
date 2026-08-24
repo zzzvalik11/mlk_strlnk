@@ -5,6 +5,7 @@ import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/core/widgets/empty_state.dart';
 import 'package:telecom_dashboard/core/widgets/error_state.dart';
 import 'package:telecom_dashboard/core/widgets/loading_spinner.dart';
@@ -36,17 +37,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       onRefresh: () => ref.read(paymentViewModelProvider.notifier).refresh(),
       child: CustomScrollView(
         slivers: [
-            // ─── Title ─────────────────────────
+            // ─── Header ─────────────────────────
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                child: Text(
-                  'Оплата',
-                  style: AppTheme.headlineLarge,
-                ),
-              ),
+              child: AppHeader(showBackButton: true, title: 'Оплата'),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
             // ─── Quick Action Cards ─────────────
             SliverToBoxAdapter(
               child: Padding(
