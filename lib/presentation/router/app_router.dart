@@ -146,19 +146,11 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: Container(
-        color: Colors.yellow,
-        child: const Center(
-          child: Text('BODY TEST', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-        ),
-      ),
+      body: _buildCurrentTab(),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentTab,
-        screenWidth: screenWidth,
         onTap: (index) {
           setState(() => _currentTab = index);
         },
