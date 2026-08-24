@@ -251,6 +251,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
+          ),
           // ─── Active Services ──────────
           if (state.services.isNotEmpty) ...[
             const SizedBox(height: 24),
