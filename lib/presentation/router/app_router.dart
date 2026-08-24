@@ -23,7 +23,8 @@ import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar
 
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(this._ref) {
-    _ref.listen(authProvider, (_, __) {
+    _ref.listen(authProvider, (_, next) {
+      debugPrint('🔵 AUTH CHANGE: ${next.runtimeType}');
       notifyListeners();
     });
   }
@@ -44,48 +45,36 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final loc = state.matchedLocation;
       final isLoginRoute = loc == Routes.login;
-      final isSupportRoute = loc == Routes.support;
-      final isQuickLoginRoute = loc == Routes.quickLogin;
-      final isAuthMethodRoute = loc == Routes.authMethodSelection;
+      final isPublicRoute = loc == Routes.support ||
+          loc == Routes.quickLogin ||
+          loc == Routes.authMethodSelection;
 
       debugPrint('🔵 REDIRECT: loc=$loc auth=$isAuthenticated isLoading=$isLoading');
 
-      // Public routes (no auth required)
-      if (isSupportRoute || isQuickLoginRoute || isAuthMethodRoute) return null;
+      // Public routes — always accessible
+      if (isPublicRoute) return null;
 
-      // Not authenticated and not loading → login
+      // Not authenticated and not loading → redirect to login
       if (!isAuthenticated && !isLoading && !isLoginRoute) {
         debugPrint('🔵 REDIRECT → login');
         return Routes.login;
       }
 
-      // Authenticated and on login → main
+      // Authenticated and on login → redirect to home
       if (isAuthenticated && isLoginRoute) {
-        debugPrint('🔵 REDIRECT → home (user authenticated)');
+        debugPrint('🔵 REDIRECT → home');
         return Routes.home;
       }
 
       return null;
     },
     routes: [
-      // ─── Main screen with tabs (NO ShellRoute) ───
+      // ─── Main screen — single route, tabs are LOCAL state ───
       GoRoute(
         path: Routes.home,
         builder: (context, state) => const MainScreen(),
       ),
-      GoRoute(
-        path: Routes.payment,
-        builder: (context, state) => const MainScreen(initialTab: 1),
-      ),
-      GoRoute(
-        path: Routes.news,
-        builder: (context, state) => const MainScreen(initialTab: 2),
-      ),
-      GoRoute(
-        path: Routes.support,
-        builder: (context, state) => const MainScreen(initialTab: 3),
-      ),
-      // Auth routes
+      // ─── Auth routes ───
       GoRoute(
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
@@ -98,7 +87,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.authMethodSelection,
         builder: (context, state) => const AuthMethodSelectionScreen(),
       ),
-      // App routes
+      // ─── Public route (accessible from login) ───
+      GoRoute(
+        path: Routes.support,
+        builder: (context, state) => const SupportScreen(),
+      ),
+      // ─── Detail / push routes ───
       GoRoute(
         path: Routes.topUp,
         builder: (context, state) => const TopUpScreen(),
@@ -133,31 +127,30 @@ final routerProvider = Provider<GoRouter>((ref) {
 // ─── Main Screen with Tab Navigation ─────────────────────
 
 class MainScreen extends StatefulWidget {
-  final int initialTab;
-
-  const MainScreen({super.key, this.initialTab = 0});
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  late int _currentTab;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentTab = widget.initialTab;
-  }
+  int _currentTab = 0;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    debugPrint('🟢 MainScreen.build() tab=$_currentTab');
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: _buildCurrentTab(),
+      body: IndexedStack(
+        index: _currentTab,
+        children: const [
+          HomeScreen(),
+          PaymentScreen(),
+          NewsScreen(),
+          SupportScreen(),
+        ],
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentTab,
         screenWidth: screenWidth,
@@ -166,20 +159,5 @@ class _MainScreenState extends State<MainScreen> {
         },
       ),
     );
-  }
-
-  Widget _buildCurrentTab() {
-    switch (_currentTab) {
-      case 0:
-        return const HomeScreen();
-      case 1:
-        return const PaymentScreen();
-      case 2:
-        return const NewsScreen();
-      case 3:
-        return const SupportScreen();
-      default:
-        return const HomeScreen();
-    }
   }
 }

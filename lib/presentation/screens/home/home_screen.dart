@@ -196,7 +196,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const Text('Баланс', style: AppTheme.bodySmall),
                 const SizedBox(height: 4),
                 Text(
-                  '${state.balance.amount}',
+                  CurrencyFormatter.formatCurrency(state.balance.amount),
                   style: AppTheme.balanceAmount.copyWith(fontSize: 48),
                 ),
                 if (state.balance.paidUntil != null) ...[
@@ -273,11 +273,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            for (int i = 0; i < state.services.length; i++)
-              Padding(
+            ...state.services.map(
+              (s) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text('Service ${i + 1}: ${state.services[i].name} (${state.services[i].cost})'),
+                child: ServiceCard(service: s),
               ),
+            ),
           ],
         ],
       ),
