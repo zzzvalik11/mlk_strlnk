@@ -152,7 +152,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             ),
                           ),
                           onPressed: _showCustomRangePicker,
-                          selectedColor: AppTheme.orange500.withOpacity(0.2),
                           side: isCustom
                               ? BorderSide(color: AppTheme.orange500)
                               : null,
