@@ -20,13 +20,24 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const int _unreadNotifications = 2;
+  bool _dashboardLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    // Defer to first frame so ref is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(homeViewModelProvider.notifier).loadDashboard();
+      _tryLoadDashboard();
     });
+  }
+
+  /// Load dashboard data only when user is authenticated.
+  void _tryLoadDashboard() {
+    final authState = ref.read(authProvider);
+    final user = authState.valueOrNull;
+    if (user != null && !_dashboardLoaded) {
+      ref.read(homeViewModelProvider.notifier).loadDashboard();
+    }
   }
 
   @override
@@ -34,6 +45,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final homeState = ref.watch(homeViewModelProvider);
     final authState = ref.watch(authProvider);
     final user = authState.valueOrNull;
+
+    // Re-trigger load when user becomes available
+    ref.listen(authProvider, (prev, next) {
+      if (next.valueOrNull != null && !_dashboardLoaded) {
+        _tryLoadDashboard();
+      }
+    });
 
     return RefreshIndicator(
       color: AppTheme.orange500,
@@ -43,21 +61,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ─── AppBar ───────────────────
-            _buildAppBar(user, homeState),
-            // ─── State Content ───────────
-            if (homeState is HomeLoading || homeState is HomeInitial)
-              const SizedBox(
-                height: 400,
-                child: Center(child: LoadingSpinner()),
-              )
+            // ─── AppBar (always visible) ───
+            _buildAppBar(user),
+            // ─── State Content ───
+            if (homeState is HomeLoaded)
+              _buildContent(homeState)
             else if (homeState is HomeError)
-              SizedBox(
-                height: 400,
-                child: _buildErrorState(homeState.message),
-              )
-            else if (homeState is HomeLoaded)
-              _buildContent(homeState),
+              _buildErrorState(homeState.message)
+            else
+              _buildLoadingState(),
             const SizedBox(height: 100),
           ],
         ),
@@ -67,11 +79,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ─── AppBar ──────────────────────────────────────
 
-  Widget _buildAppBar(User? user, HomeState homeState) {
+  Widget _buildAppBar(User? user) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
       child: Row(
         children: [
+          // Avatar
           Container(
             width: 48,
             height: 48,
@@ -103,10 +116,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppTheme.gray500, fontWeight: FontWeight.w600, letterSpacing: 1.5,
                   ),
                 ),
-                Text(user?.fullName ?? '', style: AppTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  user?.fullName ?? '',
+                  style: AppTheme.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
+          // Notifications
           Stack(
             children: [
               IconButton(
@@ -120,13 +139,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onPressed: () => context.push(Routes.notifications),
               ),
               if (_unreadNotifications > 0)
-                Positioned(
+                const Positioned(
                   right: 8, top: 8,
-                  child: Container(
+                  child: SizedBox(
                     width: 10, height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
@@ -148,9 +169,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // ─── Loading State ───────────────────────────────
+
+  Widget _buildLoadingState() {
+    return const SizedBox(
+      height: 400,
+      child: Center(child: LoadingSpinner()),
+    );
+  }
+
   // ─── Dashboard Content ───────────────────────────
 
   Widget _buildContent(HomeLoaded state) {
+    _dashboardLoaded = true;
     final isFrozen = state.isLocked;
     return Padding(
       padding: AppTheme.screenPadding,
@@ -220,7 +251,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
-          ),
           // ─── Active Services ──────────
           if (state.services.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -365,21 +395,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildErrorState(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.error),
-            const SizedBox(height: 16),
-            Text(message, style: AppTheme.bodyMedium, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => ref.read(homeViewModelProvider.notifier).refresh(),
-              child: const Text('Повторить'),
-            ),
-          ],
+    return SizedBox(
+      height: 400,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.error),
+              const SizedBox(height: 16),
+              Text(message, style: AppTheme.bodyMedium, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  _dashboardLoaded = false;
+                  ref.read(homeViewModelProvider.notifier).refresh();
+                },
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
         ),
       ),
     );

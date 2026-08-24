@@ -42,15 +42,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     refreshListenable: authNotifier,
     redirect: (context, state) {
-      // Use ref.read (not ref.watch) — we are notified via refreshListenable.
       final authState = ref.read(authProvider);
       final isAuthenticated = authState.valueOrNull != null;
       final isLoading = authState is AsyncLoading;
 
-      final isLoginRoute = state.matchedLocation == Routes.login;
-      final isSupportRoute = state.matchedLocation == Routes.support;
-      final isQuickLoginRoute = state.matchedLocation == Routes.quickLogin;
-      final isAuthMethodRoute = state.matchedLocation == Routes.authMethodSelection;
+      final loc = state.matchedLocation;
+      final isLoginRoute = loc == Routes.login;
+      final isSupportRoute = loc == Routes.support;
+      final isQuickLoginRoute = loc == Routes.quickLogin;
+      final isAuthMethodRoute = loc == Routes.authMethodSelection;
 
       // Public routes (no auth required)
       if (isSupportRoute || isQuickLoginRoute || isAuthMethodRoute) return null;
@@ -70,7 +70,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       ShellRoute(
         builder: (context, state, child) {
-          // Determine tab index from location
           final location = state.matchedLocation;
           int idx = 0;
           if (location.startsWith(Routes.payment)) idx = 1;
@@ -78,6 +77,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (location.startsWith(Routes.support)) idx = 3;
 
           return _ShellWrapper(
+            key: ValueKey(location),
             initialIndex: idx,
             child: child,
           );
@@ -85,27 +85,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: Routes.home,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeScreen(),
-            ),
+            builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
             path: Routes.payment,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: PaymentScreen(),
-            ),
+            builder: (context, state) => const PaymentScreen(),
           ),
           GoRoute(
             path: Routes.news,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: NewsScreen(),
-            ),
+            builder: (context, state) => const NewsScreen(),
           ),
           GoRoute(
             path: Routes.support,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: SupportScreen(),
-            ),
+            builder: (context, state) => const SupportScreen(),
           ),
         ],
       ),
@@ -156,12 +148,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 // ─── Shell Wrapper ──────────────────────────────────────────
 
-/// Wraps shell children with a [BottomNavBar] and manages tab state.
 class _ShellWrapper extends StatefulWidget {
   final Widget child;
   final int initialIndex;
 
-  const _ShellWrapper({required this.child, required this.initialIndex});
+  const _ShellWrapper({super.key, required this.child, required this.initialIndex});
 
   @override
   State<_ShellWrapper> createState() => _ShellWrapperState();
@@ -190,24 +181,7 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth <= AppBreakpoints.maxContentWidth) {
-            return widget.child;
-          }
-          return Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
-              child: SizedBox(
-                width: double.infinity,
-                height: constraints.maxHeight,
-                child: widget.child,
-              ),
-            ),
-          );
-        },
-      ),
+      body: child,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         screenWidth: screenWidth,
@@ -222,6 +196,28 @@ class _ShellWrapperState extends State<_ShellWrapper> {
           context.go(routes[index]);
         },
       ),
+    );
+  }
+
+  /// Responsive wrapper for wide screens only.
+  Widget get child {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth <= AppBreakpoints.maxContentWidth) {
+          return widget.child;
+        }
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
+            child: SizedBox(
+              width: double.infinity,
+              height: constraints.maxHeight,
+              child: widget.child,
+            ),
+          ),
+        );
+      },
     );
   }
 }
