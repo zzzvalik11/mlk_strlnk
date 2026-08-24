@@ -33,60 +33,77 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
     return RefreshIndicator(
       color: AppTheme.orange500,
       onRefresh: () => ref.read(newsListViewModelProvider.notifier).refresh(),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Новости', style: AppTheme.headlineLarge),
+      child: CustomScrollView(
+          slivers: [
+            // ─── Title ───────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                child: Text(
+                  'Новости',
+                  style: AppTheme.headlineLarge,
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            // ─── Content ──────────────────────
             switch (state) {
-              NewsListLoading() => const SizedBox(height: 300, child: Center(child: LoadingSpinner())),
-              NewsListError(:final message) => SizedBox(
-                height: 300,
-                child: ErrorState(message: message, onRetry: () => ref.read(newsListViewModelProvider.notifier).refresh()),
-              ),
-              NewsListEmpty() => const SizedBox(
-                height: 300,
-                child: EmptyState(icon: Icons.article_outlined, message: 'Нет новостей', subtitle: 'Здесь появятся новости и обновления'),
-              ),
-              NewsListLoaded(:final items, :final hasMore) => Column(
-                children: [
-                  for (int i = 0; i < items.length; i++)
-                    Padding(
-                      padding: EdgeInsets.only(left: 16, right: 16, bottom: i < items.length - 1 ? 10 : 0),
-                      child: _NewsListItem(
-                        item: items[i],
-                        onTap: () => context.push('${Routes.news}/${items[i].id}'),
-                      ),
-                    ),
-                  if (hasMore)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Center(
-                        child: TextButton(
-                          onPressed: () => ref.read(newsListViewModelProvider.notifier).loadMore(),
-                          child: const Text('Загрузить ещё'),
+              NewsListLoading() =>
+                const SliverFillRemaining(child: LoadingSpinner()),
+              NewsListError(:final message) => SliverFillRemaining(
+                  child: ErrorState(
+                    message: message,
+                    onRetry: () =>
+                        ref.read(newsListViewModelProvider.notifier).refresh(),
+                  ),
+                ),
+              NewsListEmpty() => SliverFillRemaining(
+                  child: const EmptyState(
+                    icon: Icons.article_outlined,
+                    message: 'Нет новостей',
+                    subtitle: 'Здесь появятся новости и обновления',
+                  ),
+                ),
+              NewsListLoaded(:final items, :final hasMore) => SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index == items.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: TextButton(
+                              onPressed: () => ref.read(newsListViewModelProvider.notifier).loadMore(),
+                              child: const Text('Загрузить ещё'),
+                            ),
+                          ),
+                        );
+                      }
+                      final item = items[index];
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          bottom: index < items.length - 1 ? 10 : 80,
                         ),
-                      ),
-                    ),
-                ],
-              ),
-              NewsListInitial() => const SizedBox(height: 300, child: Center(child: LoadingSpinner())),
+                        child: _NewsListItem(
+                          item: item,
+                          onTap: () => context.push('${Routes.news}/${item.id}'),
+                        ),
+                      );
+                    },
+                    childCount: items.length + (hasMore ? 1 : 0),
+                  ),
+                ),
+              NewsListInitial() =>
+                const SliverFillRemaining(child: LoadingSpinner()),
             },
-            const SizedBox(height: 100),
           ],
-        ),
       ),
     );
   }
 }
 
-// ─── News List Item ───────────────────────────────────
+// ─── News List Item ───────────────────────────────────────
 
 class _NewsListItem extends StatelessWidget {
   final NewsItem item;
@@ -108,6 +125,7 @@ class _NewsListItem extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // Icon
             Container(
               width: 44,
               height: 44,
@@ -115,9 +133,14 @@ class _NewsListItem extends StatelessWidget {
                 color: AppTheme.orange500.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.article_rounded, color: AppTheme.orange500, size: 22),
+              child: const Icon(
+                Icons.article_rounded,
+                color: AppTheme.orange500,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
+            // Title + meta
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,19 +154,33 @@ class _NewsListItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(DateFormatter.formatDate(item.publishedAt), style: AppTheme.labelSmall),
+                      Text(
+                        DateFormatter.formatDate(item.publishedAt),
+                        style: AppTheme.labelSmall,
+                      ),
                       if (item.readCount != null) ...[
                         const SizedBox(width: 8),
-                        Icon(Icons.visibility_outlined, size: 12, color: AppTheme.gray400),
+                        Icon(
+                          Icons.visibility_outlined,
+                          size: 12,
+                          color: AppTheme.gray400,
+                        ),
                         const SizedBox(width: 2),
-                        Text('${item.readCount}', style: AppTheme.labelSmall),
+                        Text(
+                          '${item.readCount}',
+                          style: AppTheme.labelSmall,
+                        ),
                       ],
                     ],
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppTheme.gray400, size: 20),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.gray400,
+              size: 20,
+            ),
           ],
         ),
       ),

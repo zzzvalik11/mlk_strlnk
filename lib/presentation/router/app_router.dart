@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
+import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/home/home_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/login/auth_method_selection_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/login/login_screen.dart';
@@ -16,47 +17,33 @@ import 'package:telecom_dashboard/presentation/screens/services/services_screen.
 import 'package:telecom_dashboard/presentation/screens/settings/settings_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/support/support_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_screen.dart';
-import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar.dart';
 
 // ─── Router Provider ────────────────────────────────────────
 
-class _AuthChangeNotifier extends ChangeNotifier {
-  _AuthChangeNotifier(this._ref) {
-    _ref.listen(authProvider, (_, next) {
-      notifyListeners();
-    });
-  }
-  final Ref _ref;
-}
-
 final routerProvider = Provider<GoRouter>((ref) {
-  final authNotifier = _AuthChangeNotifier(ref);
+  final authState = ref.watch(authProvider);
+  final isAuthenticated = authState.valueOrNull != null;
+  final isLoading = authState is AsyncLoading;
 
   return GoRouter(
-    initialLocation: Routes.login,
+    initialLocation: Routes.home,
     debugLogDiagnostics: true,
-    refreshListenable: authNotifier,
     redirect: (context, state) {
-      final authState = ref.read(authProvider);
-      final isAuthenticated = authState.valueOrNull != null;
-      final isLoading = authState is AsyncLoading;
+      final isLoginRoute = state.matchedLocation == Routes.login;
+      final isSupportRoute = state.matchedLocation == Routes.support;
+      final isQuickLoginRoute = state.matchedLocation == Routes.quickLogin;
+      final isAuthMethodRoute = state.matchedLocation == Routes.authMethodSelection;
 
-      final loc = state.matchedLocation;
-      final isLoginRoute = loc == Routes.login;
-      final isPublicRoute = loc == Routes.support ||
-          loc == Routes.quickLogin ||
-          loc == Routes.authMethodSelection;
+      // Public routes (no auth required)
+      if (isSupportRoute || isQuickLoginRoute || isAuthMethodRoute) return null;
 
-      // Public routes — always accessible
-      if (isPublicRoute) return null;
-
-      // Not authenticated and not loading → redirect to login
+      // Not authenticated → login
       if (!isAuthenticated && !isLoading && !isLoginRoute) {
         return Routes.login;
       }
 
-      // Authenticated and on login → redirect to home
+      // Authenticated and on login → home
       if (isAuthenticated && isLoginRoute) {
         return Routes.home;
       }
@@ -64,12 +51,48 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // ─── Main screen ───
-      GoRoute(
-        path: Routes.home,
-        builder: (context, state) => const MainScreen(),
+      ShellRoute(
+        builder: (context, state, child) {
+          // Determine tab index from location
+          final location = state.matchedLocation;
+          int idx = 0;
+          if (location.startsWith(Routes.payment)) idx = 1;
+          if (location.startsWith(Routes.news)) idx = 2;
+          if (location.startsWith(Routes.support)) idx = 3;
+
+          return _ShellWrapper(
+            initialIndex: idx,
+            child: child,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: Routes.home,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: HomeScreen(),
+            ),
+          ),
+          GoRoute(
+            path: Routes.payment,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: PaymentScreen(),
+            ),
+          ),
+          GoRoute(
+            path: Routes.news,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: NewsScreen(),
+            ),
+          ),
+          GoRoute(
+            path: Routes.support,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: SupportScreen(),
+            ),
+          ),
+        ],
       ),
-      // ─── Auth routes ───
+      // Auth routes
       GoRoute(
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
@@ -82,25 +105,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.authMethodSelection,
         builder: (context, state) => const AuthMethodSelectionScreen(),
       ),
-      // ─── Public route (from login screen link) ───
-      GoRoute(
-        path: Routes.support,
-        builder: (context, state) => Scaffold(
-          backgroundColor: AppTheme.orange50,
-          appBar: AppBar(
-            backgroundColor: AppTheme.orange50,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: () => context.go(Routes.login),
-            ),
-            title: const Text('Поддержка'),
-          ),
-          body: const SupportScreen(),
-        ),
-      ),
-      // ─── Detail routes ───
+      // App routes
       GoRoute(
         path: Routes.topUp,
         builder: (context, state) => const TopUpScreen(),
@@ -132,44 +137,54 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// ─── Main Screen with Tab Navigation ─────────────────────
+// ─── Shell Wrapper ──────────────────────────────────────────
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+/// Wraps shell children with a [BottomNavBar] and manages tab state.
+class _ShellWrapper extends StatefulWidget {
+  final Widget child;
+  final int initialIndex;
+
+  const _ShellWrapper({required this.child, required this.initialIndex});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<_ShellWrapper> createState() => _ShellWrapperState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  int _currentTab = 0;
+class _ShellWrapperState extends State<_ShellWrapper> {
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ShellWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialIndex != oldWidget.initialIndex) {
+      _currentIndex = widget.initialIndex;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: _buildCurrentTab(),
+      body: widget.child,
       bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentTab,
+        currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() => _currentTab = index);
+          setState(() => _currentIndex = index);
+          final routes = [
+            Routes.home,
+            Routes.payment,
+            Routes.news,
+            Routes.support,
+          ];
+          context.go(routes[index]);
         },
       ),
     );
-  }
-
-  Widget _buildCurrentTab() {
-    switch (_currentTab) {
-      case 0:
-        return const HomeScreen();
-      case 1:
-        return const PaymentScreen();
-      case 2:
-        return const NewsScreen();
-      case 3:
-        return const SupportScreen();
-      default:
-        return const HomeScreen();
-    }
   }
 }

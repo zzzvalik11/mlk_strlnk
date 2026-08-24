@@ -51,9 +51,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final formState = ref.watch(loginViewModelProvider);
     final isSubmitting = formState is LoginFormSubmitting;
 
-    // Listen for success — navigation is handled by GoRouter redirect.
+    // Listen for success and navigate.
     ref.listen<LoginFormState>(loginViewModelProvider, (prev, next) {
-      if (next is LoginFormNeedsMethodSelection) {
+      if (next is LoginFormSuccess) {
+        context.go(Routes.home);
+      } else if (next is LoginFormNeedsMethodSelection) {
         context.go(Routes.authMethodSelection);
       }
     });

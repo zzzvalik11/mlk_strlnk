@@ -58,7 +58,13 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
       );
       if (didAuth) {
         await ref.read(authProvider.notifier).authenticateWithBiometric();
-        // Navigation is handled by GoRouter redirect.
+        final authState = ref.read(authProvider);
+        if (!mounted) return;
+        if (authState.valueOrNull != null) {
+          context.go(Routes.home);
+        } else if (authState.hasError) {
+          setState(() => _error = authState.error.toString());
+        }
       }
     } on PlatformException catch (e) {
       setState(() => _error = _mapBioError(e.message));
@@ -87,9 +93,11 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
     final localSource = ref.read(userLocalSourceProvider);
     final method = localSource.getAuthMethod() ?? AuthMethod.pin;
 
-    // Listen for auth errors — navigation is handled by GoRouter redirect.
+    // Listen for auth success
     ref.listen<AsyncValue>(authProvider, (prev, next) {
-      if (next.hasError) {
+      if (next.valueOrNull != null) {
+        context.go(Routes.home);
+      } else if (next.hasError) {
         setState(() => _error = next.error.toString());
       }
     });

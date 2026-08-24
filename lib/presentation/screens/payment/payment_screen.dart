@@ -34,86 +34,100 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     return RefreshIndicator(
       color: AppTheme.orange500,
       onRefresh: () => ref.read(paymentViewModelProvider.notifier).refresh(),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Оплата', style: AppTheme.headlineLarge),
-            ),
-            const SizedBox(height: 20),
-            // ─── Quick Action Cards ───
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.4,
-                children: [
-                  _QuickAction(
-                    icon: Icons.account_balance_wallet_rounded,
-                    label: 'Оплата услуг',
-                    color: AppTheme.orange500,
-                    onTap: () => context.push(Routes.topUp),
-                  ),
-                  const _QuickAction(
-                    icon: Icons.send_rounded,
-                    label: 'Перевод',
-                    color: AppTheme.info,
-                  ),
-                  const _QuickAction(
-                    icon: Icons.smartphone_rounded,
-                    label: 'Привязать карту',
-                    color: AppTheme.success,
-                  ),
-                  const _QuickAction(
-                    icon: Icons.local_offer_rounded,
-                    label: 'Промокод',
-                    color: AppTheme.warning,
-                  ),
-                ],
+      child: CustomScrollView(
+        slivers: [
+            // ─── Title ─────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                child: Text(
+                  'Оплата',
+                  style: AppTheme.headlineLarge,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Последние операции', style: AppTheme.titleMedium),
-            ),
-            const SizedBox(height: 12),
-            // ─── State Content ───
-            switch (state) {
-              PaymentLoading() => const SizedBox(height: 300, child: Center(child: LoadingSpinner())),
-              PaymentError(:final message) => SizedBox(
-                height: 300,
-                child: ErrorState(message: message, onRetry: () => ref.read(paymentViewModelProvider.notifier).refresh()),
-              ),
-              PaymentEmpty() => const SizedBox(
-                height: 300,
-                child: EmptyState(icon: Icons.receipt_long_rounded, message: 'Нет операций'),
-              ),
-              PaymentLoaded(:final recentTransactions) => Padding(
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            // ─── Quick Action Cards ─────────────
+            SliverToBoxAdapter(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 1.4,
                   children: [
-                    for (int i = 0; i < recentTransactions.length; i++)
-                      Padding(
-                        padding: EdgeInsets.only(bottom: i < recentTransactions.length - 1 ? 8 : 0),
-                        child: _TransactionItem(transaction: recentTransactions[i]),
-                      ),
+                    _QuickAction(
+                      icon: Icons.account_balance_wallet_rounded,
+                      label: 'Оплата услуг',
+                      color: AppTheme.orange500,
+                      onTap: () => context.push(Routes.topUp),
+                    ),
+                    const _QuickAction(
+                      icon: Icons.send_rounded,
+                      label: 'Перевод',
+                      color: AppTheme.info,
+                    ),
+                    const _QuickAction(
+                      icon: Icons.smartphone_rounded,
+                      label: 'Привязать карту',
+                      color: AppTheme.success,
+                    ),
+                    const _QuickAction(
+                      icon: Icons.local_offer_rounded,
+                      label: 'Промокод',
+                      color: AppTheme.warning,
+                    ),
                   ],
                 ),
               ),
-              PaymentInitial() => const SizedBox(height: 300, child: Center(child: LoadingSpinner())),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            // ─── Recent Transactions ────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Последние операции',
+                  style: AppTheme.titleMedium,
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            switch (state) {
+              PaymentLoading() => const SliverFillRemaining(child: LoadingSpinner()),
+              PaymentError(:final message) => SliverFillRemaining(
+                  child: ErrorState(
+                    message: message,
+                    onRetry: () =>
+                        ref.read(paymentViewModelProvider.notifier).refresh(),
+                  ),
+                ),
+              PaymentEmpty() => SliverFillRemaining(
+                  child: const EmptyState(
+                    icon: Icons.receipt_long_rounded,
+                    message: 'Нет операций',
+                  ),
+                ),
+              PaymentLoaded(:final recentTransactions) => SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: index < recentTransactions.length - 1 ? 8 : 80,
+                      ),
+                      child: _TransactionItem(
+                          transaction: recentTransactions[index]),
+                    ),
+                    childCount: recentTransactions.length,
+                  ),
+                ),
+              PaymentInitial() => const SliverFillRemaining(child: LoadingSpinner()),
             },
-            const SizedBox(height: 100),
           ],
-        ),
       ),
     );
   }
@@ -172,7 +186,9 @@ class _QuickAction extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   label,
-                  style: AppTheme.bodyMedium.copyWith(fontWeight: FontWeight.w500),
+                  style: AppTheme.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -205,14 +221,18 @@ class _TransactionItem extends StatelessWidget {
     return Container(
       padding: AppTheme.cardPaddingSmall,
       decoration: BoxDecoration(
-        color: Colors.white, borderRadius: AppTheme.cardRadius, boxShadow: AppTheme.cardShadow,
+        color: Colors.white,
+        borderRadius: AppTheme.cardRadius,
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Row(
         children: [
           Container(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: _iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10),
+              color: _iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(_icon, color: _iconColor, size: 20),
           ),
@@ -221,8 +241,16 @@ class _TransactionItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(transaction.description, style: AppTheme.bodyLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(DateFormatter.formatDate(transaction.date), style: AppTheme.labelSmall),
+                Text(
+                  transaction.description,
+                  style: AppTheme.bodyLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  DateFormatter.formatDate(transaction.date),
+                  style: AppTheme.labelSmall,
+                ),
               ],
             ),
           ),
@@ -238,17 +266,29 @@ class _TransactionItem extends StatelessWidget {
     );
   }
 
-  IconData get _icon => switch (transaction.type) {
-    TransactionType.topUp => Icons.add_circle_outline_rounded,
-    TransactionType.payment => Icons.payment_rounded,
-    TransactionType.refund => Icons.undo_rounded,
-    TransactionType.bonus => Icons.card_giftcard_rounded,
-  };
+  IconData get _icon {
+    switch (transaction.type) {
+      case TransactionType.topUp:
+        return Icons.add_circle_outline_rounded;
+      case TransactionType.payment:
+        return Icons.payment_rounded;
+      case TransactionType.refund:
+        return Icons.undo_rounded;
+      case TransactionType.bonus:
+        return Icons.card_giftcard_rounded;
+    }
+  }
 
-  Color get _iconColor => switch (transaction.type) {
-    TransactionType.topUp => AppTheme.success,
-    TransactionType.payment => AppTheme.orange500,
-    TransactionType.refund => AppTheme.info,
-    TransactionType.bonus => AppTheme.warning,
-  };
+  Color get _iconColor {
+    switch (transaction.type) {
+      case TransactionType.topUp:
+        return AppTheme.success;
+      case TransactionType.payment:
+        return AppTheme.orange500;
+      case TransactionType.refund:
+        return AppTheme.info;
+      case TransactionType.bonus:
+        return AppTheme.warning;
+    }
+  }
 }

@@ -21,7 +21,7 @@ dependencies:
   dio: ^5.4.3
 
   # Serialization
-  freezed_annotation: any
+  freezed_annotation: ^2.4.4
   json_annotation: ^4.12.0
   fpdart: ^1.1.0
 

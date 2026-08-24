@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
-import 'package:telecom_dashboard/core/utils/responsive.dart';
 import 'package:telecom_dashboard/core/widgets/empty_state.dart';
 import 'package:telecom_dashboard/core/widgets/error_state.dart';
 import 'package:telecom_dashboard/core/widgets/loading_spinner.dart';
@@ -26,68 +25,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     });
   }
 
-  Future<void> _showCustomRangePicker() async {
-    final now = DateTime.now();
-    final initialRange = DateTimeRange(
-      start: DateTime(now.year, now.month - 1, now.day),
-      end: now,
-    );
-
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: now,
-      initialDateRange: initialRange,
-      initialEntryMode: DatePickerEntryMode.calendar,
-      locale: const Locale('ru'),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.orange500,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppTheme.gray900,
-            ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.white,
-              foregroundColor: AppTheme.gray900,
-              elevation: 0,
-            ),
-          ),
-          child: child!,
-        );
-      },
-      textDirection: TextDirection.ltr,
-    );
-
-    if (picked != null) {
-      ref.read(historyViewModelProvider.notifier).setCustomRange(picked);
-    }
-  }
-
-  String _formatRangeLabel(DateTimeRange range) {
-    final from = _shortDate(range.start);
-    final to = _shortDate(range.end);
-    return '$from – $to';
-  }
-
-  String _shortDate(DateTime d) {
-    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(historyViewModelProvider);
     final notifier = ref.read(historyViewModelProvider.notifier);
-    final isCustom = notifier.period == HistoryPeriod.custom;
-
-    // Get range label for display
-    final rangeLabel = (state is HistoryLoaded && state.customRange != null)
-        ? _formatRangeLabel(state.customRange!)
-        : (state is HistoryEmpty && state.customRange != null)
-            ? _formatRangeLabel(state.customRange!)
-            : null;
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
@@ -98,126 +39,86 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         title: const Text('История операций'),
         centerTitle: true,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
-          child: Column(
-            children: [
-              // ─── Period Filter ───────
-              SizedBox(
-                height: 48,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    // Quick period chips
-                    ...HistoryPeriod.values.where((p) => p != HistoryPeriod.custom).map((p) {
-                      final isActive = !isCustom && notifier.period == p;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Center(
-                          child: ChoiceChip(
-                            label: Text(p.label),
-                            selected: isActive,
-                            onSelected: (_) => notifier.setPeriod(p),
-                            selectedColor: AppTheme.orange500.withOpacity(0.2),
-                            labelStyle: TextStyle(
-                              color: isActive ? AppTheme.orange500 : AppTheme.gray600,
-                              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
-                      );
-                    }),
-                    // Calendar / custom range chip
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Center(
-                        child: ActionChip(
-                          avatar: Icon(
-                            Icons.calendar_month_rounded,
-                            size: 16,
-                            color: isCustom ? AppTheme.orange500 : AppTheme.gray500,
-                          ),
-                          label: Text(
-                            isCustom && rangeLabel != null
-                                ? rangeLabel
-                                : HistoryPeriod.custom.label,
-                            style: TextStyle(
-                              color: isCustom ? AppTheme.orange500 : AppTheme.gray600,
-                              fontWeight: isCustom ? FontWeight.w600 : FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                          ),
-                          onPressed: _showCustomRangePicker,
-                          side: isCustom
-                              ? BorderSide(color: AppTheme.orange500)
-                              : null,
-                          backgroundColor: isCustom
-                              ? AppTheme.orange500.withOpacity(0.08)
-                              : null,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
+      body: Column(
+        children: [
+          // ─── Period Filter ──────────────
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: HistoryPeriod.values.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final p = HistoryPeriod.values[index];
+                final isActive = notifier.period == p;
+                return Center(
+                  child: ChoiceChip(
+                    label: Text(p.label),
+                    selected: isActive,
+                    onSelected: (_) => notifier.setPeriod(p),
+                    selectedColor: AppTheme.orange500.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                      color: isActive ? AppTheme.orange500 : AppTheme.gray600,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 13,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-              // ─── Content ───────────
-              Expanded(
-                child: switch (state) {
-                  HistoryLoading() => const LoadingSpinner(),
-                  HistoryError(:final message) => ErrorState(
-                      message: message,
-                      onRetry: () => notifier.refresh(),
-                    ),
-                  HistoryEmpty() => const EmptyState(
-                      icon: Icons.receipt_long_rounded,
-                      message: 'Нет операций',
-                      subtitle: 'Нет операций за выбранный период',
-                    ),
-                  HistoryLoaded(:final transactions, :final hasMore) =>
-                    RefreshIndicator(
-                      color: AppTheme.orange500,
-                      onRefresh: () => notifier.refresh(),
-                      child: ListView.builder(
-                        padding: AppTheme.screenPadding.copyWith(bottom: 16),
-                        itemCount: transactions.length + (hasMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == transactions.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Center(
-                                child: TextButton(
-                                  onPressed: () => notifier.loadMore(),
-                                  child: const Text('Загрузить ещё'),
-                                ),
-                              ),
-                            );
-                          }
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: index < transactions.length - 1 ? 8 : 0),
-                            child: _TransactionItem(transaction: transactions[index]),
-                          );
-                        },
-                      ),
-                    ),
-                  HistoryInitial() => const LoadingSpinner(),
-                },
-              ),
-            ],
+                    visualDensity: VisualDensity.compact,
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+          const SizedBox(height: 4),
+          // ─── Content ──────────────────────
+          Expanded(
+            child: switch (state) {
+              HistoryLoading() => const LoadingSpinner(),
+              HistoryError(:final message) => ErrorState(
+                  message: message,
+                  onRetry: () => notifier.refresh(),
+                ),
+              HistoryEmpty() => const EmptyState(
+                  icon: Icons.receipt_long_rounded,
+                  message: 'Нет операций',
+                  subtitle: 'Нет операций за выбранный период',
+                ),
+              HistoryLoaded(:final transactions, :final hasMore) =>
+                RefreshIndicator(
+                  color: AppTheme.orange500,
+                  onRefresh: () => notifier.refresh(),
+                  child: ListView.builder(
+                    padding: AppTheme.screenPadding.copyWith(bottom: 16),
+                    itemCount: transactions.length + (hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == transactions.length) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Center(
+                            child: TextButton(
+                              onPressed: () => notifier.loadMore(),
+                              child: const Text('Загрузить ещё'),
+                            ),
+                          ),
+                        );
+                      }
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: index < transactions.length - 1 ? 8 : 0),
+                        child: _TransactionItem(transaction: transactions[index]),
+                      );
+                    },
+                  ),
+                ),
+              HistoryInitial() => const LoadingSpinner(),
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─── Transaction Item ───────────────────────────
+// ─── Transaction Item ──────────────────────────────────────
 
 class _TransactionItem extends StatelessWidget {
   final Transaction transaction;

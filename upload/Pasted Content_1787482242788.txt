@@ -1,0 +1,802 @@
+Launching lib\main.dart on Edge in debug mode...
+lib/domain/entities/user.dart:7:7: Error: The non-abstract class 'User' is missing implementations
+for these members:
+ - _$User.avatarUrl
+ - _$User.createdAt
+ - _$User.fullName
+ - _$User.id
+ - _$User.phone
+ - _$User.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class User with _$User {
+      ^^^^
+lib/domain/entities/user.freezed.dart:19:165: Context: '_$User.avatarUrl' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                                           ^^^^^^^^^
+lib/domain/entities/user.freezed.dart:19:216: Context: '_$User.createdAt' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                                           ^^^^^^^^^
+lib/domain/entities/user.freezed.dart:19:74: Context: '_$User.fullName' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                         ^^^^^^^^
+lib/domain/entities/user.freezed.dart:19:33: Context: '_$User.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                ^^
+lib/domain/entities/user.freezed.dart:19:119: Context: '_$User.phone' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                                           ^^^^^
+lib/domain/entities/user.freezed.dart:27:24: Context: '_$User.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/data/models/user_model.dart:8:7: Error: The non-abstract class 'UserModel' is missing
+implementations for these members:
+ - _$UserModel.avatarUrl
+ - _$UserModel.createdAt
+ - _$UserModel.fullName
+ - _$UserModel.id
+ - _$UserModel.phone
+ - _$UserModel.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class UserModel with _$UserModel {
+      ^^^^^^^^^
+lib/data/models/user_model.freezed.dart:19:165: Context: '_$UserModel.avatarUrl' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                                           ^^^^^^^^^
+lib/data/models/user_model.freezed.dart:19:216: Context: '_$UserModel.createdAt' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                                           ^^^^^^^^^
+lib/data/models/user_model.freezed.dart:19:74: Context: '_$UserModel.fullName' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                         ^^^^^^^^
+lib/data/models/user_model.freezed.dart:19:33: Context: '_$UserModel.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                ^^
+lib/data/models/user_model.freezed.dart:19:119: Context: '_$UserModel.phone' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'fullName') String get fullName;@JsonKey(name:
+'phone') String? get phone;@JsonKey(name: 'avatarUrl') String? get avatarUrl;@JsonKey(name:
+'createdAt') DateTime get createdAt;
+                                                                                           ^^^^^
+lib/data/models/user_model.freezed.dart:27:24: Context: '_$UserModel.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/domain/entities/transaction.dart:27:7: Error: The non-abstract class 'Transaction' is missing
+implementations for these members:
+ - _$Transaction.amount
+ - _$Transaction.date
+ - _$Transaction.description
+ - _$Transaction.id
+ - _$Transaction.relatedServiceId
+ - _$Transaction.status
+ - _$Transaction.toJson
+ - _$Transaction.type
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class Transaction with _$Transaction {
+      ^^^^^^^^^^^
+lib/domain/entities/transaction.freezed.dart:19:163: Context: '_$Transaction.amount' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)
+TransactionType get type;@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'description')
+String get description;@JsonKey(name: 'date') DateTime get date;@JsonKey(name: 'status',
+unknownEnumValue: TransactionStatus.success) TransactionStatus get status;@JsonKey(name:
+'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^
+lib/domain/entities/transaction.freezed.dart:19:259: Context: '_$Transaction.date' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)
+TransactionType get type;@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'description')
+String get description;@JsonKey(name: 'date') DateTime get date;@JsonKey(name: 'status',
+unknownEnumValue: TransactionStatus.success) TransactionStatus get status;@JsonKey(name:
+'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^
+lib/domain/entities/transaction.freezed.dart:19:211: Context: '_$Transaction.description' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)
+TransactionType get type;@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'description')
+String get description;@JsonKey(name: 'date') DateTime get date;@JsonKey(name: 'status',
+unknownEnumValue: TransactionStatus.success) TransactionStatus get status;@JsonKey(name:
+'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/domain/entities/transaction.freezed.dart:19:33: Context: '_$Transaction.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)
+TransactionType get type;@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'description')
+String get description;@JsonKey(name: 'date') DateTime get date;@JsonKey(name: 'status',
+unknownEnumValue: TransactionStatus.success) TransactionStatus get status;@JsonKey(name:
+'relatedServiceId') String? get relatedServiceId;
+                                ^^
+lib/domain/entities/transaction.freezed.dart:19:410: Context: '_$Transaction.relatedServiceId' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)
+TransactionType get type;@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'description')
+String get description;@JsonKey(name: 'date') DateTime get date;@JsonKey(name: 'status',
+unknownEnumValue: TransactionStatus.success) TransactionStatus get status;@JsonKey(name:
+'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^^^^^^
+lib/domain/entities/transaction.freezed.dart:19:356: Context: '_$Transaction.status' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)
+TransactionType get type;@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'description')
+String get description;@JsonKey(name: 'date') DateTime get date;@JsonKey(name: 'status',
+unknownEnumValue: TransactionStatus.success) TransactionStatus get status;@JsonKey(name:
+'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^
+lib/domain/entities/transaction.freezed.dart:27:24: Context: '_$Transaction.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/domain/entities/transaction.freezed.dart:19:122: Context: '_$Transaction.type' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue: TransactionType.payment)
+TransactionType get type;@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'description')
+String get description;@JsonKey(name: 'date') DateTime get date;@JsonKey(name: 'status',
+unknownEnumValue: TransactionStatus.success) TransactionStatus get status;@JsonKey(name:
+'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^
+lib/domain/entities/news_item.dart:7:7: Error: The non-abstract class 'NewsItem' is missing
+implementations for these members:
+ - _$NewsItem.id
+ - _$NewsItem.imageUrl
+ - _$NewsItem.publishedAt
+ - _$NewsItem.readCount
+ - _$NewsItem.summary
+ - _$NewsItem.tags
+ - _$NewsItem.title
+ - _$NewsItem.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class NewsItem with _$NewsItem {
+      ^^^^^^^^
+lib/domain/entities/news_item.freezed.dart:19:33: Context: '_$NewsItem.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                ^^
+lib/domain/entities/news_item.freezed.dart:19:161: Context: '_$NewsItem.imageUrl' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^^
+lib/domain/entities/news_item.freezed.dart:19:213: Context: '_$NewsItem.publishedAt' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/domain/entities/news_item.freezed.dart:19:262: Context: '_$NewsItem.readCount' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^^^
+lib/domain/entities/news_item.freezed.dart:19:114: Context: '_$NewsItem.summary' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^
+lib/domain/entities/news_item.freezed.dart:19:312: Context: '_$NewsItem.tags' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^
+lib/domain/entities/news_item.freezed.dart:19:71: Context: '_$NewsItem.title' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                      ^^^^^
+lib/domain/entities/news_item.freezed.dart:27:24: Context: '_$NewsItem.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/domain/entities/service.dart:18:7: Error: The non-abstract class 'Service' is missing
+implementations for these members:
+ - _$Service.billingCycle
+ - _$Service.category
+ - _$Service.cost
+ - _$Service.iconUrl
+ - _$Service.id
+ - _$Service.name
+ - _$Service.status
+ - _$Service.toJson
+ - _$Service.warningMessage
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class Service with _$Service {
+      ^^^^^^^
+lib/domain/entities/service.freezed.dart:19:400: Context: '_$Service.billingCycle' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^^
+lib/domain/entities/service.freezed.dart:19:113: Context: '_$Service.category' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^^
+lib/domain/entities/service.freezed.dart:19:156: Context: '_$Service.cost' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^
+lib/domain/entities/service.freezed.dart:19:289: Context: '_$Service.iconUrl' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^
+lib/domain/entities/service.freezed.dart:19:33: Context: '_$Service.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                ^^
+lib/domain/entities/service.freezed.dart:19:70: Context: '_$Service.name' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                     ^^^^
+lib/domain/entities/service.freezed.dart:19:244: Context: '_$Service.status' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^
+lib/domain/entities/service.freezed.dart:27:24: Context: '_$Service.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/domain/entities/service.freezed.dart:19:342: Context: '_$Service.warningMessage' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceStatus.active) ServiceStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^^^^
+lib/domain/entities/balance.dart:7:7: Error: The non-abstract class 'Balance' is missing
+implementations for these members:
+ - _$Balance.amount
+ - _$Balance.currency
+ - _$Balance.isPaid
+ - _$Balance.lastUpdated
+ - _$Balance.paidUntil
+ - _$Balance.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class Balance with _$Balance {
+      ^^^^^^^
+lib/domain/entities/balance.freezed.dart:19:37: Context: '_$Balance.amount' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                    ^^^^^^
+lib/domain/entities/balance.freezed.dart:19:82: Context: '_$Balance.currency' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                 ^^^^^^^^
+lib/domain/entities/balance.freezed.dart:19:177: Context: '_$Balance.isPaid' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                           ^^^^^^
+lib/domain/entities/balance.freezed.dart:19:227: Context: '_$Balance.lastUpdated' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/domain/entities/balance.freezed.dart:19:133: Context: '_$Balance.paidUntil' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                           ^^^^^^^^^
+lib/domain/entities/balance.freezed.dart:27:24: Context: '_$Balance.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/domain/entities/support_ticket.dart:18:7: Error: The non-abstract class 'SupportTicket' is
+missing implementations for these members:
+ - _$SupportTicket.createdAt
+ - _$SupportTicket.description
+ - _$SupportTicket.id
+ - _$SupportTicket.replyCount
+ - _$SupportTicket.status
+ - _$SupportTicket.subject
+ - _$SupportTicket.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class SupportTicket with _$SupportTicket {
+      ^^^^^^^^^^^^^
+lib/domain/entities/support_ticket.freezed.dart:19:261: Context: '_$SupportTicket.createdAt' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue: TicketStatus.open)
+TicketStatus get status;@JsonKey(name: 'createdAt') DateTime get createdAt;@JsonKey(name:
+'replyCount') int get replyCount;
+                                                                                           ^^^^^^^^^
+lib/domain/entities/support_ticket.freezed.dart:19:122: Context: '_$SupportTicket.description' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue: TicketStatus.open)
+TicketStatus get status;@JsonKey(name: 'createdAt') DateTime get createdAt;@JsonKey(name:
+'replyCount') int get replyCount;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/domain/entities/support_ticket.freezed.dart:19:33: Context: '_$SupportTicket.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue: TicketStatus.open)
+TicketStatus get status;@JsonKey(name: 'createdAt') DateTime get createdAt;@JsonKey(name:
+'replyCount') int get replyCount;
+                                ^^
+lib/domain/entities/support_ticket.freezed.dart:19:308: Context: '_$SupportTicket.replyCount' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue: TicketStatus.open)
+TicketStatus get status;@JsonKey(name: 'createdAt') DateTime get createdAt;@JsonKey(name:
+'replyCount') int get replyCount;
+                                                                                           ^^^^^^^^^^
+lib/domain/entities/support_ticket.freezed.dart:19:213: Context: '_$SupportTicket.status' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue: TicketStatus.open)
+TicketStatus get status;@JsonKey(name: 'createdAt') DateTime get createdAt;@JsonKey(name:
+'replyCount') int get replyCount;
+                                                                                           ^^^^^^
+lib/domain/entities/support_ticket.freezed.dart:19:73: Context: '_$SupportTicket.subject' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue: TicketStatus.open)
+TicketStatus get status;@JsonKey(name: 'createdAt') DateTime get createdAt;@JsonKey(name:
+'replyCount') int get replyCount;
+                                                                        ^^^^^^^
+lib/domain/entities/support_ticket.freezed.dart:27:24: Context: '_$SupportTicket.toJson' is defined
+here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/data/models/news_model.dart:8:7: Error: The non-abstract class 'NewsModel' is missing
+implementations for these members:
+ - _$NewsModel.id
+ - _$NewsModel.imageUrl
+ - _$NewsModel.publishedAt
+ - _$NewsModel.readCount
+ - _$NewsModel.summary
+ - _$NewsModel.tags
+ - _$NewsModel.title
+ - _$NewsModel.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class NewsModel with _$NewsModel {
+      ^^^^^^^^^
+lib/data/models/news_model.freezed.dart:19:33: Context: '_$NewsModel.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                ^^
+lib/data/models/news_model.freezed.dart:19:161: Context: '_$NewsModel.imageUrl' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^^
+lib/data/models/news_model.freezed.dart:19:213: Context: '_$NewsModel.publishedAt' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/data/models/news_model.freezed.dart:19:262: Context: '_$NewsModel.readCount' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^^^
+lib/data/models/news_model.freezed.dart:19:114: Context: '_$NewsModel.summary' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^^^^
+lib/data/models/news_model.freezed.dart:19:312: Context: '_$NewsModel.tags' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                                           ^^^^
+lib/data/models/news_model.freezed.dart:19:71: Context: '_$NewsModel.title' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'title') String get title;@JsonKey(name: 'summary')
+String get summary;@JsonKey(name: 'imageUrl') String? get imageUrl;@JsonKey(name: 'publishedAt')
+DateTime get publishedAt;@JsonKey(name: 'readCount') int? get readCount;@JsonKey(name: 'tags')
+List<String> get tags;
+                                                                      ^^^^^
+lib/data/models/news_model.freezed.dart:27:24: Context: '_$NewsModel.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/domain/entities/page.dart:7:7: Error: The non-abstract class 'Page' is missing implementations
+for these members:
+ - _$Page.hasMore
+ - _$Page.items
+ - _$Page.limit
+ - _$Page.page
+ - _$Page.toJson
+ - _$Page.total
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class Page<T> with _$Page<T> {
+      ^^^^
+lib/domain/entities/page.freezed.dart:19:74: Context: '_$Page.hasMore' is defined here.
+ List<T> get items; int get total; int get page; int get limit; bool get hasMore;
+                                                                         ^^^^^^^
+lib/domain/entities/page.freezed.dart:19:14: Context: '_$Page.items' is defined here.
+ List<T> get items; int get total; int get page; int get limit; bool get hasMore;
+             ^^^^^
+lib/domain/entities/page.freezed.dart:19:58: Context: '_$Page.limit' is defined here.
+ List<T> get items; int get total; int get page; int get limit; bool get hasMore;
+                                                         ^^^^^
+lib/domain/entities/page.freezed.dart:19:44: Context: '_$Page.page' is defined here.
+ List<T> get items; int get total; int get page; int get limit; bool get hasMore;
+                                           ^^^^
+lib/domain/entities/page.freezed.dart:27:24: Context: '_$Page.toJson' is defined here.
+  Map<String, dynamic> toJson(Object? Function(T) toJsonT);
+                       ^^^^^^
+lib/domain/entities/page.freezed.dart:19:29: Context: '_$Page.total' is defined here.
+ List<T> get items; int get total; int get page; int get limit; bool get hasMore;
+                            ^^^^^
+lib/data/models/balance_model.dart:8:7: Error: The non-abstract class 'BalanceModel' is missing
+implementations for these members:
+ - _$BalanceModel.amount
+ - _$BalanceModel.currency
+ - _$BalanceModel.isPaid
+ - _$BalanceModel.lastUpdated
+ - _$BalanceModel.paidUntil
+ - _$BalanceModel.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class BalanceModel with _$BalanceModel {
+      ^^^^^^^^^^^^
+lib/data/models/balance_model.freezed.dart:19:37: Context: '_$BalanceModel.amount' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                    ^^^^^^
+lib/data/models/balance_model.freezed.dart:19:82: Context: '_$BalanceModel.currency' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                 ^^^^^^^^
+lib/data/models/balance_model.freezed.dart:19:177: Context: '_$BalanceModel.isPaid' is defined here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                           ^^^^^^
+lib/data/models/balance_model.freezed.dart:19:227: Context: '_$BalanceModel.lastUpdated' is defined
+here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/data/models/balance_model.freezed.dart:19:133: Context: '_$BalanceModel.paidUntil' is defined
+here.
+@JsonKey(name: 'amount') double get amount;@JsonKey(name: 'currency') String get
+currency;@JsonKey(name: 'paidUntil') DateTime? get paidUntil;@JsonKey(name: 'isPaid') bool get
+isPaid;@JsonKey(name: 'lastUpdated') DateTime get lastUpdated;
+                                                                                           ^^^^^^^^^
+lib/data/models/balance_model.freezed.dart:27:24: Context: '_$BalanceModel.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/data/models/transaction_model.dart:8:7: Error: The non-abstract class 'TransactionModel' is
+missing implementations for these members:
+ - _$TransactionModel.amount
+ - _$TransactionModel.date
+ - _$TransactionModel.description
+ - _$TransactionModel.id
+ - _$TransactionModel.relatedServiceId
+ - _$TransactionModel.status
+ - _$TransactionModel.toJson
+ - _$TransactionModel.type
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class TransactionModel with _$TransactionModel {
+      ^^^^^^^^^^^^^^^^
+lib/data/models/transaction_model.freezed.dart:19:173: Context: '_$TransactionModel.amount' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue:
+TransactionModelType.payment) TransactionModelType get type;@JsonKey(name: 'amount') double get
+amount;@JsonKey(name: 'description') String get description;@JsonKey(name: 'date') DateTime get
+date;@JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
+TransactionModelStatus get status;@JsonKey(name: 'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^
+lib/data/models/transaction_model.freezed.dart:19:269: Context: '_$TransactionModel.date' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue:
+TransactionModelType.payment) TransactionModelType get type;@JsonKey(name: 'amount') double get
+amount;@JsonKey(name: 'description') String get description;@JsonKey(name: 'date') DateTime get
+date;@JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
+TransactionModelStatus get status;@JsonKey(name: 'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^
+lib/data/models/transaction_model.freezed.dart:19:221: Context: '_$TransactionModel.description' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue:
+TransactionModelType.payment) TransactionModelType get type;@JsonKey(name: 'amount') double get
+amount;@JsonKey(name: 'description') String get description;@JsonKey(name: 'date') DateTime get
+date;@JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
+TransactionModelStatus get status;@JsonKey(name: 'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/data/models/transaction_model.freezed.dart:19:33: Context: '_$TransactionModel.id' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue:
+TransactionModelType.payment) TransactionModelType get type;@JsonKey(name: 'amount') double get
+amount;@JsonKey(name: 'description') String get description;@JsonKey(name: 'date') DateTime get
+date;@JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
+TransactionModelStatus get status;@JsonKey(name: 'relatedServiceId') String? get relatedServiceId;
+                                ^^
+lib/data/models/transaction_model.freezed.dart:19:430: Context: '_$TransactionModel.relatedServiceId'
+is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue:
+TransactionModelType.payment) TransactionModelType get type;@JsonKey(name: 'amount') double get
+amount;@JsonKey(name: 'description') String get description;@JsonKey(name: 'date') DateTime get
+date;@JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
+TransactionModelStatus get status;@JsonKey(name: 'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^^^^^^
+lib/data/models/transaction_model.freezed.dart:19:376: Context: '_$TransactionModel.status' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue:
+TransactionModelType.payment) TransactionModelType get type;@JsonKey(name: 'amount') double get
+amount;@JsonKey(name: 'description') String get description;@JsonKey(name: 'date') DateTime get
+date;@JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
+TransactionModelStatus get status;@JsonKey(name: 'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^^^
+lib/data/models/transaction_model.freezed.dart:27:24: Context: '_$TransactionModel.toJson' is defined
+here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/data/models/transaction_model.freezed.dart:19:132: Context: '_$TransactionModel.type' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'type', unknownEnumValue:
+TransactionModelType.payment) TransactionModelType get type;@JsonKey(name: 'amount') double get
+amount;@JsonKey(name: 'description') String get description;@JsonKey(name: 'date') DateTime get
+date;@JsonKey(name: 'status', unknownEnumValue: TransactionModelStatus.success)
+TransactionModelStatus get status;@JsonKey(name: 'relatedServiceId') String? get relatedServiceId;
+                                                                                           ^^^^
+lib/data/models/service_model.dart:8:7: Error: The non-abstract class 'ServiceModel' is missing
+implementations for these members:
+ - _$ServiceModel.billingCycle
+ - _$ServiceModel.category
+ - _$ServiceModel.cost
+ - _$ServiceModel.iconUrl
+ - _$ServiceModel.id
+ - _$ServiceModel.name
+ - _$ServiceModel.status
+ - _$ServiceModel.toJson
+ - _$ServiceModel.warningMessage
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class ServiceModel with _$ServiceModel {
+      ^^^^^^^^^^^^
+lib/data/models/service_model.freezed.dart:19:410: Context: '_$ServiceModel.billingCycle' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^^
+lib/data/models/service_model.freezed.dart:19:113: Context: '_$ServiceModel.category' is defined
+here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^^
+lib/data/models/service_model.freezed.dart:19:156: Context: '_$ServiceModel.cost' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^
+lib/data/models/service_model.freezed.dart:19:299: Context: '_$ServiceModel.iconUrl' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^
+lib/data/models/service_model.freezed.dart:19:33: Context: '_$ServiceModel.id' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                ^^
+lib/data/models/service_model.freezed.dart:19:70: Context: '_$ServiceModel.name' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                     ^^^^
+lib/data/models/service_model.freezed.dart:19:254: Context: '_$ServiceModel.status' is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^
+lib/data/models/service_model.freezed.dart:27:24: Context: '_$ServiceModel.toJson' is defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/data/models/service_model.freezed.dart:19:352: Context: '_$ServiceModel.warningMessage' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'name') String get name;@JsonKey(name: 'category')
+String get category;@JsonKey(name: 'cost') double get cost;@JsonKey(name: 'status', unknownEnumValue:
+ServiceModelStatus.active) ServiceModelStatus get status;@JsonKey(name: 'iconUrl') String? get
+iconUrl;@JsonKey(name: 'warningMessage') String? get warningMessage;@JsonKey(name: 'billingCycle')
+String? get billingCycle;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^^^^
+lib/data/models/support_ticket_model.dart:8:7: Error: The non-abstract class 'SupportTicketModel' is
+missing implementations for these members:
+ - _$SupportTicketModel.createdAt
+ - _$SupportTicketModel.description
+ - _$SupportTicketModel.id
+ - _$SupportTicketModel.replyCount
+ - _$SupportTicketModel.status
+ - _$SupportTicketModel.subject
+ - _$SupportTicketModel.toJson
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class SupportTicketModel with _$SupportTicketModel {
+      ^^^^^^^^^^^^^^^^^^
+lib/data/models/support_ticket_model.freezed.dart:19:271: Context: '_$SupportTicketModel.createdAt'
+is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue:
+TicketModelStatus.open) TicketModelStatus get status;@JsonKey(name: 'createdAt') DateTime get
+createdAt;@JsonKey(name: 'replyCount') int get replyCount;
+                                                                                           ^^^^^^^^^
+lib/data/models/support_ticket_model.freezed.dart:19:122: Context: '_$SupportTicketModel.description'
+is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue:
+TicketModelStatus.open) TicketModelStatus get status;@JsonKey(name: 'createdAt') DateTime get
+createdAt;@JsonKey(name: 'replyCount') int get replyCount;
+                                                                                           ^^^^^^^^^^
+                                                                                           ^
+lib/data/models/support_ticket_model.freezed.dart:19:33: Context: '_$SupportTicketModel.id' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue:
+TicketModelStatus.open) TicketModelStatus get status;@JsonKey(name: 'createdAt') DateTime get
+createdAt;@JsonKey(name: 'replyCount') int get replyCount;
+                                ^^
+lib/data/models/support_ticket_model.freezed.dart:19:318: Context: '_$SupportTicketModel.replyCount'
+is defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue:
+TicketModelStatus.open) TicketModelStatus get status;@JsonKey(name: 'createdAt') DateTime get
+createdAt;@JsonKey(name: 'replyCount') int get replyCount;
+                                                                                           ^^^^^^^^^^
+lib/data/models/support_ticket_model.freezed.dart:19:223: Context: '_$SupportTicketModel.status' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue:
+TicketModelStatus.open) TicketModelStatus get status;@JsonKey(name: 'createdAt') DateTime get
+createdAt;@JsonKey(name: 'replyCount') int get replyCount;
+                                                                                           ^^^^^^
+lib/data/models/support_ticket_model.freezed.dart:19:73: Context: '_$SupportTicketModel.subject' is
+defined here.
+@JsonKey(name: 'id') String get id;@JsonKey(name: 'subject') String get subject;@JsonKey(name:
+'description') String get description;@JsonKey(name: 'status', unknownEnumValue:
+TicketModelStatus.open) TicketModelStatus get status;@JsonKey(name: 'createdAt') DateTime get
+createdAt;@JsonKey(name: 'replyCount') int get replyCount;
+                                                                        ^^^^^^^
+lib/data/models/support_ticket_model.freezed.dart:27:24: Context: '_$SupportTicketModel.toJson' is
+defined here.
+  Map<String, dynamic> toJson();
+                       ^^^^^^
+lib/domain/usecases/auth/login_usecase.dart:16:22: Error: The method 'validatePin' isn't defined for
+the type 'LoginUseCase'.
+ - 'LoginUseCase' is from 'package:telecom_dashboard/domain/usecases/auth/login_usecase.dart'
+ ('lib/domain/usecases/auth/login_usecase.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'validatePin'.
+    final pinError = validatePin(pin);
+                     ^^^^^^^^^^^
+lib/domain/usecases/auth/login_usecase.dart:22:29: Error: The method 'validatePassword' isn't defined
+for the type 'LoginUseCase'.
+ - 'LoginUseCase' is from 'package:telecom_dashboard/domain/usecases/auth/login_usecase.dart'
+ ('lib/domain/usecases/auth/login_usecase.dart').
+Try correcting the name to the name of an existing method, or defining a method named
+'validatePassword'.
+      final passwordError = validatePassword(password);
+                            ^^^^^^^^^^^^^^^^
+lib/presentation/widgets/navigation/bottom_nav_bar.dart:53:29: Error: Member not found:
+'help_circle_rounded'.
+                icon: Icons.help_circle_rounded,
+                            ^^^^^^^^^^^^^^^^^^^
+lib/core/errors/exceptions.dart:9:23: Error: The type 'DioExceptionType' is not exhaustively matched
+by the switch cases since it doesn't match 'DioExceptionType.transformTimeout'.
+ - 'DioExceptionType' is from 'package:dio/src/dio_exception.dart'
+ ('/C:/Users/ValikK/AppData/Local/Pub/Cache/hosted/pub.dev/dio-5.11.0/lib/src/dio_exception.dart').
+Try adding a default case or cases that match 'DioExceptionType.transformTimeout'.
+    switch (exception.type) {
+                      ^
+Waiting for connection from debug service on Edge...               17,9s
+Failed to compile application.
