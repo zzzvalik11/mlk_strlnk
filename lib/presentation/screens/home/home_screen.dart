@@ -19,7 +19,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// Simulated unread notifications count.
   static const int _unreadNotifications = 2;
 
   @override
@@ -39,31 +38,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return RefreshIndicator(
       color: AppTheme.orange500,
       onRefresh: () => ref.read(homeViewModelProvider.notifier).refresh(),
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildAppBar(user, homeState)),
-          if (homeState is HomeLoading || homeState is HomeInitial)
-            const SliverFillRemaining(child: LoadingSpinner())
-          else if (homeState is HomeError)
-            SliverFillRemaining(child: _buildErrorState(homeState.message))
-          else if (homeState is HomeLoaded)
-            SliverToBoxAdapter(child: _buildContent(homeState)),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-        ],
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ─── AppBar ───────────────────
+            _buildAppBar(user, homeState),
+            // ─── State Content ───────────
+            if (homeState is HomeLoading || homeState is HomeInitial)
+              const SizedBox(
+                height: 400,
+                child: Center(child: LoadingSpinner()),
+              )
+            else if (homeState is HomeError)
+              SizedBox(
+                height: 400,
+                child: _buildErrorState(homeState.message),
+              )
+            else if (homeState is HomeLoaded)
+              _buildContent(homeState),
+            const SizedBox(height: 100),
+          ],
+        ),
       ),
     );
   }
 
-  // ─── AppBar ──────────────────────────────────────────────
+  // ─── AppBar ──────────────────────────────────────
 
   Widget _buildAppBar(User? user, HomeState homeState) {
-    final isFrozen = homeState is HomeLoaded && homeState.isLocked;
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
       child: Row(
         children: [
-          // Avatar
           Container(
             width: 48,
             height: 48,
@@ -99,7 +107,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
-          // Bell with unread dot
           Stack(
             children: [
               IconButton(
@@ -125,12 +132,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
             ],
           ),
-          // Settings
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: AppTheme.gray600, size: 24),
             onPressed: () => context.push(Routes.settings),
           ),
-          // Logout
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppTheme.gray400, size: 22),
             onPressed: () {
@@ -143,7 +148,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ─── Dashboard Content ───────────────────────────────────
+  // ─── Dashboard Content ───────────────────────────
 
   Widget _buildContent(HomeLoaded state) {
     final isFrozen = state.isLocked;
@@ -152,7 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ─── Balance Card ───────────────
+          // ─── Balance Card ───────────
           Container(
             padding: AppTheme.cardPadding,
             decoration: BoxDecoration(
@@ -216,7 +221,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
-          // ─── Active Services ──────────────
+          // ─── Active Services ──────────
           if (state.services.isNotEmpty) ...[
             const SizedBox(height: 24),
             GestureDetector(
@@ -226,7 +231,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Text('Активные услуги', style: AppTheme.titleMedium),
                   const Spacer(),
-                  // Freeze/unfreeze lock
                   IconButton(
                     icon: Icon(
                       isFrozen ? Icons.lock_rounded : Icons.lock_open_rounded,
@@ -254,7 +258,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ─── Freeze / Unfreeze Dialog ─────────────────────────────
+  // ─── Freeze / Unfreeze Dialog ─────────────────────
 
   void _showFreezeDialog(bool isFrozen) {
     if (isFrozen) {
@@ -362,18 +366,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildErrorState(String message) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.error),
-          const SizedBox(height: 16),
-          Text(message, style: AppTheme.bodyMedium, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () => ref.read(homeViewModelProvider.notifier).refresh(),
-            child: const Text('Повторить'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.error),
+            const SizedBox(height: 16),
+            Text(message, style: AppTheme.bodyMedium, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => ref.read(homeViewModelProvider.notifier).refresh(),
+              child: const Text('Повторить'),
+            ),
+          ],
+        ),
       ),
     );
   }

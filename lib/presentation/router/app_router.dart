@@ -171,18 +171,31 @@ class _ShellWrapperState extends State<_ShellWrapper> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isWide = screenWidth > AppBreakpoints.maxContentWidth;
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: isWide
-          ? Center(
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth <= AppBreakpoints.maxContentWidth) {
+              return widget.child;
+            }
+            return Align(
+              alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxContentWidth),
-                child: widget.child,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: constraints.maxHeight,
+                  child: widget.child,
+                ),
               ),
-            )
-          : widget.child,
+            );
+          },
+        ),
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         screenWidth: screenWidth,
