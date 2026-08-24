@@ -22,7 +22,7 @@ dependencies:
 
   # Serialization
   freezed_annotation: ^2.4.4
-  json_annotation: any
+  json_annotation: ^4.9.0
   fpdart: ^1.1.0
 
   # Local storage
@@ -44,12 +44,11 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  build_runner: any
+  build_runner: ^2.4.0
   freezed: ^2.5.0
-  json_serializable: any
+  json_serializable: ^6.9.0
 
 flutter:
   uses-material-design: true
 
-dependency_overrides:
-  analyzer: ^7.0.0
+

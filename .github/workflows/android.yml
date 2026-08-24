@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       flutter_version:
-        description: 'Flutter SDK version (leave empty for latest stable)'
+        description: 'Flutter SDK version (leave empty for 3.38.10)'
         required: false
-        default: ''
+        default: '3.38.10'
       build_type:
         description: 'Build type'
         required: false
@@ -39,7 +39,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ github.event.inputs.flutter_version }}
+          flutter-version: ${{ github.event.inputs.flutter_version || '3.38.10' }}
           channel: 'stable'
           cache: true
 
@@ -49,7 +49,6 @@ jobs:
       - name: Generate Android platform files
         run: flutter create --platforms=android .
 
-      # Java must be set up AFTER flutter create generates android/ with gradle files
       - name: Setup Java
         uses: actions/setup-java@v5
         with:

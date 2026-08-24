@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       flutter_version:
-        description: 'Flutter SDK version (leave empty for latest stable)'
+        description: 'Flutter SDK version (leave empty for 3.38.10)'
         required: false
-        default: ''
+        default: '3.38.10'
 
 concurrency:
   group: ios-${{ github.ref }}
@@ -31,7 +31,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ github.event.inputs.flutter_version }}
+          flutter-version: ${{ github.event.inputs.flutter_version || '3.38.10' }}
           channel: 'stable'
           cache: true
 
@@ -48,13 +48,11 @@ jobs:
         run: cd ios && pod install
 
       # ── Code Signing (optional) ─────────────────────────────
-      # Uncomment and configure these steps when you have
-      # Apple Developer account and signing certificates.
-      #
+      # Uncomment when Apple Developer account + certificates ready.
       # Required secrets:
-      #   IOS_CERTIFICATE_BASE64  — base64-encoded .p12 certificate
-      #   IOS_CERTIFICATE_PASSWORD — password for the .p12 file
-      #   IOS_PROVISIONING_PROFILE_BASE64 — base64-encoded .mobileprovision
+      #   IOS_CERTIFICATE_BASE64
+      #   IOS_CERTIFICATE_PASSWORD
+      #   IOS_PROVISIONING_PROFILE_BASE64
       #
       # - name: Install Apple Certificate
       #   uses: apple-actions/import-codesign-certs@v2
