@@ -8,12 +8,10 @@ import 'package:telecom_dashboard/presentation/router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('⭐ MAIN: app starting...');
 
   // Initialize SharedPreferences-backed storage before any provider uses it.
   final storageService = StorageService();
   await storageService.init();
-  debugPrint('⭐ MAIN: storage initialized');
 
   runApp(
     ProviderScope(

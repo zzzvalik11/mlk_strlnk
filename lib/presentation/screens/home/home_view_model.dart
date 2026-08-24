@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/domain/entities/balance.dart';
@@ -63,24 +62,19 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   Future<void> loadDashboard() async {
     state = const HomeLoading();
-    debugPrint('🔴 HomeNotifier.loadDashboard() START');
 
     try {
       // Load user
       final authState = _ref.read(authProvider);
       final user = authState.valueOrNull;
       if (user == null) {
-        debugPrint('🔴 HomeNotifier: user is null!');
         state = const HomeError('Не авторизован');
         return;
       }
-      debugPrint('🔴 HomeNotifier: user=${user.fullName}, loading balance...');
 
       // Load balance and services in parallel
       final balanceResult = await _ref.read(balanceProvider.future);
-      debugPrint('🔴 HomeNotifier: balance loaded=${balanceResult.amount}');
       final servicesResult = await _ref.read(activeServicesProvider.future);
-      debugPrint('🔴 HomeNotifier: services loaded, count=${servicesResult.length}');
 
       final localSource = _ref.read(userLocalSourceProvider);
       final locked = localSource.isLocked();
@@ -101,7 +95,6 @@ class HomeNotifier extends StateNotifier<HomeState> {
         );
       }
     } catch (e) {
-      debugPrint('🔴 HomeNotifier ERROR: $e');
       state = HomeError(e.toString());
     }
   }
