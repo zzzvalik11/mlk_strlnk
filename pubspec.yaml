@@ -31,10 +31,9 @@ dependencies:
   # Biometric auth
   local_auth: ^2.3.0
 
-  # Utils
-  intl: ^0.20.3
+  # Utils / Localization
+  intl: any
 
-  # Localization
   flutter_localizations:
     sdk: flutter
 
