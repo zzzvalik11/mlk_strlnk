@@ -36,13 +36,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          cache: 'gradle'
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -55,6 +48,13 @@ jobs:
 
       - name: Generate Android platform files
         run: flutter create --platforms=android .
+
+      # Java must be set up AFTER flutter create generates android/ with gradle files
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs

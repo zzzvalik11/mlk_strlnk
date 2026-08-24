@@ -44,6 +44,9 @@ jobs:
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Install CocoaPods dependencies
+        run: cd ios && pod install
+
       # ── Code Signing (optional) ─────────────────────────────
       # Uncomment and configure these steps when you have
       # Apple Developer account and signing certificates.
@@ -65,11 +68,9 @@ jobs:
       #     echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning Profiles/profile.mobileprovision
 
       - name: Build iOS (no codesign)
-        run: |
-          flutter build ios --release \
-            --no-codesign
+        run: flutter build ios --release --no-codesign
 
-      - name: Create IPA (no codesign)
+      - name: Create IPA
         run: |
           mkdir -p build/ios/ipa
           cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload
