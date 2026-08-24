@@ -25,9 +25,6 @@ test/
 .DS_Store
 *.pem
 *.log
-dev.log
-dev.out.log
-server.log
 
 # Environment
 .env*
@@ -39,40 +36,3 @@ server.log
 
 # Coverage
 /coverage
-
-# ── Sandbox (NOT part of Flutter app) ─────────────────────
-node_modules/
-/.pnp
-.pnp.*
-/.next/
-/out/
-.vercel
-*.tsbuildinfo
-next-env.d.ts
-bun.lock
-package.json
-tsconfig.json
-next.config.ts
-tailwind.config.ts
-postcss.config.mjs
-eslint.config.mjs
-components.json
-/.zscripts/
-/examples/
-/mini-services/
-/db/
-/public/
-/src/
-/prisma/
-/tests/
-/upload/
-/worklog.md
-/skills/
-local-*
-.claude
-.z-ai-config
-prompt
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*

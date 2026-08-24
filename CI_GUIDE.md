@@ -28,7 +28,7 @@
 3. Слева выберите **Build Android** или **Build iOS**.
 4. Нажмите **Run workflow**.
 5. При необходимости измените параметры:
-   - **Flutter version** — версия SDK (по умолчанию `3.27.4`)
+   - **Flutter version** — версия SDK (по умолчанию — последняя стабильная)
    - **Build type** (только Android) — `apk` или `appbundle`
 
 ---
@@ -36,20 +36,39 @@
 ## Этапы сборки (Android)
 
 ```
-Checkout → Java 17 → Flutter SDK → pub get → flutter create → build_runner → build → upload
+Checkout → Flutter SDK → pub get → flutter create (android) → Java 17 → build_runner → build → upload
 ```
 
 | Шаг | Команда | Описание |
 |-----|---------|----------|
 | Install dependencies | `flutter pub get` | Загрузка пакетов из pubspec.yaml |
 | Generate Android files | `flutter create --platforms=android .` | Создание android/ директории |
+| Setup Java | `actions/setup-java@v5` (Zulu 17) | JDK для Gradle |
 | Run build_runner | `dart run build_runner build --delete-conflicting-outputs` | Генерация .freezed.dart и .g.dart |
 | Build APK | `flutter build apk --release` | Сборка релизного APK |
 | Build AAB | `flutter build appbundle --release` | Сборка App Bundle для Google Play |
 
+## Этапы сборки (iOS)
+
+```
+Checkout → Flutter SDK → pub get → flutter create (ios+android) → ensure Podfile → build_runner → pod install → build → create IPA → upload
+```
+
+| Шаг | Команда | Описание |
+|-----|---------|----------|
+| Install dependencies | `flutter pub get` | Загрузка пакетов из pubspec.yaml |
+| Generate iOS files | `flutter create --platforms=ios,android .` | Создание ios/ и android/ |
+| Ensure Podfile | Проверка + fallback создание | В новых версиях Flutter Podfile не генерируется автоматически |
+| Run build_runner | `dart run build_runner build --delete-conflicting-outputs` | Генерация .freezed.dart и .g.dart |
+| Install CocoaPods | `cd ios && pod install --repo-update` | Зависимости iOS |
+| Build iOS | `flutter build ios --release --no-codesign` | Сборка без подписи |
+| Create IPA | `cp + zip` в Payload/ | Упаковка .ipa |
+
+---
+
 ### Почему `flutter create .`?
 
-Директории `android/` и `ios/` не коммитятся в репозиторий (они генерируются Flutter). CI создаёт их на лету перед сборкой.
+Платформенные директории (`android/`, `ios/`) не хранятся в репозитории — они генерируются Flutter на лету. Исключение — `ios/Podfile`, который коммитится отдельно, так как в новых версиях Flutter SDK он не создаётся автоматически.
 
 ---
 
@@ -132,8 +151,8 @@ security find-identity -v -p codesigning
 |--|-----|------------------|
 | Назначение | Прямая установка на устройство | Загрузка в Google Play |
 | Размер | Полный (все архитектуры) | Оптимизированный (Google сжимает) |
-| Для тестирования | ✅ Да | ❌ Нет |
-| Для публикации | ❌ Нет | ✅ Да |
+| Для тестирования | Да | Нет |
+| Для публикации | Нет | Да |
 
 По умолчанию workflow собирает **APK**. Для загрузки в Google Play запустите вручную с `build_type: appbundle`.
 
@@ -150,7 +169,7 @@ security find-identity -v -p codesigning
 Измените дефолтное значение в `.github/workflows/android.yml`:
 
 ```yaml
-flutter-version: '3.27.4'  # ← здесь
+flutter-version: '3.27.4'  # пустая строка = последняя стабильная
 ```
 
 И в `.github/workflows/ios.yml` аналогично.
@@ -174,7 +193,11 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 Обычно связан с версией Java или AGP. Проверьте, что `java-version: '17'` соответствует вашей версии `android/build.gradle`.
 
-### 4. iOS: Xcode version mismatch
+### 4. iOS: No Podfile found
+
+В новых версиях Flutter SDK `flutter create` не генерирует `ios/Podfile`. В репозитории уже хранится `ios/Podfile`, а CI содержит fallback-шаг для его создания при необходимости.
+
+### 5. iOS: Xcode version mismatch
 
 macos-latest обновляется GitHub. Если сборка сломалась, можно pin-нуть Xcode:
 
@@ -192,9 +215,6 @@ macos-latest обновляется GitHub. Если сборка сломала
 # Запустить только Android workflow локально через act (необязательно)
 brew install act
 act push -W .github/workflows/android.yml
-
-# Проверить синтаксис YAML
-python3 -c "import yaml; yaml.safe_load(open('.github/workflows/android.yml'))"
 
 # Посмотреть логи последнего запуска
 gh run list --limit 5

@@ -2,7 +2,7 @@
 
 Мобильное приложение для абонентов телеком-оператора. Отображает баланс, подключённые услуги, историю платежей, новости и обеспечивает связь с техподдержкой.
 
-**Стек:** Flutter 3.x · Dart 3.8+ · Riverpod · GoRouter · Dio · Freezed · fpdart
+**Стек:** Flutter 3.x · Dart 3.13+ · Riverpod · GoRouter · Dio · Freezed 4.x · fpdart
 
 **Архитектура:** Clean Architecture — три слоя (Domain / Data / Presentation) с односторонней зависимостью `presentation → domain ← data`.
 
@@ -22,20 +22,24 @@
 | Экран | Описание | ViewModel |
 |-------|----------|-----------|
 | Главная (`/`) | Баланс, дата оплаты, список активных услуг, уведомления, замок тарифа | `HomeViewModel` |
-| Оплата (`/payment`) | Сводка по платежам, кнопка пополнения | `PaymentViewModel` |
+| Оплата (`/payment`) | Быстрые действия, последние операции | `PaymentViewModel` |
 | Новости (`/news`) | Лента статей с детальным просмотром (`/news/:id`) | `NewsViewModel` |
 | Поддержка (`/support`) | Создание обращений, отслеживание статуса | `SupportViewModel` |
 | Пополнение (`/top_up`) | Ввод суммы и оплата | `TopUpViewModel` |
-| История (`/history`) | Все транзакции с фильтрацией | `HistoryViewModel` |
+| История (`/history`) | Все транзакции с фильтрацией по периоду (вкл. произвольный) | `HistoryViewModel` |
 | Услуги (`/services`) | Список подключённых услуг | — |
 | Уведомления (`/notifications`) | Лента уведомлений с read/unread | — |
-| Настройки (`/settings`) | Смена метода авторизации | — |
+| Настройки (`/settings`) | Смена метода авторизации, выход | — |
 
 ### Навигация
 
 Нижнее меню с 4 вкладками: **Главная**, **Оплата**, **Новости**, **Поддержка**.
 Реализовано через GoRouter `ShellRoute` с `_ShellWrapper` (StatefulWidget).
 Переключение вкладок через `context.go(route)`.
+
+### Общая шапка
+
+Все экраны авторизованной зоны используют единый виджет `AppHeader` — аватар, имя/ID пользователя, колокольчик уведомлений, настройки, выход. На внутренних экранах добавляется кнопка «назад».
 
 ---
 
@@ -70,7 +74,7 @@
 
 | Категория           | Технология                        |
 |---------------------|-----------------------------------|
-| Фреймворк           | Flutter 3.x (Dart 3.8+)           |
+| Фреймворк           | Flutter 3.x (Dart 3.13+)          |
 | State management    | Riverpod (`flutter_riverpod`)     |
 | Роутинг             | GoRouter 14.x (ShellRoute)        |
 | Сеть                | Dio                               |
@@ -101,6 +105,7 @@ lib/
 │   │   ├── date_formatter.dart        # Форматирование дат
 │   │   └── validators.dart            # Валидация ПИН / пароля
 │   └── widgets/
+│       ├── app_header.dart            # Единая шапка для всех экранов
 │       ├── empty_state.dart           # Пустое состояние
 │       ├── error_state.dart           # Ошибка с retry
 │       ├── loading_spinner.dart       # Индикатор загрузки
@@ -129,11 +134,9 @@ lib/
 │       │   ├── get_balance_usecase.dart
 │       │   └── top_up_usecase.dart
 │       ├── services/
-│       │   ├── get_active_services_usecase.dart
-│       │   └── get_service_details_usecase.dart
+│       │   └── get_active_services_usecase.dart
 │       ├── transactions/
-│       │   ├── get_transaction_history_usecase.dart
-│       │   └── get_transaction_details_usecase.dart
+│       │   └── get_transaction_history_usecase.dart
 │       ├── news/
 │       │   ├── get_news_list_usecase.dart
 │       │   └── get_news_by_id_usecase.dart
@@ -246,7 +249,7 @@ Dependency Rule: presentation → domain ← data
 
 ### Требования
 
-- Flutter >= 3.22.0 (Dart >= 3.8.0)
+- Flutter >= 3.22.0 (Dart >= 3.13.0)
 - Android Studio или VS Code с Flutter-плагином
 
 ### Установка и запуск
@@ -259,11 +262,18 @@ cd mlk_strlnk
 flutter pub get
 
 # 2. Генерация кода (Freezed + json_serializable)
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
 
-# 3. Запуск
+# 3. Создание платформенных файлов
+flutter create --platforms=android,ios,web .
+
+# 4. Запуск
 flutter run
 ```
+
+> **Примечание:** Платформенные директории (`android/`, `ios/`, `web/`) не хранятся в репозитории.
+> Исключение — `ios/Podfile` (в новых версиях Flutter SDK он не генерируется автоматически).
+> Если `flutter create` не создал Podfile, он уже есть в репозитории.
 
 ### Запуск на Web
 
@@ -279,7 +289,7 @@ flutter run -d Edge
 flutter clean
 rm -rf .dart_tool/build
 flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
 ```
 
 ---
@@ -314,10 +324,10 @@ flutter analyze
 dart format lib/
 
 # Перегенерировать код
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
 
 # Watch-режим (автогенерация при изменениях)
-flutter pub run build_runner watch
+dart run build_runner watch
 
 # Запустить CI локально (нужен act)
 act push -W .github/workflows/android.yml
