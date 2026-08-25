@@ -245,6 +245,38 @@ Dependency Rule: presentation → domain ← data
 
 ---
 
+## Внешние интеграции
+
+Бэкенд выступает **оркестратором** между мобильным приложением и сторонними сервисами. Приложение напрямую не обращается к внешним API.
+
+| Сервис | Назначение | Протокол | Аутентификация |
+|--------|-----------|----------|----------------|
+| **Starlink BSS** (starlink-api v1.0.0) | Биллинг: авторизация, счета, услуги, тарифы, транзакции | REST API (JSON) | JWT Bearer Token (365 дней) |
+| **РСБ ECOMM** v3.0.17 | Платёжный шлюз: оплата картой (Visa/MC/Мир), 3DS 2.x, DMS, рекуррент, Apple/Google/Samsung/Yandex Pay | HTTP POST (form-encoded) + REST API (JSON API) | SSL-сертификат ТСП (mTLS, TLS 1.2+) |
+| **СБП** (НСПК через Сбербанк) | Оплата по QR-коду через Систему быстрых платежей | REST API (JSON) | API-ключи |
+| **Devino Telecom** | SMS: OTP, уведомления об оплате, информационные рассылки | REST API v2 (JSON) | Basic Auth (login:password) |
+| **Firebase Cloud Messaging** | Push-уведомления: статус платежей, напоминания, тарифы | FCM HTTP v1 API | OAuth 2.0 Service Account |
+
+### Платёжные методы
+
+- **Банковская карта** — через платёжную форму Банка Русский Стандарт (RSB ECOMM). Модели: SMS (единая транзакция) и DMS (авторизация + выполнение). Поддержка 3D Secure 2.x.
+- **СБП** — создание платежа, генерация QR-кода, callback-уведомления, возвраты. Доступно также на платёжной странице РСБ (`ecomm_payment_scenario=10564`).
+- **Рекуррентные платежи** — сохранение карты на стороне Банка, последующее списание по инициативе ТСП или клиента.
+
+### Ключевые эндпоинты прокси
+
+| Группа | Эндпоинты нашего API | Внешний сервис |
+|--------|---------------------|---------------|
+| Платежи (карта) | `/v1/payments/card/register`, `status`, `dms/*`, `reverse`, `refund`, `close-day` | РСБ ECOMM |
+| Платежи (СБП) | `/v1/payments/sbp/create`, `status/{id}`, `cancel/{id}`, `refund/{id}`, `callback` | СБП API |
+| SMS | `/v1/sms/send`, `status/{id}`, `balance` | Devino Telecom |
+| Push | `/v1/notifications/send`, `status`, `status-old` | FCM (через BSS) |
+
+Полная спецификация — [`api.yaml`](./api.yaml) (OpenAPI 3.0.3, 42 эндпоинта).
+Подробная архитектура — [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
+---
+
 ## Быстрый старт
 
 ### Требования
