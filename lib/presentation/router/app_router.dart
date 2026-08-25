@@ -16,6 +16,7 @@ import 'package:telecom_dashboard/presentation/screens/payment/payment_screen.da
 import 'package:telecom_dashboard/presentation/screens/services/services_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/settings/settings_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/support/support_screen.dart';
+import 'package:telecom_dashboard/presentation/screens/top_up/payment_callback_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_screen.dart';
 import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar.dart';
 
@@ -131,6 +132,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return NewsDetailScreen(newsId: id);
+        },
+      ),
+      // Payment callback — deep link / 3DS возврат из РСБ
+      GoRoute(
+        path: Routes.paymentCallback,
+        builder: (context, state) {
+          // go_router кладёт query-параметры в state.uri.queryParameters
+          final params = Map<String, String>.from(state.uri.queryParameters);
+          return PaymentCallbackScreen(queryParams: params);
         },
       ),
     ],

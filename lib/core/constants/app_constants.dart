@@ -24,4 +24,13 @@ class AppConstants {
 
   // Cache
   static const int cacheTtlSeconds = 300;
+
+  // Deep links / Payment callback
+  /// URL scheme приложения (используется для возврата из 3DS РСБ).
+  static const String deepLinkScheme = 'starlink';
+
+  /// Паттерн URL, который перехватывается в WebView после завершения оплаты.
+  /// Бэкенд должен сконфигурировать этот URL как returnUrl при создании транзакции.
+  static const String paymentCallbackHost = 'payment-callback.starlink.app';
+  static const String paymentCallbackPath = '/callback';
 }

@@ -24,10 +24,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Remove stale generated files
+        run: |
+          find lib -name '*.freezed.dart' -delete 2>/dev/null || true
+          find lib -name '*.g.dart' -delete 2>/dev/null || true
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ github.event.inputs.flutter_version }}
+          flutter-version: ${{ github.event.inputs.flutter_version || '' }}
           channel: 'stable'
           cache: true
 
@@ -37,61 +42,35 @@ jobs:
       - name: Generate iOS platform files
         run: flutter create --platforms=ios,android .
 
-      - name: Ensure Podfile exists
+      - name: Configure deep links
+        run: bash scripts/configure_deep_links.sh
+
+      # ── CocoaPods / Swift Package Manager ──────────────────
+      # Flutter 3.47+ мигрирует на SPM. Если flutter create
+      # сгенерировал Podfile — запускаем pod install.
+      # Если нет (SPM) — пропускаем.
+      - name: Install CocoaPods (if needed)
         run: |
-          if [ ! -f ios/Podfile ]; then
-            echo "Podfile missing after flutter create — creating from template"
-            cat > ios/Podfile << 'PODFILE'
-          platform :ios, '14.0'
-
-          ENV['COCOAPODS_DISABLE_STATS'] = 'true'
-
-          project 'Runner', {
-            'Debug' => :debug,
-            'Profile' => :release,
-            'Release' => :release,
-          }
-
-          def flutter_root
-            generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
-            unless File.exist?(generated_xcode_build_settings_path)
-              raise "#{generated_xcode_build_settings_path} must exist."
-            end
-            File.foreach(generated_xcode_build_settings_path) do |line|
-              matches = line.match(/FLUTTER_ROOT\=(.*)/)
-              return matches[1].strip if matches
-            end
-            raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}."
-          end
-
-          require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
-
-          flutter_ios_podfile_setup
-
-          target 'Runner' do
-            use_frameworks!
-            use_modular_headers!
-            flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-            target 'RunnerTests' do
-              inherit! :search_paths
-            end
-          end
-
-          post_install do |installer|
-            installer.pods_project.targets.each do |target|
-              flutter_additional_ios_build_settings(target)
-            end
-          end
-          PODFILE
+          if [ -f ios/Podfile ]; then
+            cd ios && pod install --repo-update
+          else
+            echo "No Podfile — using Swift Package Manager"
           fi
-          echo "Podfile contents:"
-          head -5 ios/Podfile
 
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Install CocoaPods dependencies
-        run: cd ios && pod install --repo-update
+      # ── Code Signing (uncomment when certificates are ready) ──
+      # - name: Install Apple Certificate
+      #   uses: apple-actions/import-codesign-certs@v2
+      #   with:
+      #     p12-file-base64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+      #     p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      #
+      # - name: Install Provisioning Profile
+      #   run: |
+      #     mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+      #     echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
 
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign

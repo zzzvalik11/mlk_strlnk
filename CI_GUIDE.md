@@ -7,7 +7,7 @@
 ## Обзор
 
 | Workflow | Файл | Runner | Результат |
-|----------|------|--------|-----------|
+|----------|------|--------|----------|
 | Build Android | `.github/workflows/android.yml` | `ubuntu-latest` | `app-release.apk` или `app-release.aab` |
 | Build iOS | `.github/workflows/ios.yml` | `macos-latest` | `Starlink.ipa` (без подписи) |
 
@@ -36,14 +36,16 @@
 ## Этапы сборки (Android)
 
 ```
-Checkout → Flutter SDK → pub get → flutter create (android) → Java 17 → build_runner → build → upload
+Checkout → Remove stale .freezed → Flutter SDK → pub get → flutter create (android) → deep links → Java 17 → build_runner → build → upload
 ```
 
 | Шаг | Команда | Описание |
 |-----|---------|----------|
+| Remove stale generated files | `find lib -name '*.freezed.dart' -delete` | Удаление старых сгенерированных файлов (если были закоммичены) |
 | Install dependencies | `flutter pub get` | Загрузка пакетов из pubspec.yaml |
 | Generate Android files | `flutter create --platforms=android .` | Создание android/ директории |
-| Setup Java | `actions/setup-java@v5` (Zulu 17) | JDK для Gradle |
+| Configure deep links | `bash scripts/configure_deep_links.sh` | Настройка intent-filter для `starlink://` scheme |
+| Setup Java | `actions/setup-java@v4` (Zulu 17) | JDK для Gradle |
 | Run build_runner | `dart run build_runner build --delete-conflicting-outputs` | Генерация .freezed.dart и .g.dart |
 | Build APK | `flutter build apk --release` | Сборка релизного APK |
 | Build AAB | `flutter build appbundle --release` | Сборка App Bundle для Google Play |
@@ -51,16 +53,17 @@ Checkout → Flutter SDK → pub get → flutter create (android) → Java 17 �
 ## Этапы сборки (iOS)
 
 ```
-Checkout → Flutter SDK → pub get → flutter create (ios+android) → ensure Podfile → build_runner → pod install → build → create IPA → upload
+Checkout → Remove stale .freezed → Flutter SDK → pub get → flutter create (ios+android) → deep links → build_runner → [pod install | SPM] → build → create IPA → upload
 ```
 
 | Шаг | Команда | Описание |
 |-----|---------|----------|
+| Remove stale generated files | `find lib -name '*.freezed.dart' -delete` | Удаление старых сгенерированных файлов |
 | Install dependencies | `flutter pub get` | Загрузка пакетов из pubspec.yaml |
 | Generate iOS files | `flutter create --platforms=ios,android .` | Создание ios/ и android/ |
-| Ensure Podfile | Проверка + fallback создание | В новых версиях Flutter Podfile не генерируется автоматически |
+| Configure deep links | `bash scripts/configure_deep_links.sh` | Настройка CFBundleURLSchemes для `starlink://` |
+| Install CocoaPods (if needed) | `cd ios && pod install` | Запускается только если flutter create создал Podfile |
 | Run build_runner | `dart run build_runner build --delete-conflicting-outputs` | Генерация .freezed.dart и .g.dart |
-| Install CocoaPods | `cd ios && pod install --repo-update` | Зависимости iOS |
 | Build iOS | `flutter build ios --release --no-codesign` | Сборка без подписи |
 | Create IPA | `cp + zip` в Payload/ | Упаковка .ipa |
 
@@ -68,7 +71,41 @@ Checkout → Flutter SDK → pub get → flutter create (ios+android) → ensure
 
 ### Почему `flutter create .`?
 
-Платформенные директории (`android/`, `ios/`) не хранятся в репозитории — они генерируются Flutter на лету. Исключение — `ios/Podfile`, который коммитится отдельно, так как в новых версиях Flutter SDK он не создаётся автоматически.
+Платформенные директории (`android/`, `ios/`) не хранятся в репозитории — они генерируются Flutter на лету при каждой сборке в CI. Это уменьшает размер репозитория и избегает конфликтов версий Flutter.
+
+### CocoaPods vs Swift Package Manager
+
+Flutter 3.47+ мигрирует с CocoaPods на Swift Package Manager (SPM). Workflow автоматически определяет, какой подход использовать:
+- Если `flutter create` сгенерировал `ios/Podfile` → запускается `pod install`
+- Если Podfile отсутствует (SPM) → шаг пропускается
+
+**Важно**: `ios/Podfile` не хранится в репозитории — `.gitignore` исключает всю директорию `ios/`.
+
+---
+
+## Глубокие ссылки (Deep Links)
+
+Приложение обрабатывает deep link `starlink://` для возврата из платёжной формы (3DS РСБ).
+
+### Как это работает
+
+1. Пользователь оплачивает картой через WebView (РСБ ECOMM).
+2. После 3DS верификации банк перенаправляет на callback URL.
+3. WebView перехватывает URL через `NavigationDelegate` и перенаправляет на экран результата.
+4. Если банк открывает URL scheme напрямую (`starlink://payment/callback?...`), приложение открывается через deep link.
+
+### Настройка в CI
+
+Скрипт `scripts/configure_deep_links.sh` автоматически настраивает платформы после `flutter create`:
+- **Android**: добавляет `intent-filter` в `AndroidManifest.xml` для схемы `starlink`
+- **iOS**: добавляет `CFBundleURLSchemes` в `Info.plist`
+
+### Локальная настройка
+
+```bash
+# После flutter create (или если платформенные файлы уже есть):
+bash scripts/configure_deep_links.sh
+```
 
 ---
 
@@ -178,12 +215,25 @@ flutter-version: '3.27.4'  # пустая строка = последняя ст
 
 ## Отладка ошибок сборки
 
-### 1. Ошибка `build_runner` (нет .freezed.dart)
+### 1. Ошибка freezed (missing implementations)
 
+Симптом: `The non-abstract class 'X' is missing implementations for these members: _$X.toJson...`
+
+Причина: в репозитории остались старые `.freezed.dart` файлы, не соответствующие текущему исходному коду.
+
+Решение:
 ```bash
-# Локально проверить:
+# Локально:
+find lib -name '*.freezed.dart' -delete
+find lib -name '*.g.dart' -delete
 flutter pub run build_runner build --delete-conflicting-outputs
+
+# Если файлы закоммичены в git:
+git rm --cached 'lib/**/*.freezed.dart' 'lib/**/*.g.dart'
+git commit -m 'chore: remove stale generated files'
 ```
+
+CI автоматически удаляет stale файлы перед `build_runner`.
 
 ### 2. Ошибка `flutter create`
 
@@ -193,18 +243,37 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 Обычно связан с версией Java или AGP. Проверьте, что `java-version: '17'` соответствует вашей версии `android/build.gradle`.
 
-### 4. iOS: No Podfile found
+### 4. iOS: CocoaPods / SPM конфликт
 
-В новых версиях Flutter SDK `flutter create` не генерирует `ios/Podfile`. В репозитории уже хранится `ios/Podfile`, а CI содержит fallback-шаг для его создания при необходимости.
+Flutter 3.47+ мигрирует на Swift Package Manager. Если видите ошибку о CocoaPods:
+- Убедитесь, что `ios/Podfile` **не** хранится в репозитории
+- Проверьте `.gitignore`: директива `/ios/` должна игнорировать всю папку (без исключений)
+- CI автоматически определяет, нужен ли `pod install`
 
 ### 5. iOS: Xcode version mismatch
 
-macos-latest обновляется GitHub. Если сборка сломалась, можно pin-нуть Xcode:
+`macos-latest` обновляется GitHub. Если сборка сломалась, можно pin-нуть Xcode:
 
 ```yaml
 - uses: maxim-lobanov/setup-xcode@v1
   with:
-    xcode-version: '15.4'
+    xcode-version: '16.0'
+```
+
+---
+
+## Структура generated-файлов
+
+```
+*.freezed.dart  — генерируется freezed (иммутабельные классы, copyWith, when/maybe)
+*.g.dart       — генерируется json_serializable (fromJson/toJson)
+```
+
+Оба типа файлов **не хранятся в репозитории** (`.gitignore`: `*.freezed.dart`, `*.g.dart`).
+Генерация происходит в CI через `build_runner` и локально через:
+
+```bash
+flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
 ---
@@ -212,11 +281,16 @@ macos-latest обновляется GitHub. Если сборка сломала
 ## Полезные команды
 
 ```bash
-# Запустить только Android workflow локально через act (необязательно)
-brew install act
-act push -W .github/workflows/android.yml
+# Локальная генерация кода
+flutter pub run build_runner build --delete-conflicting-outputs
 
-# Посмотреть логи последнего запуска
+# Очистка сгенерированных файлов
+find lib -name '*.freezed.dart' -delete && find lib -name '*.g.dart' -delete
+
+# Локальная настройка deep links (после flutter create)
+bash scripts/configure_deep_links.sh
+
+# Посмотреть логи CI
 gh run list --limit 5
 gh run view --log
 ```

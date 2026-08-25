@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:telecom_dashboard/core/constants/app_constants.dart';
+import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
-import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
+import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/domain/entities/payment_link.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_view_model.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class TopUpScreen extends ConsumerStatefulWidget {
   const TopUpScreen({super.key});
@@ -414,34 +417,102 @@ class _PaymentMethodTile extends StatelessWidget {
 
 // ─── WebView для платёжной формы РСБ ─────────────────────
 
-class _PaymentWebView extends StatelessWidget {
+/// Полноэкранный WebView для оплаты картой через РСБ ECOMM.
+/// Перехватывает callback URL по завершении 3DS / оплаты
+/// и перенаправляет на экран результата.
+class _PaymentWebView extends StatefulWidget {
   final String url;
   const _PaymentWebView({required this.url});
+
+  @override
+  State<_PaymentWebView> createState() => _PaymentWebViewState();
+}
+
+class _PaymentWebViewState extends State<_PaymentWebView> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (progress) {
+            // прогресс загрузки (0–100)
+          },
+          onPageFinished: (_) {
+            if (mounted && _isLoading) {
+              setState(() => _isLoading = false);
+            }
+          },
+          onNavigationRequest: (navigation) {
+            final uri = navigation.url;
+            // Перехватываем callback URL от РСБ
+            if (_isCallbackUrl(uri)) {
+              _handleCallback(uri);
+              return NavigationDecision.prevent;
+            }
+            // Перехватываем deep link (starlink://...)
+            if (uri.startsWith('${AppConstants.deepLinkScheme}://')) {
+              _handleDeepLink(uri);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  /// Проверяет, является ли URL callback-ом от платёжной системы.
+  bool _isCallbackUrl(String url) {
+    final uri = Uri.parse(url);
+    // Сопоставляем по хосту из AppConstants
+    if (uri.host == AppConstants.paymentCallbackHost) return true;
+    // Fallback: любой URL с нашим scheme
+    if (url.startsWith('${AppConstants.deepLinkScheme}://')) return true;
+    return false;
+  }
+
+  /// Обрабатывает callback: извлекает query-параметры и переходит на экран результата.
+  void _handleCallback(String url) {
+    final uri = Uri.parse(url);
+    final params = Map<String, String>.from(uri.queryParameters);
+    if (mounted) {
+      Navigator.of(context).pop();
+      context.go(
+        '${Routes.paymentCallback}?${uri.query}',
+      );
+    }
+  }
+
+  /// Обрабатывает deep link (starlink://payment/callback?...).
+  void _handleDeepLink(String url) {
+    _handleCallback(url);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Оплата'),
+        title: const Text('Оплата картой'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: const Center(
-        child: Text(
-          'WebView будет загружен по URL:\n\n'
-          'Здесь открывается платёжная форма Банка Русский Стандарт.\n'
-          'Подключите бэкенд для получения реального URL.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        // TODO: раскомментировать при подключенном webview_flutter:
-        // WebViewWidget(
-        //   controller: WebViewController()
-        //     ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        //     ..loadRequest(Uri.parse(url)),
-        // ),
+      body: Stack(
+        children: [
+          WebViewWidget(controller: _controller),
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.orange500,
+              ),
+            ),
+        ],
       ),
     );
   }

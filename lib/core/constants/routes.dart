@@ -22,4 +22,8 @@ class Routes {
   static const String settings = '/settings';
   static const String services = '/services';
   static const String notifications = '/notifications';
+
+  /// Payment callback — 3DS / возврат из платёжной формы РСБ.
+  /// Параметры query: status, result_code, rrn, approval_code, message
+  static const String paymentCallback = '/payment/callback';
 }
