@@ -44,10 +44,10 @@ jobs:
       - name: Configure deep links
         run: bash scripts/configure_deep_links.sh
 
-      # ── CocoaPods / Swift Package Manager ──────────────────
+      # CocoaPods / Swift Package Manager
       # Flutter 3.47+ мигрирует на SPM. Если flutter create
-      # сгенерировал Podfile — запускаем pod install.
-      # Если нет (SPM) — пропускаем.
+      # сгенерировал Podfile - запускаем pod install.
+      # Если нет (SPM) - пропускаем.
       - name: Install CocoaPods (if needed)
         run: |
           if [ -f ios/Podfile ]; then
@@ -59,9 +59,7 @@ jobs:
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
 
-      # ── Code Signing ────────────────────────────────────────
-      # Секреты: IOS_CERTIFICATE_BASE64, IOS_CERTIFICATE_PASSWORD,
-      #   IOS_PROVISIONING_PROFILE_BASE64, IOS_TEAM_ID
+      # Code Signing (автоматически при наличии секретов)
       - name: Install Apple Certificate
         if: "${{ secrets.IOS_CERTIFICATE_BASE64 }}" != ""
         uses: apple-actions/import-codesign-certs@v2
@@ -80,11 +78,8 @@ jobs:
         run: |
           sed -i '' "s/\${TEAM_ID}/${{ secrets.IOS_TEAM_ID }}/g" ios/ExportOptions.plist
 
-      # ── Build ────────────────────────────────────────────────
-      # Если секреты заданы — билдим с подписью и создаём IPA.
-      # Иначе — билдим без подписи (--no-codesign) для проверки компиляции.
-
-      - name: Build iOS (no codesign — compilation check)
+      # Build: без секретов - no-codesign, с секретами - подписанный IPA
+      - name: Build iOS (no codesign - compilation check)
         if: "${{ secrets.IOS_CERTIFICATE_BASE64 }}" == ""
         run: flutter build ios --release --no-codesign
 

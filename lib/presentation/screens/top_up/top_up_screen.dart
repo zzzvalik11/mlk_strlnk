@@ -575,14 +575,7 @@ class _SbpQrScreen extends StatelessWidget {
                     data: qrcodeLink,
                     version: QrVersions.auto,
                     size: 220,
-                    eyeStyle: QrEyeStyle(
-                      eyeShape: QrEyeShape.roundedSquare,
-                      color: AppTheme.gray900,
-                    ),
-                    dataModuleStyle: QrDataModuleStyle(
-                      dataModuleShape: QrDataModuleShape.square,
-                      color: AppTheme.gray900,
-                    ),
+                    backgroundColor: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 28),
