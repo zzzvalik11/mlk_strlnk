@@ -19,7 +19,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
   Future<Either<Failure, PaymentLink>> getPayLink({
     required int accountId,
     required double amount,
-    required PaymentMethod method,
+    PaymentMethod method,
   }) async {
     try {
       final json = await _remoteSource.getPayLink(

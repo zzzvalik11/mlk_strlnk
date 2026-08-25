@@ -10,12 +10,14 @@ class GetTransactionHistoryUseCase {
   const GetTransactionHistoryUseCase(this._repository);
 
   Future<Either<Failure, Page<Transaction>>> call({
-    int page = 1,
-    int limit = 20,
+    int accountId = 1,
+    String? dateFrom,
+    String? dateTo,
   }) {
-    if (page < 1) page = 1;
-    if (limit < 1) limit = 20;
-
-    return _repository.getHistory(page: page, limit: limit);
+    return _repository.getHistory(
+      accountId: accountId,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+    );
   }
 }

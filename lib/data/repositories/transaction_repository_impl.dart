@@ -22,8 +22,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
   @override
   Future<Either<Failure, Page<Transaction>>> getHistory({
-    int page = 1,
-    int limit = 20,
+    int accountId = 1,
+    String? dateFrom,
+    String? dateTo,
   }) async {
     try {
       if (_localSource.isMockUser()) {
@@ -31,22 +32,23 @@ class TransactionRepositoryImpl implements TransactionRepository {
         return right(Page<Transaction>(
           items: items,
           total: items.length,
-          page: page,
-          limit: limit,
+          page: 1,
+          limit: items.length,
           hasMore: false,
         ));
       }
 
       final models = await _remoteSource.getTransactionHistory(
-        page: page,
-        limit: limit,
+        accountId: accountId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
       );
       final entities = models.map((m) => m.toDomain()).toList();
       final domainPage = Page<Transaction>(
         items: entities,
         total: entities.length,
-        page: page,
-        limit: limit,
+        page: 1,
+        limit: entities.length,
         hasMore: false,
       );
       return right(domainPage);
@@ -58,7 +60,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<Either<Failure, Transaction>> getTransactionDetails(String id) async {
+  Future<Either<Failure, Transaction>> getTransactionDetails(String id, {int accountId = 1}) async {
     try {
       if (_localSource.isMockUser()) {
         final all = _createMockTransactions();
@@ -69,7 +71,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
         return right(match);
       }
 
-      final models = await _remoteSource.getTransactionHistory();
+      final models = await _remoteSource.getTransactionHistory(accountId: accountId);
       final match = models.where((m) => m.id == id).firstOrNull;
       if (match == null) {
         return left(

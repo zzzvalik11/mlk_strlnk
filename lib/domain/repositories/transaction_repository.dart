@@ -5,8 +5,9 @@ import 'package:telecom_dashboard/domain/entities/transaction.dart';
 
 abstract class TransactionRepository {
   Future<Either<Failure, Page<Transaction>>> getHistory({
-    int page = 1,
-    int limit = 20,
+    int accountId = 1,
+    String? dateFrom,
+    String? dateTo,
   });
-  Future<Either<Failure, Transaction>> getTransactionDetails(String id);
+  Future<Either<Failure, Transaction>> getTransactionDetails(String id, {int accountId = 1});
 }

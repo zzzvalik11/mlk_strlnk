@@ -20,14 +20,14 @@ class ServiceRepositoryImpl implements ServiceRepository {
         _localSource = localSource;
 
   @override
-  Future<Either<Failure, List<Service>>> getActiveServices() async {
+  Future<Either<Failure, List<Service>>> getActiveServices({int accountId = 1}) async {
     try {
       // Mock data for test user — no network calls
       if (_localSource.isMockUser()) {
         return right(_createMockServices());
       }
 
-      final models = await _remoteSource.getActiveServices();
+      final models = await _remoteSource.getActiveServices(accountId: accountId);
       return right(models.map((m) => m.toDomain()).toList());
     } on DioException catch (e) {
       return left(DioExceptionMapper.map(e));
@@ -37,7 +37,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
   }
 
   @override
-  Future<Either<Failure, Service>> getServiceDetails(String id) async {
+  Future<Either<Failure, Service>> getServiceDetails(String id, {int accountId = 1}) async {
     try {
       if (_localSource.isMockUser()) {
         final all = _createMockServices();
@@ -48,7 +48,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
         return right(match);
       }
 
-      final models = await _remoteSource.getActiveServices();
+      final models = await _remoteSource.getActiveServices(accountId: accountId);
       final match = models.where((m) => m.id == id).firstOrNull;
       if (match == null) {
         return left(
@@ -64,14 +64,14 @@ class ServiceRepositoryImpl implements ServiceRepository {
   }
 
   @override
-  Future<Either<Failure, Service>> renewService(String id) async {
+  Future<Either<Failure, Service>> renewService(String id, {int accountId = 1}) async {
     try {
       if (_localSource.isMockUser()) {
-        final result = await getServiceDetails(id);
+        final result = await getServiceDetails(id, accountId: accountId);
         return result;
       }
 
-      final result = await getServiceDetails(id);
+      final result = await getServiceDetails(id, accountId: accountId);
       return result;
     } on DioException catch (e) {
       return left(DioExceptionMapper.map(e));

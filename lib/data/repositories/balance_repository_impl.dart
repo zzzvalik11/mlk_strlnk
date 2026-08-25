@@ -28,7 +28,24 @@ class BalanceRepositoryImpl implements BalanceRepository {
         return right(_createMockBalance());
       }
 
-      final model = await _remoteSource.getBalance();
+      final accounts = await _remoteSource.getAccounts();
+      if (accounts.isEmpty) {
+        return left(const Failure.server(
+          statusCode: 404,
+          message: 'Счета не найдены',
+        ));
+      }
+      // Берём первый счёт для баланса
+      final first = accounts.first;
+      final model = BalanceModel(
+        amount: (first['balance'] as num?)?.toDouble() ?? 0.0,
+        currency: 'RUB',
+        paidUntil: first['paid_until'] != null
+            ? DateTime.tryParse(first['paid_until'] as String)
+            : null,
+        isPaid: (first['is_paid'] as bool?) ?? false,
+        lastUpdated: DateTime.now(),
+      );
       return right(model.toDomain());
     } on DioException catch (e) {
       return left(DioExceptionMapper.map(e));
@@ -41,14 +58,15 @@ class BalanceRepositoryImpl implements BalanceRepository {
   Future<Either<Failure, Balance>> topUp(double amount, String method) async {
     try {
       if (_localSource.isMockUser()) {
-        // Just return a mock balance with updated amount
         return right(_createMockBalance(amount: 500.0 + amount));
       }
 
-      final result = await _remoteSource.topUp(amount);
-      final newBalanceValue = (result['newBalance'] as num).toDouble();
-      final model = await _remoteSource.getBalance();
-      return right(model.toDomain());
+      // Пополнение теперь через PaymentRepository (РСБ/СБП).
+      // Этот метод оставлен для совместимости, но реальная логика
+      // перенесена в PaymentRepository.getPayLink().
+      return left(const Failure.unknown(
+        message: 'Используйте PaymentRepository для пополнения',
+      ));
     } on DioException catch (e) {
       return left(DioExceptionMapper.map(e));
     } catch (e) {
@@ -61,7 +79,7 @@ class BalanceRepositoryImpl implements BalanceRepository {
   Balance _createMockBalance({double? amount}) {
     return Balance(
       amount: amount ?? 500.0,
-      currency: '₽',
+      currency: 'RUB',
       paidUntil: DateTime(2025, 8, 15),
       isPaid: true,
       lastUpdated: DateTime.now(),

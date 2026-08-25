@@ -23,4 +23,13 @@ class SupportRemoteSource {
       response.data as Map<String, dynamic>,
     );
   }
+
+  /// GET /v1/support/tickets — список обращений.
+  Future<List<SupportTicketModel>> getTickets() async {
+    final response = await _apiClient.get('/v1/support/tickets');
+    final data = response.data as List<dynamic>;
+    return data
+        .map((e) => SupportTicketModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

@@ -56,7 +56,7 @@ class SupportRepositoryImpl implements SupportRepository {
         return right(_createMockTickets());
       }
 
-      final models = await _remoteSource.getMyTickets();
+      final models = await _remoteSource.getTickets();
       return right(models.map((m) => m.toDomain()).toList());
     } on DioException catch (e) {
       return left(DioExceptionMapper.map(e));
@@ -77,7 +77,7 @@ class SupportRepositoryImpl implements SupportRepository {
         return right(match);
       }
 
-      final models = await _remoteSource.getMyTickets();
+      final models = await _remoteSource.getTickets();
       final match = models.where((m) => m.id == id).firstOrNull;
       if (match == null) {
         return left(
