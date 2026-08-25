@@ -8,6 +8,8 @@ import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
 import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/domain/entities/payment_link.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_view_model.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class TopUpScreen extends ConsumerStatefulWidget {
@@ -520,14 +522,27 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
 
 // ─── Экран QR-кода для СБП ───────────────────────────────
 
+/// Полноэкранный экран с QR-кодом для оплаты через СБП (Сбербанк).
+/// [qrcodeLink] — payload для генерации QR (передаётся 1:1 в QrImageView).
+/// [qrUrl] — прямая ссылка для открытия в браузере / банковском приложении.
 class _SbpQrScreen extends StatelessWidget {
   final String qrcodeLink;
   final String? qrUrl;
   const _SbpQrScreen({required this.qrcodeLink, this.qrUrl});
 
+  /// Открывает [qrUrl] во внешнем браузере или банковском приложении.
+  Future<void> _launchQrUrl() async {
+    if (qrUrl == null) return;
+    final uri = Uri.parse(qrUrl!);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Оплата через СБП'),
         leading: IconButton(
@@ -535,44 +550,86 @@ class _SbpQrScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Заглушка QR-кода
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppTheme.gray300),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Text(
-                    'QR-код\n(требуется пакет qr_flutter)',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // QR-код
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: QrImageView(
+                    data: qrcodeLink,
+                    version: QrVersions.auto,
+                    size: 220,
+                    eyeStyle: QrEyeStyle(
+                      eyeShape: QrEyeShape.roundedOuter,
+                      color: AppTheme.gray900,
+                    ),
+                    dataModuleStyle: QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.roundedOuter,
+                      color: AppTheme.gray900,
+                    ),
+                    embeddedImage: null, // Логотип Сбербанка можно добавить позже
+                    embeddedImageStyle: null,
                   ),
                 ),
-                // TODO: заменить на QrImageView при подключении qr_flutter
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Откройте банковское приложение\nи отсканируйте QR-код',
-                textAlign: TextAlign.center,
-                style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray600),
-              ),
-              const SizedBox(height: 16),
-              if (qrUrl != null)
-                TextButton(
-                  onPressed: () {
-                    // TODO: открыть qrUrl в браузере
-                  },
-                  child: const Text('Открыть в браузере'),
+                const SizedBox(height: 28),
+                Text(
+                  'Откройте банковское приложение\nи отсканируйте QR-код',
+                  textAlign: TextAlign.center,
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.gray600,
+                    fontSize: 15,
+                  ),
                 ),
-            ],
+                const SizedBox(height: 24),
+                // Кнопка «Открыть в браузере»
+                if (qrUrl != null)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: _launchQrUrl,
+                      icon: const Icon(Icons.open_in_browser_rounded, size: 20),
+                      label: const Text(
+                        'Открыть в приложении банка',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.orange500,
+                        side: BorderSide(color: AppTheme.orange500),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Вернуться к сумме',
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.gray500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

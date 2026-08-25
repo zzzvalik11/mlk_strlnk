@@ -9,7 +9,7 @@
 | Workflow | Файл | Runner | Результат |
 |----------|------|--------|----------|
 | Build Android | `.github/workflows/android.yml` | `ubuntu-latest` | `app-release.apk` или `app-release.aab` |
-| Build iOS | `.github/workflows/ios.yml` | `macos-latest` | `Starlink.ipa` (без подписи) |
+| Build iOS | `.github/workflows/ios.yml` | `macos-latest` | `*.ipa` (без подписи) или подписанный IPA |
 
 ---
 
@@ -141,44 +141,66 @@ adb install app-release.apk
 
 ## iOS: подпись кода (Code Signing)
 
-По умолчанию iOS-сборка **без подписи** (`--no-codesign`). IPA можно использовать для тестирования на симуляторе, но **не для установки на реальное устройство**.
+Workflow автоматически определяет, заданы ли секреты для подписи:
+- **Без секретов** — билд `--no-codesign` для проверки компиляции
+- **С секретами** — полный `flutter build ipa` с подписью и экспортом IPA
 
-### Для подписанного IPA (установка на iPhone)
+### Требуемые секреты GitHub
 
-Требуется аккаунт Apple Developer ($99/год) и сертификаты.
+Добавьте в **Settings → Secrets and variables → Actions**:
 
-#### Шаг 1. Подготовка сертификата
+| Secret | Описание | Как получить |
+|--------|----------|-------------|
+| `IOS_CERTIFICATE_BASE64` | P12 сертификат (base64) | `base64 -i certificate.p12 \| pbcopy` |
+| `IOS_CERTIFICATE_PASSWORD` | Пароль от .p12 файла | Задаётся при экспорте из Keychain |
+| `IOS_PROVISIONING_PROFILE_BASE64` | .mobileprovision (base64) | `base64 -i profile.mobileprovision \| pbcopy` |
+| `IOS_TEAM_ID` | Apple Team ID | [developer.apple.com → Membership](https://developer.apple.com/account) |
+
+### Пошаговая настройка
+
+#### 1. Создание сертификата
 
 ```bash
-# Экспорт .p12 из Keychain
+# В Keychain Access:
+# Keychain Access → Certificate Assistant → Request a Certificate from a Certificate Authority
+# Или через Xcode: Preferences → Accounts → Manage Certificates → +
+
+# Экспорт в .p12:
 security find-identity -v -p codesigning
-# Экспорт сертификата в .p12 формат
+# Правый клик по сертификату → Export → сохранить как .p12
+base64 -i certificate.p12 | pbcopy  # → IOS_CERTIFICATE_BASE64
 ```
 
-#### Шаг 2. Создание Provisioning Profile
+#### 2. Создание Provisioning Profile
 
-1. Зайти на [developer.apple.com](https://developer.apple.com)
-2. Certificates, Identifiers & Profiles → Profiles → Create
-3. Выбрать тип: **Ad Hoc** или **App Store**
-4. Скачать файл `.mobileprovision`
+1. Зайти на [developer.apple.com/account/resources/identifiers/list](https://developer.apple.com/account/resources/identifiers/list)
+2. Создать App ID (bundle identifier совпадает с pubspec.yaml)
+3. [Profiles → Create](https://developer.apple.com/account/resources/profiles/list) → тип **Ad Hoc** или **App Store**
+4. Скачать `.mobileprovision`
+5. `base64 -i profile.mobileprovision | pbcopy` → `IOS_PROVISIONING_PROFILE_BASE64`
 
-#### Шаг 3. Настройка секретов GitHub
+#### 3. Конфигурация ExportOptions
 
-Добавьте в репозитории **Settings → Secrets and variables → Actions**:
+Файл `ios/ExportOptions.plist` уже создан и содержит плейсхолдер `${TEAM_ID}`.
+CI автоматически подставляет `IOS_TEAM_ID` через `sed`.
 
-| Secret | Описание |
-|--------|----------|
-| `IOS_CERTIFICATE_BASE64` | `base64 -i certificate.p12 | pbcopy` |
-| `IOS_CERTIFICATE_PASSWORD` | Пароль от .p12 файла |
-| `IOS_PROVISIONING_PROFILE_BASE64` | `base64 -i profile.mobileprovision | pbcopy` |
+#### 4. Активация подписи
 
-#### Шаг 4. Раскомментировать шаги в ios.yml
+После добавления секретов в GitHub — **ничего раскомментировать не нужно**. Workflow автоматически:
+1. Проверит наличие `IOS_CERTIFICATE_BASE64`
+2. Установит сертификат и provisioning profile
+3. Подставит Team ID в ExportOptions.plist
+4. Выполнит `flutter build ipa --export-options-plist=ios/ExportOptions.plist`
+5. Загрузит подписанный IPA как артефакт
 
-В файле `.github/workflows/ios.yml` раскомментируйте блоки:
-- `Install Apple Certificate`
-- `Install Provisioning Profile`
+### Методы подписи в ExportOptions.plist
 
-И уберите `--no-codesign` из команды сборки.
+| method | Когда использовать |
+|--------|-------------------|
+| `automatic` | Xcode Managed Signing (рекомендуется для CI) |
+| `app-store` | Публикация в App Store Connect |
+| `ad-hoc` | Установка на конкретные устройства |
+| `development` | Только для отладки на зарегистрированных устройствах |
 
 ---
 

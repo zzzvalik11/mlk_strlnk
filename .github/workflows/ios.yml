@@ -34,7 +34,6 @@ jobs:
         with:
           flutter-version: ${{ github.event.inputs.flutter_version || '' }}
           channel: 'stable'
-          cache: true
 
       - name: Install dependencies
         run: flutter pub get
@@ -60,30 +59,51 @@ jobs:
       - name: Run build_runner (Freezed + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
 
-      # ── Code Signing (uncomment when certificates are ready) ──
-      # - name: Install Apple Certificate
-      #   uses: apple-actions/import-codesign-certs@v2
-      #   with:
-      #     p12-file-base64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-      #     p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-      #
-      # - name: Install Provisioning Profile
-      #   run: |
-      #     mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-      #     echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+      # ── Code Signing ────────────────────────────────────────
+      # Когда сертификат и provisioning profile готовы —
+      # раскомментируйте эти шаги и добавьте secrets в GitHub:
+      #   IOS_CERTIFICATE_BASE64  — P12 сертификат (base64)
+      #   IOS_CERTIFICATE_PASSWORD — пароль к P12
+      #   IOS_PROVISIONING_PROFILE_BASE64 — .mobileprovision (base64)
+      #   IOS_TEAM_ID — Apple Team ID
 
-      - name: Build iOS (no codesign)
+      - name: Install Apple Certificate
+        if: "${{ secrets.IOS_CERTIFICATE_BASE64 }}" != ""
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+
+      - name: Install Provisioning Profile
+        if: "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" != ""
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+      - name: Prepare ExportOptions.plist
+        if: "${{ secrets.IOS_TEAM_ID }}" != ""
+        run: |
+          sed -i '' "s/\${TEAM_ID}/${{ secrets.IOS_TEAM_ID }}/g" ios/ExportOptions.plist
+
+      # ── Build ────────────────────────────────────────────────
+      # Если секреты заданы — билдим с подписью и создаём IPA.
+      # Иначе — билдим без подписи (--no-codesign) для проверки компиляции.
+
+      - name: Build iOS (no codesign — compilation check)
+        if: "${{ secrets.IOS_CERTIFICATE_BASE64 }}" == ""
         run: flutter build ios --release --no-codesign
 
-      - name: Create IPA
+      - name: Build iOS (signed)
+        if: "${{ secrets.IOS_CERTIFICATE_BASE64 }}" != ""
         run: |
-          mkdir -p build/ios/ipa
-          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload
-          cd build/ios/ipa && zip -r ../../Starlink.ipa Payload
+          flutter build ipa \
+            --release \
+            --export-options-plist=ios/ExportOptions.plist
 
       - name: Upload IPA
+        if: "${{ secrets.IOS_CERTIFICATE_BASE64 }}" != ""
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: build/ios/Starlink.ipa
+          path: build/ios/ipa/*.ipa
           retention-days: 30
