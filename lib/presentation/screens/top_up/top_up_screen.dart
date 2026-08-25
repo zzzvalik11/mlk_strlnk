@@ -35,32 +35,32 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
       final link = next.paymentLink;
       if (link == null) return;
 
-      link.when(
-        card: (cardLink) {
+      // Dart 3 pattern matching вместо link.when() —
+      // freezed 4.0 генерирует некорректную сигнатуру when для sealed unions.
+      switch (link) {
+        case CardPaymentLink(:final clientHandlerUrl):
           // Открываем WebView с платёжной формой РСБ
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => _PaymentWebView(url: cardLink.clientHandlerUrl),
+              builder: (_) => _PaymentWebView(url: clientHandlerUrl),
             ),
           ).then((_) {
             // После закрытия WebView — сброс и обновление баланса
             ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
           });
-        },
-        sbp: (sbpLink) {
+        case SbpPaymentLink(:final qrcodeLink, :final qrUrl):
           // Открываем QR-экран
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => _SbpQrScreen(
-                qrcodeLink: sbpLink.qrcodeLink,
-                qrUrl: sbpLink.qrUrl,
+                qrcodeLink: qrcodeLink,
+                qrUrl: qrUrl,
               ),
             ),
           ).then((_) {
             ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
           });
-        },
-      );
+      }
     });
 
     final effectiveAmount = ref.read(topUpViewModelProvider.notifier).effectiveAmount;

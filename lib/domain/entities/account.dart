@@ -17,7 +17,7 @@ enum AccountStatus {
 
 /// Лицевой счёт абонента из биллинговой системы.
 @freezed
-class Account with _$Account {
+sealed class Account with _$Account {
   const factory Account({
     @JsonKey(name: 'id')
     required int id,

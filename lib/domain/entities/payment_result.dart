@@ -32,7 +32,7 @@ enum PaymentProcessStatus {
 
 /// Результат проверки платежа (РСБ или СБП).
 @freezed
-class PaymentResult with _$PaymentResult {
+sealed class PaymentResult with _$PaymentResult {
   const factory PaymentResult({
     @JsonKey(name: 'success')
     required bool success,

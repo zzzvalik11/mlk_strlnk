@@ -5,7 +5,7 @@ part 'sms_status.g.dart';
 
 /// Результат отправки SMS через Devino Telecom.
 @freezed
-class SmsSendResult with _$SmsSendResult {
+sealed class SmsSendResult with _$SmsSendResult {
   const factory SmsSendResult({
     @JsonKey(name: 'success')
     required bool success,
@@ -23,7 +23,7 @@ class SmsSendResult with _$SmsSendResult {
 
 /// Статус доставки SMS.
 @freezed
-class SmsDeliveryStatus with _$SmsDeliveryStatus {
+sealed class SmsDeliveryStatus with _$SmsDeliveryStatus {
   const factory SmsDeliveryStatus({
     @JsonKey(name: 'success')
     required bool success,
