@@ -8,25 +8,32 @@ set -euo pipefail
 SCHEME="starlink"
 HOST="payment-callback.starlink.app"
 
+# Portable in-place sed: Linux использует sed -i, macOS — sed -i ''
+sed_inplace() {
+  if [[ "$OSTYPE" == darwin* ]]; then
+    sed -i '' "$@"
+  else
+    sed -i "$@"
+  fi
+}
+
 # ══════════════════════════════════════════════════════════════
 # Android: добавляем intent-filter в AndroidManifest.xml
 # ══════════════════════════════════════════════════════════════
 if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
   MANIFEST="android/app/src/main/AndroidManifest.xml"
 
-  # Проверяем, не добавлен ли уже intent-filter
   if ! grep -q "$SCHEME" "$MANIFEST" 2>/dev/null; then
     # Вставляем intent-filter перед закрывающим </activity>
-    INTENT_FILTER="\n            <!-- Deep link: starlink:// -->\n            <intent-filter>\n                <action android:name=\"android.intent.action.VIEW\" />\n                <category android:name=\"android.intent.category.DEFAULT\" />\n                <category android:name=\"android.intent.category.BROWSABLE\" />\n                <data android:scheme=\"$SCHEME\" android:host=\"$HOST\" />\n            </intent-filter>"
+    INTENT_FILTER='\            <!-- Deep link: starlink:// -->\n\            <intent-filter>\n\                <action android:name="android.intent.action.VIEW" />\n\                <category android:name="android.intent.category.DEFAULT" />\n\                <category android:name="android.intent.category.BROWSABLE" />\n\                <data android:scheme="'"$SCHEME"'" android:host="'"$HOST"'" />\n\            </intent-filter>'
 
-    # Используем sed для вставки перед </activity>
-    sed -i "s|</activity>|${INTENT_FILTER}\n        </activity>|" "$MANIFEST"
+    sed_inplace "s|</activity>|${INTENT_FILTER}\n        </activity>|" "$MANIFEST"
     echo "[Android] Deep link intent-filter добавлен в $MANIFEST"
   else
     echo "[Android] Deep link уже настроен"
   fi
 else
-  echo "[Android] Файл $MANIFEST не найден — пропускаем"
+  echo "[Android] Файл android/app/src/main/AndroidManifest.xml не найден — пропускаем"
 fi
 
 # ══════════════════════════════════════════════════════════════
@@ -35,12 +42,9 @@ fi
 if [ -f "ios/Runner/Info.plist" ]; then
   PLIST="ios/Runner/Info.plist"
 
-  # Проверяем, не добавлен ли уже scheme
   if ! grep -q "$SCHEME" "$PLIST" 2>/dev/null; then
-    # Вставляем CFBundleURLTypes перед закрывающим </dict>
-    # Используем Python для надёжного редактирования plist-подобного XML
     python3 -c "
-import re, sys
+import sys
 with open('$PLIST', 'r') as f:
     content = f.read()
 
@@ -57,7 +61,6 @@ dection = '''
                 </dict>
         </array>'''
 
-# Вставляем перед последним </dict>
 content = content.rstrip()
 if content.endswith('</dict>'):
     content = content[:-len('</dict>')] + dection + '\n</dict>'
