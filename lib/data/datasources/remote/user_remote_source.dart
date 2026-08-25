@@ -11,7 +11,7 @@ class UserRemoteSource {
       : _apiClient = apiClient;
 
   /// GET /v1/subscriber — профиль авторизованного абонента.
-  Future<UserModel> getUserProfile() async {
+  Future<UserModel> getSubscriber() async {
     final response = await _apiClient.get('/v1/subscriber');
     return UserModel.fromJson(response.data as Map<String, dynamic>);
   }
