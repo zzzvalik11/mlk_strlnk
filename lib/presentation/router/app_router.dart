@@ -17,6 +17,7 @@ import 'package:telecom_dashboard/presentation/screens/services/services_screen.
 import 'package:telecom_dashboard/presentation/screens/settings/settings_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/support/support_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/payment_callback_screen.dart';
+import 'package:telecom_dashboard/presentation/screens/payment/promised_payment_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_screen.dart';
 import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar.dart';
 
@@ -110,6 +111,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.topUp,
         builder: (context, state) => const TopUpScreen(),
+      ),
+      GoRoute(
+        path: Routes.promisedPayment,
+        builder: (context, state) => const PromisedPaymentScreen(),
       ),
       GoRoute(
         path: Routes.history,

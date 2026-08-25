@@ -75,6 +75,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       label: 'Промокод',
                       color: AppTheme.warning,
                     ),
+                    _QuickAction(
+                      icon: Icons.access_time_rounded,
+                      label: 'Обещанный платёж',
+                      color: AppTheme.success,
+                      onTap: () => context.push(Routes.promisedPayment),
+                    ),
                   ],
                 ),
               ),

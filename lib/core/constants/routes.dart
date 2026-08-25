@@ -19,6 +19,7 @@ class Routes {
   static const String authMethodSelection = '/auth_method_selection';
 
   /// App
+  static const String promisedPayment = '/promised_payment';
   static const String settings = '/settings';
   static const String services = '/services';
   static const String notifications = '/notifications';

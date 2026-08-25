@@ -5,18 +5,17 @@ import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/domain/entities/user.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
+import 'package:telecom_dashboard/presentation/providers/notifications_provider.dart';
 
 /// Unified app header used on every screen.
 /// Shows user avatar, name, ID, notification bell, settings & logout.
 class AppHeader extends ConsumerWidget {
   final String? title;
-  final int unreadNotifications;
   final bool showBackButton;
 
   const AppHeader({
     super.key,
     this.title,
-    this.unreadNotifications = 2,
     this.showBackButton = false,
   });
 
@@ -24,6 +23,7 @@ class AppHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.valueOrNull;
+    final unreadCount = ref.watch(unreadNotificationsProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -35,7 +35,13 @@ class AppHeader extends ConsumerWidget {
               child: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
                 color: AppTheme.gray700,
-                onPressed: () => context.pop(),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go(Routes.home);
+                  }
+                },
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
@@ -84,15 +90,15 @@ class AppHeader extends ConsumerWidget {
             children: [
               IconButton(
                 icon: Icon(
-                  unreadNotifications > 0
+                  unreadCount > 0
                       ? Icons.notifications_rounded
                       : Icons.notifications_none_rounded,
-                  color: unreadNotifications > 0 ? AppTheme.orange500 : AppTheme.gray600,
+                  color: unreadCount > 0 ? AppTheme.orange500 : AppTheme.gray600,
                   size: 24,
                 ),
                 onPressed: () => context.push(Routes.notifications),
               ),
-              if (unreadNotifications > 0)
+              if (unreadCount > 0)
                 Positioned(
                   right: 8, top: 8,
                   child: Container(

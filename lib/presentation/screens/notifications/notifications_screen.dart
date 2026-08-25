@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/utils/date_formatter.dart';
 import 'package:telecom_dashboard/core/widgets/app_header.dart';
+import 'package:telecom_dashboard/presentation/providers/notifications_provider.dart';
 
 /// Mock notification model.
 class PushNotification {
@@ -82,6 +83,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         )).toList(),
       );
     });
+    ref.read(unreadNotificationsProvider.notifier).state = 0;
   }
 
   void _markRead(int index) {
@@ -95,6 +97,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         type: _notifications[index].type,
       );
     });
+    final remaining = _notifications.where((n) => !n.isRead).length;
+    ref.read(unreadNotificationsProvider.notifier).state = remaining;
   }
 
   @override

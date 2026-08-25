@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/widgets/app_header.dart';
+import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/screens/support/support_view_model.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
@@ -33,13 +34,14 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(supportViewModelProvider);
     final isSubmitting = state is SupportFormSubmitting;
+    final isAuthenticated = ref.watch(authProvider).valueOrNull != null;
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
       body: SafeArea(
         child: Column(
           children: [
-            const AppHeader(showBackButton: true, title: 'Поддержка'),
+            if (isAuthenticated) const AppHeader(showBackButton: true, title: 'Поддержка'),
             Expanded(
               child: SingleChildScrollView(
         padding: AppTheme.screenPadding,
