@@ -60,13 +60,8 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       # ── Code Signing ────────────────────────────────────────
-      # Когда сертификат и provisioning profile готовы —
-      # раскомментируйте эти шаги и добавьте secrets в GitHub:
-      #   IOS_CERTIFICATE_BASE64  — P12 сертификат (base64)
-      #   IOS_CERTIFICATE_PASSWORD — пароль к P12
-      #   IOS_PROVISIONING_PROFILE_BASE64 — .mobileprovision (base64)
-      #   IOS_TEAM_ID — Apple Team ID
-
+      # Секреты: IOS_CERTIFICATE_BASE64, IOS_CERTIFICATE_PASSWORD,
+      #   IOS_PROVISIONING_PROFILE_BASE64, IOS_TEAM_ID
       - name: Install Apple Certificate
         if: "${{ secrets.IOS_CERTIFICATE_BASE64 }}" != ""
         uses: apple-actions/import-codesign-certs@v2

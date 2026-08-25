@@ -576,15 +576,13 @@ class _SbpQrScreen extends StatelessWidget {
                     version: QrVersions.auto,
                     size: 220,
                     eyeStyle: QrEyeStyle(
-                      eyeShape: QrEyeShape.roundedOuter,
+                      eyeShape: QrEyeShape.roundedSquare,
                       color: AppTheme.gray900,
                     ),
                     dataModuleStyle: QrDataModuleStyle(
-                      dataModuleShape: QrDataModuleShape.roundedOuter,
+                      dataModuleShape: QrDataModuleShape.square,
                       color: AppTheme.gray900,
                     ),
-                    embeddedImage: null, // Логотип Сбербанка можно добавить позже
-                    embeddedImageStyle: null,
                   ),
                 ),
                 const SizedBox(height: 28),
