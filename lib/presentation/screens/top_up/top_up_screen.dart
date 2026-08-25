@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/core/utils/currency_formatter.dart';
-import 'package:telecom_dashboard/presentation/providers/balance_provider.dart';
+import 'package:telecom_dashboard/domain/entities/payment_link.dart';
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_view_model.dart';
 
 class TopUpScreen extends ConsumerStatefulWidget {
@@ -27,20 +27,37 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
   Widget build(BuildContext context) {
     final topUpState = ref.watch(topUpViewModelProvider);
 
+    // Слушаем: если получена ссылка — открываем платёжную форму / QR
     ref.listen<TopUpState>(topUpViewModelProvider, (prev, next) {
-      if (next.result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Баланс пополнён',
+      final link = next.paymentLink;
+      if (link == null) return;
+
+      link.when(
+        card: (cardLink) {
+          // Открываем WebView с платёжной формой РСБ
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => _PaymentWebView(url: cardLink.clientHandlerUrl),
             ),
-            backgroundColor: AppTheme.success,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        ref.invalidate(balanceProvider);
-        context.pop(next.result);
-      }
+          ).then((_) {
+            // После закрытия WebView — сброс и обновление баланса
+            ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
+          });
+        },
+        sbp: (sbpLink) {
+          // Открываем QR-экран
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => _SbpQrScreen(
+                qrcodeLink: sbpLink.qrcodeLink,
+                qrUrl: sbpLink.qrUrl,
+              ),
+            ),
+          ).then((_) {
+            ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
+          });
+        },
+      );
     });
 
     final effectiveAmount = ref.read(topUpViewModelProvider.notifier).effectiveAmount;
@@ -53,137 +70,155 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
             const AppHeader(showBackButton: true, title: 'Пополнить баланс'),
             Expanded(
               child: SingleChildScrollView(
-        padding: AppTheme.screenPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ─── Quick Amounts Grid ──────────────
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 2.2,
-              children: TopUpNotifier.quickAmounts.map((amount) {
-                final isSelected = topUpState.selectedAmount == amount;
-                return _QuickAmountButton(
-                  amount: amount,
-                  isSelected: isSelected,
-                  onTap: () {
-                    ref.read(topUpViewModelProvider.notifier).selectQuickAmount(amount);
-                    _customAmountController.clear();
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-            // ─── Custom Amount ───────────────────
-            Text(
-              'Или введите свою сумму',
-              style: AppTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _customAmountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              onChanged: (value) {
-                ref.read(topUpViewModelProvider.notifier).updateCustomAmount(value);
-              },
-              decoration: InputDecoration(
-                hintText: '0,00',
-                suffixText: '₽',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: AppTheme.inputRadius,
-                  borderSide: BorderSide(color: AppTheme.gray200),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: AppTheme.inputRadius,
-                  borderSide: BorderSide(color: AppTheme.gray200),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: AppTheme.inputRadius,
-                  borderSide: BorderSide(color: AppTheme.orange500, width: 2),
-                ),
-              ),
-            ),
-            // ─── Total Display ───────────────────
-            if (effectiveAmount != null && effectiveAmount > 0) ...[
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: AppTheme.cardRadius,
-                  boxShadow: AppTheme.cardShadow,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: AppTheme.screenPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Итого:', style: AppTheme.titleMedium.copyWith(color: AppTheme.gray600)),
-                    Text(
-                      CurrencyFormatter.formatCurrency(effectiveAmount),
-                      style: AppTheme.headlineSmall.copyWith(
-                        color: AppTheme.gray900,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: [const FontFeature.tabularFigures()],
+                    // ─── Быстрые суммы ──────────────
+                    GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 2.2,
+                      children: TopUpNotifier.quickAmounts.map((amount) {
+                        final isSelected = topUpState.selectedAmount == amount;
+                        return _QuickAmountButton(
+                          amount: amount,
+                          isSelected: isSelected,
+                          onTap: () {
+                            ref
+                                .read(topUpViewModelProvider.notifier)
+                                .selectQuickAmount(amount);
+                            _customAmountController.clear();
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    // ─── Своя сумма ───────────────────
+                    Text('Или введите свою сумму', style: AppTheme.bodySmall),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _customAmountController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (value) {
+                        ref
+                            .read(topUpViewModelProvider.notifier)
+                            .updateCustomAmount(value);
+                      },
+                      decoration: InputDecoration(
+                        hintText: '0,00',
+                        suffixText: '₽',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: AppTheme.inputRadius,
+                          borderSide: BorderSide(color: AppTheme.gray200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppTheme.inputRadius,
+                          borderSide: BorderSide(color: AppTheme.gray200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: AppTheme.inputRadius,
+                          borderSide: BorderSide(
+                            color: AppTheme.orange500,
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
+                    // ─── Итого ───────────────────────────
+                    if (effectiveAmount != null && effectiveAmount > 0) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: AppTheme.cardRadius,
+                          boxShadow: AppTheme.cardShadow,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Итого:',
+                              style: AppTheme.titleMedium
+                                  .copyWith(color: AppTheme.gray600),
+                            ),
+                            Text(
+                              CurrencyFormatter.formatCurrency(effectiveAmount),
+                              style: AppTheme.headlineSmall.copyWith(
+                                color: AppTheme.gray900,
+                                fontWeight: FontWeight.w700,
+                                fontFeatures: [
+                                  const FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // ─── Ошибка ───────────────────────────
+                    if (topUpState.error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          topUpState.error!,
+                          style: AppTheme.bodySmall
+                              .copyWith(color: AppTheme.error),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+                    // ─── Кнопка «Оплатить» ───────────────────
+                    SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: (effectiveAmount == null ||
+                                effectiveAmount <= 0 ||
+                                topUpState.isSubmitting)
+                            ? null
+                            : () => _showPaymentMethods(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.orange500,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: AppTheme.orange200,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: topUpState.isSubmitting
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor:
+                                      AlwaysStoppedAnimation(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Оплатить',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-            ],
-            // ─── Error ───────────────────────────
-            if (topUpState.error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  topUpState.error!,
-                  style: AppTheme.bodySmall.copyWith(color: AppTheme.error),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            const SizedBox(height: 24),
-            // ─── Submit Button ───────────────────
-            SizedBox(
-              height: 56,
-              child: ElevatedButton(
-                onPressed: (effectiveAmount == null || effectiveAmount <= 0 || topUpState.isSubmitting)
-                    ? null
-                    : () => _showPaymentMethods(context, effectiveAmount!),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.orange500,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppTheme.orange200,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: topUpState.isSubmitting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        'Пополнить${effectiveAmount != null && effectiveAmount > 0 ? '' : ''}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
             ),
           ],
         ),
@@ -191,19 +226,20 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
     );
   }
 
-  void _showPaymentMethods(BuildContext context, double amount) {
+  /// Показать bottom sheet с выбором метода оплаты.
+  void _showPaymentMethods(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => _PaymentMethodSheet(amount: amount),
+      builder: (_) => _PaymentMethodSheet(),
     );
   }
 }
 
-// ─── Quick Amount Button ────────────────────────────────────
+// ─── Кнопка быстрой суммы ──────────────────────────────────
 
 class _QuickAmountButton extends StatelessWidget {
   final double amount;
@@ -254,13 +290,9 @@ class _QuickAmountButton extends StatelessWidget {
   }
 }
 
-// ─── Payment Method Bottom Sheet ────────────────────────────
+// ─── Bottom sheet с методами оплаты ──────────────────────
 
 class _PaymentMethodSheet extends ConsumerWidget {
-  final double amount;
-
-  const _PaymentMethodSheet({required this.amount});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
@@ -270,7 +302,6 @@ class _PaymentMethodSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Handle
             Center(
               child: Container(
                 width: 40,
@@ -282,50 +313,37 @@ class _PaymentMethodSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            // Amount
             Text(
-              'Сумма пополнения',
-              style: AppTheme.bodySmall,
+              'Способ оплаты',
+              style: AppTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
-            Text(
-              CurrencyFormatter.formatCurrency(amount),
-              style: AppTheme.headlineSmall.copyWith(
-                fontWeight: FontWeight.w700,
-                fontFeatures: [const FontFeature.tabularFigures()],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            // Methods
+            const SizedBox(height: 20),
+            // Карта
             _PaymentMethodTile(
               icon: Icons.credit_card_rounded,
               title: 'Банковская карта',
-              subtitle: 'Visa, Mastercard, МИР',
+              subtitle: 'Visa, Mastercard, МИР · РСБ',
               onTap: () {
                 Navigator.pop(context);
-                ref.read(topUpViewModelProvider.notifier).submitTopUp();
+                ref
+                    .read(topUpViewModelProvider.notifier)
+                    .setPaymentMethod(PaymentMethod.card);
+                ref.read(topUpViewModelProvider.notifier).requestPayLink();
               },
             ),
             const SizedBox(height: 8),
+            // СБП
             _PaymentMethodTile(
-              icon: Icons.account_balance_rounded,
+              icon: Icons.qr_code_2_rounded,
               title: 'СБП',
-              subtitle: 'Система быстрых платежей',
+              subtitle: 'Система быстрых платежей · QR-код',
               onTap: () {
                 Navigator.pop(context);
-                ref.read(topUpViewModelProvider.notifier).submitTopUp();
-              },
-            ),
-            const SizedBox(height: 8),
-            _PaymentMethodTile(
-              icon: Icons.schedule_rounded,
-              title: 'Обещанный платёж',
-              subtitle: 'Оплата из средств следующего периода',
-              onTap: () {
-                Navigator.pop(context);
-                ref.read(topUpViewModelProvider.notifier).submitTopUp();
+                ref
+                    .read(topUpViewModelProvider.notifier)
+                    .setPaymentMethod(PaymentMethod.sbp);
+                ref.read(topUpViewModelProvider.notifier).requestPayLink();
               },
             ),
           ],
@@ -334,6 +352,8 @@ class _PaymentMethodSheet extends ConsumerWidget {
     );
   }
 }
+
+// ─── Плитка метода оплаты ──────────────────────────────────
 
 class _PaymentMethodTile extends StatelessWidget {
   final IconData icon;
@@ -384,6 +404,103 @@ class _PaymentMethodTile extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.chevron_right_rounded, color: AppTheme.gray400),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── WebView для платёжной формы РСБ ─────────────────────
+
+class _PaymentWebView extends StatelessWidget {
+  final String url;
+  const _PaymentWebView({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Оплата'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: const Center(
+        child: Text(
+          'WebView будет загружен по URL:\n\n'
+          'Здесь открывается платёжная форма Банка Русский Стандарт.\n'
+          'Подключите бэкенд для получения реального URL.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        // TODO: раскомментировать при подключенном webview_flutter:
+        // WebViewWidget(
+        //   controller: WebViewController()
+        //     ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        //     ..loadRequest(Uri.parse(url)),
+        // ),
+      ),
+    );
+  }
+}
+
+// ─── Экран QR-кода для СБП ───────────────────────────────
+
+class _SbpQrScreen extends StatelessWidget {
+  final String qrcodeLink;
+  final String? qrUrl;
+  const _SbpQrScreen({required this.qrcodeLink, this.qrUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Оплата через СБП'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Заглушка QR-кода
+              Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppTheme.gray300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Text(
+                    'QR-код\n(требуется пакет qr_flutter)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                // TODO: заменить на QrImageView при подключении qr_flutter
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Откройте банковское приложение\nи отсканируйте QR-код',
+                textAlign: TextAlign.center,
+                style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray600),
+              ),
+              const SizedBox(height: 16),
+              if (qrUrl != null)
+                TextButton(
+                  onPressed: () {
+                    // TODO: открыть qrUrl в браузере
+                  },
+                  child: const Text('Открыть в браузере'),
+                ),
             ],
           ),
         ),

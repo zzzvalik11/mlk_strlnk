@@ -1,25 +1,29 @@
 import 'package:telecom_dashboard/data/datasources/remote/api_client.dart';
 import 'package:telecom_dashboard/data/models/balance_model.dart';
 
-/// Remote data source for balance-related API calls.
+/// Источник данных для операций со счетами абонента.
+/// Прокси к Starlink BSS (api.yaml v3.0.0).
 class BalanceRemoteSource {
   final ApiClient _apiClient;
 
   BalanceRemoteSource({required ApiClient apiClient}) : _apiClient = apiClient;
 
-  /// `GET /account/profile` → extracts and returns the `balance` object.
-  Future<BalanceModel> getBalance() async {
-    final response = await _apiClient.get('/account/profile');
-    final data = response.data as Map<String, dynamic>;
-    return BalanceModel.fromJson(data['balance'] as Map<String, dynamic>);
+  /// GET /v1/subscriber/accounts — список лицевых счетов.
+  Future<List<Map<String, dynamic>>> getAccounts() async {
+    final response = await _apiClient.get('/v1/subscriber/accounts');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => e as Map<String, dynamic>).toList();
   }
 
-  /// `POST /top-up` → returns a map with `newBalance`.
-  Future<Map<String, dynamic>> topUp(double amount) async {
-    final response = await _apiClient.post(
-      '/top-up',
-      body: {'amount': amount},
-    );
+  /// GET /v1/subscriber/accounts/{id} — конкретный счёт.
+  Future<Map<String, dynamic>> getAccountById(int accountId) async {
+    final response = await _apiClient.get('/v1/subscriber/accounts/$accountId');
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// GET /v1/resources/promised-pay-terms — условия обещанного платежа.
+  Future<Map<String, dynamic>> getPromisedPayTerms() async {
+    final response = await _apiClient.get('/v1/resources/promised-pay-terms');
     return response.data as Map<String, dynamic>;
   }
 }

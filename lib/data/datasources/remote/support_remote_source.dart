@@ -7,29 +7,20 @@ class SupportRemoteSource {
 
   SupportRemoteSource({required ApiClient apiClient}) : _apiClient = apiClient;
 
-  /// `POST /support` → creates a ticket and returns the DTO.
+  /// POST /v1/support/send-email — обращение в техподдержку.
   Future<SupportTicketModel> createTicket({
     required String subject,
     required String description,
   }) async {
     final response = await _apiClient.post(
-      '/support',
+      '/v1/support/send-email',
       body: {
         'subject': subject,
-        'description': description,
+        'message': description,
       },
     );
     return SupportTicketModel.fromJson(
       response.data as Map<String, dynamic>,
     );
-  }
-
-  /// `GET /support` → list of the user's tickets.
-  Future<List<SupportTicketModel>> getMyTickets() async {
-    final response = await _apiClient.get('/support');
-    final data = response.data as List<dynamic>;
-    return data
-        .map((e) => SupportTicketModel.fromJson(e as Map<String, dynamic>))
-        .toList();
   }
 }

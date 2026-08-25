@@ -1,24 +1,27 @@
 import 'package:telecom_dashboard/data/datasources/remote/api_client.dart';
 import 'package:telecom_dashboard/data/models/transaction_model.dart';
 
-/// Remote data source for transaction-related API calls.
+/// Источник данных для истории транзакций.
+/// Прокси к Starlink BSS (api.yaml v3.0.0).
 class TransactionRemoteSource {
   final ApiClient _apiClient;
 
   TransactionRemoteSource({required ApiClient apiClient})
       : _apiClient = apiClient;
 
-  /// `GET /transactions?page=&limit=` → list of transaction DTOs.
+  /// POST /v1/subscriber/accounts/{accountId}/transactions
+  /// История транзакций с фильтрацией по датам.
   Future<List<TransactionModel>> getTransactionHistory({
-    int page = 1,
-    int limit = 20,
+    required int accountId,
+    String? dateFrom,
+    String? dateTo,
   }) async {
-    final response = await _apiClient.get(
-      '/transactions',
-      queryParameters: {
-        'page': page,
-        'limit': limit,
-      },
+    final body = <String, dynamic>{};
+    if (dateFrom != null) body['date_from'] = dateFrom;
+    if (dateTo != null) body['date_to'] = dateTo;
+    final response = await _apiClient.post(
+      '/v1/subscriber/accounts/$accountId/transactions',
+      body: body,
     );
     final data = response.data as List<dynamic>;
     return data
