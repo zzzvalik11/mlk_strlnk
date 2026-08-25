@@ -37,10 +37,7 @@ class NewsRepositoryImpl implements NewsRepository {
         ));
       }
 
-      final models = await _remoteSource.getNewsList(
-        page: page,
-        limit: limit,
-      );
+      final models = await _remoteSource.getNewsList();
       final entities = models.map((m) => m.toDomain()).toList();
       final domainPage = Page<NewsItem>(
         items: entities,

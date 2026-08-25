@@ -3,17 +3,25 @@ info:
   title: Starlink — Личный кабинет абонента
   description: |
     API телеком-оператора для мобильного приложения личного кабинета.
+    
     Аутентификация осуществляется via JWT Bearer Token.
     Токен получается при авторизации и действует 365 дней.
-
+    
     ## Внешние интеграции
+
     Бэкенд выступает оркестратором между приложением и сторонними сервисами.
     Приложение напрямую не обращается к внешним сервисам.
+    
     - **Платёжный шлюз**: Банк Русский Стандарт (RSB ECOMM v3.0.17)
-    - **СБП**: Система быстрых платежей (SBP)
+    - **СБП**: Система быстрых платежей через Сбербанк
     - **Push-уведомления**: Firebase Cloud Messaging (FCM)
     - **SMS-шлюз**: Devino Telecom
     - **Биллинг**: Starlink BSS (starlink-api v1.0.0)
+    
+    Подробная архитектура: см. `ARCHITECTURE.md`.
+    
+    **Базовый URL для продакшена:** `https://api.starlink.ru/api`
+    **Базовый URL для эмулятора:** `http://10.0.2.2:3000/api`
   version: 3.0.0
   contact:
     name: Starlink API Support
@@ -33,644 +41,253 @@ tags:
   - name: Account
     description: Профиль абонента, балансы, счета
   - name: Payments
-    description: Платёжный шлюз РСБ (RSB ECOMM), СБП, пополнение баланса
+    description: Платёжный шлюз РСБ, СБП, пополнение
   - name: Transactions
-    description: История транзакций из Биллинга
+    description: История транзакций (из Биллинга)
   - name: Services
-    description: Услуги, тарифы, дополнительные услуги, пакеты
-  - name: Bundles
-    description: Пакеты предложений с тарифами
+    description: Услуги, тарифы, доп. услуги, пакеты
   - name: Support
     description: Обращения в техподдержку
-  - name: Notifications
-    description: Push-уведомления, SMS-уведомления
-  - name: TariffTypes
-    description: Типы тарифов
+  - name: Push
+    description: Регистрация устройств, настройки FCM
+  - name: Billing
+    description: Счета, биллинг, обещанный платёж
 
 paths:
-  # ============================================================
-  # AUTH
-  # ============================================================
-  /v1/auth/token:
+  # ═══════════════════════════════════════════════════════
+  #  AUTH
+  # ═══════════════════════════════════════════════════════
+  /auth/login:
     post:
-      tags: [Auth]
-      summary: Авторизация абонента
-      description: |
-        Аутентификация по PIN и паролю. Возвращает JWT-токен, действительный 365 дней.
-        Прокси-запрос к биллинговой системе Starlink BSS (POST /api/v1/auth/token).
       operationId: login
+      tags: [Auth]
+      summary: Авторизация по ПИН-коду и паролю
+      description: |
+        Проверяет учётные данные в Биллинге (BSS /api/v1/auth/token) и возвращает JWT.
+        Proxy-эндпоинт → Биллинг.
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthRequest'
-            example:
-              pin: '1234'
-              password: 'secret123'
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              pin:
+                summary: Вход по ПИН
+                value:
+                  pin: "039103"
+                  password: "123456"
       responses:
         '200':
           description: Успешная авторизация
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-              example:
-                success: true
-                data:
-                  id: 12345
-                  jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-                message: success
-                code: 200
+                $ref: '#/components/schemas/LoginResponse'
         '401':
-          description: Неверные учётные данные
-          content:
-            application/json:
-              example:
-                detail: ''
-                success: false
-                message: incorrect username or password
-                code: 401
-        '429':
-          description: Превышен лимит запросов
-          content:
-            application/json:
-              example:
-                detail: Rate limit exceeded
+          $ref: '#/components/responses/Unauthorized'
 
-  /v1/auth/logout:
+  /auth/request-otp:
     post:
+      operationId: requestOtp
       tags: [Auth]
-      summary: Выход из системы
+      summary: Запросить SMS с OTP-кодом
       description: |
-        Инвалидирует текущий JWT-токен.
-        Прокси-запрос к Starlink BSS (POST /api/v1/auth/logout).
-      operationId: logout
+        Генерирует 6-значный код, отправляет SMS через Devino Telecom.
+        Код валиден 3 минуты. Rate limit: 1 запрос / 60 секунд на номер.
+        Proxy-эндпоинт → Devino Telecom.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestOtpRequest'
       responses:
         '200':
-          description: Успешный выход
+          description: SMS отправлено
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogoutResponse'
-              example:
-                success: true
-                message: success
-                code: 200
-        '401':
-          description: Пользователь не авторизован
+                $ref: '#/components/schemas/RequestOtpResponse'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [Auth]
+      summary: Проверить OTP-код
+      description: |
+        Проверяет введённый код. При успехе — авторизует в Биллинге и возвращает JWT.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: Код верный
           content:
             application/json:
-              example:
-                detail: ''
-                success: false
-                message: not authenticated
-                code: 401
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Неверный или просроченный код
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpError'
 
-  # ============================================================
-  # ACCOUNT / SUBSCRIBER
-  # ============================================================
-  /v1/subscriber:
+  # ═════════════════════════════════════════════════════════
+  #  ACCOUNT
+  # ═══════════════════════════════════════════════════════
+  /account/profile:
     get:
+      operationId: getAccountProfile
       tags: [Account]
-      summary: Информация об абоненте
+      summary: Профиль абонента
       description: |
-        Возвращает профиль текущего авторизованного абонента.
-        Прокси-запрос к Starlink BSS (GET /api/v1/subscriber).
-      operationId: getSubscriber
+        Данные абонента, баланс, список активных услуг.
+        Proxy → Биллинг: GET /api/v1/subscriber + /accounts + /services.
       responses:
         '200':
-          description: Профиль абонента
+          description: Профиль загружен
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CustomerResponse'
+                $ref: '#/components/schemas/AccountProfileResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /v1/subscriber/accounts:
+  # ═══════════════════════════════════════════════════════
+  #  PAYMENTS (РСБ ECOMM + СБП)
+  # ═══════════════════════════════════════════════════════
+  /payments/create:
+    post:
+      operationId: createPayment
+      tags: [Payments]
+      summary: Создать платёжную сессию
+      description: |
+        Создаёт транзакцию и инициирует платёжную сессию.
+        
+        **Метод `rsb` (карта):** Бэкенд вызывает РСБ ECOMM (command=v), получает trans_id,
+        формирует URL платёжной страницы и возвращает его для открытия в WebView.
+        
+        **Метод `sbp` (СБП):** Бэкенд вызывает СБП API (POST /api/v1/create),
+        получает qrcode_link и возвращает для показа QR-кода.
+        
+        **Метод `promise` (обещанный платёж):** Обрабатывается биллингом без внешнего шлюза.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+            examples:
+              rsb_card:
+                summary: Оплата картой через РСБ
+                value:
+                  amount: 16900
+                  method: rsb
+                  description: "Оплата тарифа: Интернет 100 Мбит/с"
+              sbp:
+                summary: Оплата через СБП
+                value:
+                  amount: 50000
+                  method: sbp
+                  description: "Пополнение баланса"
+              promise:
+                summary: Обещанный платёж
+                value:
+                  amount: 50000
+                  method: promise
+      responses:
+        '200':
+          description: Платёжная сессия создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Метод оплаты недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /payments/{paymentId}/status:
     get:
-      tags: [Account]
-      summary: Список счетов абонента
+      operationId: getPaymentStatus
+      tags: [Payments]
+      summary: Статус платежа
       description: |
-        Возвращает все лицевые счета, привязанные к абоненту.
-        Прокси-запрос к Starlink BSS (GET /api/v1/subscriber/accounts).
-      operationId: getAccounts
-      responses:
-        '200':
-          description: Список счетов
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AccountResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /v1/subscriber/accounts/{account_id}:
-    get:
-      tags: [Account]
-      summary: Информация по конкретному счёту
-      description: |
-        Возвращает детальную информацию по указанному лицевому счёту.
-        Прокси-запрос к Starlink BSS.
-      operationId: getAccountById
+        Возвращает текущий статус.
+        
+        **Метод `rsb`:** Бэкенд вызывает РСБ ECOMM (command=c) по trans_id.
+        
+        **Метод `sbp`:** Бэкенд вызывает СБП API (GET /api/v1/status/{order_id}).
+        
+        Приложение должно поллить этот эндпоинт после возврата из WebView.
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-      responses:
-        '200':
-          description: Данные счёта
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AccountResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          description: Счёт не найден
-    patch:
-      tags: [Account]
-      summary: Обновление счёта
-      description: |
-        Блокировка/разблокировка счёта, установка обещанного платежа.
-        Прокси-запрос к Starlink BSS (PATCH /api/v1/subscriber/accounts/{account_id}).
-      operationId: updateAccount
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AccountUpdateRequest'
-      responses:
-        '200':
-          description: Счёт обновлён
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AccountResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /v1/subscriber/accounts/{account_id}/pay-link:
-    get:
-      tags: [Payments]
-      summary: Ссылка на оплату
-      description: |
-        Возвращает платёжную ссылку (ссылку на платежную форму РСБ или СБП) для пополнения указанного счёта на заданную сумму.
-        Формирует запрос к платёжному шлюзу РСБ ECOMM (команда `-v` для SMS-транзакции) или к СБП (POST /api/v1/create).
-        Прокси-запрос к Starlink BSS.
-      operationId: getPayLink
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - name: amount
-          in: query
-          required: true
-          description: Сумма пополнения в рублях (копейки после точки)
-          schema:
-            type: number
-            format: double
-            example: 500.00
-            minimum: 1
-        - name: payment_method
-          in: query
-          required: false
-          description: Метод оплаты
-          schema:
-            type: string
-            enum: [card, sbp]
-            default: card
-      responses:
-        '200':
-          description: Платёжная ссылка
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/CardPaymentLinkResponse'
-                  - $ref: '#/components/schemas/SbpPaymentLinkResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /v1/subscriber/accounts/{account_id}/auto-payment-off:
-    get:
-      tags: [Payments]
-      summary: Отключить автоплатёж
-      description: |
-        Отключает автоплатёж для указанного счёта.
-        Прокси-запрос к Starlink BSS.
-      operationId: disableAutoPayment
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-      responses:
-        '200':
-          description: Автоплатёж отключён
-          content:
-            application/json:
-              example:
-                success: true
-                message: auto-payment disabled
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /v1/subscriber/accounts/{account_id}/auto-payment-link:
-    get:
-      tags: [Payments]
-      summary: Ссылка на подключение автоплатежа
-      description: |
-        Возвращает ссылку для подключения автоплатежа.
-        Прокси-запрос к Starlink BSS.
-      operationId: getAutoPaymentLink
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - name: amount
-          in: query
-          required: true
-          description: Сумма автоплатежа
-          schema:
-            type: number
-            format: double
-            example: 500.00
-      responses:
-        '200':
-          description: Ссылка на автоплатёж
-          content:
-            application/json:
-              example:
-                success: true
-                auto_payment_link: 'https://...'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # ============================================================
-  # PAYMENTS — РСБ ECOMM (CARD)
-  # ============================================================
-  /v1/payments/card/register:
-    post:
-      tags: [Payments]
-      summary: Регистрация SMS-транзакции (РСБ)
-      description: |
-        Регистрирует единую транзакцию оплаты банковской картой через платёжный шлюз РСБ ECOMM.
-        Формирует HTTP POST-запрос к Merchant Handler URL РСБ с командой `-v` (register SMS transaction).
-        Аутентификация — через SSL-сертификат ТСП.
-        В ответе возвращает `transaction_id` для перенаправления клиента на ClientHandler URL Банка.
-
-        **Платёжные модели РСБ:**
-        - SMS (команда -v): авторизация + выполнение за одну транзакцию
-        - DMS (команда -a): авторизация → выполнение (команда -t) двумя этапами
-
-        В данной реализации используется модель SMS.
-      operationId: registerCardPayment
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CardPaymentRegisterRequest'
-            example:
-              amount: 12300
-              currency: '643'
-              client_ip_addr: '10.0.20.30'
-              description: 'Оплата заказа N123'
-              mrch_transaction_id: 'order-uuid-001'
-              language: ru
-              server_version: '2.0'
-      responses:
-        '200':
-          description: Транзакция зарегистрирована
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CardPaymentRegisterResponse'
-              example:
-                success: true
-                transaction_id: 'rEsfhyIk8s9ypxkcS9fj/3C8FqA='
-                client_handler_url: 'https://3dsecurepay.rsb.ru/ecomm2/ClientHandler?trans_id=rEsfhyIk8s9ypxkcS9fj%2F3C8FqA%3D'
-
-  /v1/payments/card/status:
-    post:
-      tags: [Payments]
-      summary: Статус транзакции (РСБ)
-      description: |
-        Запрашивает статус платёжной транзакции у шлюза РСБ ECOMM.
-        Команда `-c` (get transaction result).
-        Выполняется после перенаправления клиента с RETURN_URL.
-        Жизненный цикл транзакции — 10 минут. Последующие запросы считаются избыточными.
-      operationId: getCardPaymentStatus
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CardPaymentStatusRequest'
-            example:
-              trans_id: 'rEsfhyIk8s9ypxkcS9fj/3C8FqA='
-              client_ip_addr: '10.0.20.30'
-              server_version: '2.0'
-      responses:
-        '200':
-          description: Статус транзакции
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CardPaymentStatusResponse'
-              example:
-                success: true
-                result: OK
-                result_ps: FINISHED
-                result_code: '000'
-                threedsecure: AUTHENTICATED
-                rrn: '331711380059'
-                approval_code: '327593'
-                card_number: '5***********2372'
-                mrch_transaction_id: 'order-uuid-001'
-
-  /v1/payments/card/dms/register:
-    post:
-      tags: [Payments]
-      summary: Регистрация DMS-авторизации (РСБ)
-      description: |
-        Регистрирует двухэтапную транзакцию (авторизация без списания) через платёжный шлюз РСБ ECOMM.
-        Команда `-a`. Денежные средства блокируются на карте клиента.
-        Для завершения списания необходимо вызвать `/v1/payments/card/dms/complete`.
-      operationId: registerDmsAuth
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CardPaymentRegisterRequest'
-            example:
-              amount: 12300
-              currency: '643'
-              client_ip_addr: '10.0.20.30'
-              description: 'Заказ N123 (бронирование)'
-              language: ru
-              server_version: '2.0'
-      responses:
-        '200':
-          description: DMS-авторизация зарегистрирована
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CardPaymentRegisterResponse'
-
-  /v1/payments/card/dms/complete:
-    post:
-      tags: [Payments]
-      summary: Выполнение DMS-транзакции (РСБ)
-      description: |
-        Завершает двухэтапную транзакцию — производит фактическое списание заблокированных средств.
-        Команда `-t` (make DMS transaction).
-        Вызывается после подтверждения от клиента (RETURN_URL).
-      operationId: completeDmsTransaction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DmsCompleteRequest'
-            example:
-              trans_id: 'rnSC7dvU73Wt9WTxE6TDXOeal/o='
-              amount: 12300
-              currency: '643'
-              client_ip_addr: '10.0.20.30'
-              description: 'Заказ N123'
-              language: ru
-      responses:
-        '200':
-          description: DMS-транзакция выполнена
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DmsCompleteResponse'
-              example:
-                success: true
-                result: OK
-                result_code: '000'
-                rrn: '331813509357'
-                approval_code: '864745'
-                card_number: '5***********2372'
-
-  /v1/payments/card/reverse:
-    post:
-      tags: [Payments]
-      summary: Отмена транзакции (РСБ)
-      description: |
-        Отменяет транзакцию (reverse). Команда `-r`.
-        Доступна до закрытия бизнес-дня.
-        Для SMS и DMS-расчёта — полная сумма.
-        Для DMS-авторизации — только полная сумма.
-        После отмены средства возвращаются клиенту в течение дня.
-      operationId: reverseCardPayment
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TransactionActionRequest'
-            example:
-              trans_id: 'HbetBxfr87TvObsevaRhAIdWWqM='
-              suspected_fraud: false
-      responses:
-        '200':
-          description: Транзакция отменена
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransactionActionResult'
-              example:
-                success: true
-                result: OK
-                result_code: '400'
-
-  /v1/payments/card/refund:
-    post:
-      tags: [Payments]
-      summary: Возврат средств (РСБ)
-      description: |
-        Возврат средств клиенту (refund). Команда `-k`.
-        Самостоятельная операция с собственным transaction_id.
-        Доступна после закрытия бизнес-дня.
-        Поддерживается полный и частичный возврат.
-        Общая сумма возвратов не может превышать сумму оригинальной транзакции.
-      operationId: refundCardPayment
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefundRequest'
-            example:
-              trans_id: 'M1pUcZowyEKaM5wrrlzyPbqDooU='
-              amount: 50000
-      responses:
-        '200':
-          description: Возврат выполнен
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefundResponse'
-              example:
-                success: true
-                result: OK
-                result_code: '000'
-                refund_trans_id: '6ru/d9kr9u1vtqATyNdlP8KX4Kc='
-
-  /v1/payments/card/close-day:
-    post:
-      tags: [Payments]
-      summary: Закрытие бизнес-дня (РСБ)
-      description: |
-        Инициирует процедуру закрытия бизнес-дня в платёжном шлюзе РСБ ECOMM.
-        Команда `-b`. Необходимо выполнять 1 раз в сутки.
-        По результатам Банк обрабатывает операции и перечисляет средства на расчётный счёт ТСП.
-      operationId: closeBusinessDay
-      responses:
-        '200':
-          description: Бизнес-день закрыт
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CloseDayResponse'
-              example:
-                success: true
-                result: OK
-                result_code: '500'
-                fld_075: '12'
-                fld_076: '31'
-                fld_087: '3201'
-                fld_088: '10099'
-
-  # ============================================================
-  # PAYMENTS — СБП (SBP)
-  # ============================================================
-  /v1/payments/sbp/create:
-    post:
-      tags: [Payments]
-      summary: Создание платежа СБП
-      description: |
-        Создаёт платёж через Систему быстрых платежей.
-        Прокси-запрос к SBP API (POST /api/v1/create).
-        В ответе возвращается платежная ссылка для генерации QR-кода и URL формы оплаты.
-        Статусы платежа: CREATED → ON_PAYMENT → PAID / DECLINED / EXPIRED / REVERSED / REFUNDED.
-      operationId: createSbpPayment
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SbpCreateRequest'
-            example:
-              amount: 500.00
-              account: '123456'
-              phone: '79001234567'
-              email: 'user@example.com'
-              payment_stat: sbpStat
-      responses:
-        '201':
-          description: Платёж СБП создан
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SbpCreateResponse'
-              example:
-                success: true
-                sbp_id: 42
-                rq_uid: 'uuid-550e8400'
-                order_id: 'SBP-2024-000123'
-                qrcode_link: 'https://qr.nspk.ru/...'
-                qr_url: 'https://oplata.sberbank.ru/...'
-                amount: '500.00'
-                status: CREATED
-
-  /v1/payments/sbp/status/{order_id}:
-    get:
-      tags: [Payments]
-      summary: Статус платежа СБП
-      description: |
-        Возвращает текущий статус платежа СБП по order_id.
-        Прокси-запрос к SBP API (GET /api/v1/status/{order_id}).
-      operationId: getSbpPaymentStatus
-      parameters:
-        - name: order_id
+        - name: paymentId
           in: path
           required: true
-          description: ID заказа в Сбербанке
           schema:
             type: string
-          example: 'SBP-2024-000123'
+          description: ID платёжной сессии (из /payments/create)
+          example: "pay_a1b2c3d4"
       responses:
         '200':
           description: Статус платежа
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SbpStatusResponse'
+                $ref: '#/components/schemas/PaymentStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
-  /v1/payments/sbp/cancel/{order_id}:
-    get:
-      tags: [Payments]
-      summary: Отмена платежа СБП
-      description: |
-        Отменяет платёж СБП в системе НСПК.
-        Прокси-запрос к SBP API (GET /api/v1/cancel/{order_id}).
-      operationId: cancelSbpPayment
-      parameters:
-        - name: order_id
-          in: path
-          required: true
-          description: ID заказа в Сбербанке
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Платёж отменён
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SbpCancelResponse'
-
-  /v1/payments/sbp/refund/{order_id}:
+  /payments/webhook/rsb:
     post:
+      operationId: rsbPaymentWebhook
       tags: [Payments]
-      summary: Возврат платежа СБП
+      summary: Webhook от РСБ ECOMM
       description: |
-        Полный или частичный возврат платежа СБП.
-        Прокси-запрос к SBP API (POST /api/v1/refund/{order_id}).
-      operationId: refundSbpPayment
-      parameters:
-        - name: order_id
-          in: path
-          required: true
-          description: ID заказа в Сбербанке
-          schema:
-            type: string
+        Callback от Банка Русский Стандарт при изменении статуса платежа.
+        Бэкенд верифицирует IP-источника, обновляет статус транзакции,
+        начисляет средства в Биллинге, отправляет Push (FCM) и SMS (Devino).
+        **Вызывается платёжным шлюзом, НЕ приложением.**
+      security: []
       requestBody:
         required: true
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/SbpRefundRequest'
+              type: object
+              description: |
+                Поля из POST-запроса РСБ при редиректе на RETURN_URL.
+                Ключевые: trans_id, RESULT, RESULT_PS, RESULT_CODE,
+                RRN, APPROVAL_CODE, CARD_NUMBER.
       responses:
         '200':
-          description: Возврат выполнен
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SbpRefundResponse'
+          description: Webhook обработан
 
-  /v1/payments/sbp/callback:
+  /payments/webhook/sbp:
     post:
+      operationId: sbpPaymentCallback
       tags: [Payments]
-      summary: Callback от СБП
+      summary: Callback от СБП (Сбербанк)
       description: |
-        Обработка callback-уведомлений от Сбербанка/НСПК о смене статуса платежа СБП.
-        Этот эндпоинт вызывается внешней системой, не требует JWT-авторизации.
+        Callback от Сбербанка при изменении статуса СБП-платежа.
+        Бэкенд верифицирует HMAC-подпись, обновляет статус,
+        начисляет в Биллинге, отправляет Push.
+        **Вызывается Сбербанком, НЕ приложением.**
       security: []
-      operationId: sbpCallback
       requestBody:
         required: true
         content:
@@ -680,37 +297,24 @@ paths:
       responses:
         '200':
           description: Callback обработан
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
-              example:
-                status: accepted
 
-  # ============================================================
-  # TRANSACTIONS
-  # ============================================================
-  /v1/subscriber/accounts/{account_id}/transactions:
+  # ═══════════════════════════════════════════════════════
+  #  TRANSACTIONS (из Биллинга)
+  # ═══════════════════════════════════════════════════════
+  /transactions:
     post:
+      operationId: getTransactions
       tags: [Transactions]
       summary: История транзакций
       description: |
-        Возвращает историю транзакций по лицевому счёту с фильтрацией по дате.
-        Прокси-запрос к Starlink BSS (POST /api/v1/subscriber/accounts/{account_id}/transactions).
-      operationId: getTransactionHistory
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
+        История операций из Биллинга с фильтрацией по датам.
+        Proxy → Биллинг: POST /api/v1/subscriber/accounts/{id}/transactions.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TransactionsRequest'
-            example:
-              date_from: '2024-01-01'
-              date_to: '2024-12-31'
       responses:
         '200':
           description: Список транзакций
@@ -719,66 +323,50 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    date:
-                      type: string
-                      format: date-time
-                      description: '2024-01-15T10:30:00'
-                    amount:
-                      type: number
-                      description: 500.00
-                    description:
-                      type: string
-                      description: 'Пополнение через СБП'
-                    type:
-                      type: string
-                      enum: [credit, debit]
+                  $ref: '#/components/schemas/Transaction'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ============================================================
-  # SERVICES
-  # ============================================================
-  /v1/subscriber/accounts/{account_id}/services:
+  # ═══════════════════════════════════════════════════════
+  #  SERVICES (из Биллинга)
+  # ═══════════════════════════════════════════════════════
+  /services/{serviceId}/tariffs:
     get:
+      operationId: getAvailableTariffs
       tags: [Services]
-      summary: Список услуг абонента
+      summary: Доступные тарифы для услуги
       description: |
-        Возвращает список услуг, подключённых к указанному счёту.
-        Прокси-запрос к Starlink BSS.
-      operationId: getServices
+        Proxy → Биллинг: GET /api/v1/subscriber/accounts/{id}/services/{sid}/tariffs.
       parameters:
-        - $ref: '#/components/parameters/AccountId'
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: Список услуг
+          description: Список тарифов
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ServiceItem'
+                $ref: '#/components/schemas/TariffsResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /v1/subscriber/accounts/{account_id}/services/{service_id}:
+  /services/{serviceId}/change:
     patch:
+      operationId: changeService
       tags: [Services]
-      summary: Изменение услуги
+      summary: Изменить услугу
       description: |
         Смена тарифа, приостановка/возобновление услуги.
-        Прокси-запрос к Starlink BSS.
-      operationId: updateService
+        Proxy → Биллинг: PATCH /api/v1/subscriber/accounts/{id}/services/{sid}.
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - name: service_id
+        - name: serviceId
           in: path
           required: true
-          description: ID услуги
           schema:
-            type: integer
-          example: 42
+            type: string
       requestBody:
         required: true
         content:
@@ -787,72 +375,58 @@ paths:
               $ref: '#/components/schemas/ChangeServiceRequest'
       responses:
         '200':
-          description: Услуга обновлена
+          description: Услуга изменена
           content:
             application/json:
-              example:
-                success: true
-                message: service updated
+              schema:
+                $ref: '#/components/schemas/ServiceActionResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /v1/subscriber/accounts/{account_id}/services/{service_id}/additional-services:
+  /services/{serviceId}/additional:
     get:
+      operationId: getAdditionalServices
       tags: [Services]
       summary: Дополнительные услуги
       description: |
-        Возвращает список доступных дополнительных услуг (Real IP, TV-пакеты и т.д.).
-        Данные из базы данных. Прокси-запрос к Starlink BSS.
-      operationId: getAdditionalServices
+        Proxy → Биллинг: GET /.../services/{sid}/additional-services.
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - name: service_id
+        - name: serviceId
           in: path
           required: true
-          description: ID услуги
           schema:
-            type: integer
+            type: string
       responses:
         '200':
-          description: Список дополнительных услуг
+          description: Список доп. услуг
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-                    price:
-                      type: number
-                    description:
-                      type: string
-                    connected:
-                      type: boolean
+                  $ref: '#/components/schemas/AdditionalService'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /v1/subscriber/accounts/{account_id}/services/{service_id}/additional-services/{additional_service_id}:
+  /services/{serviceId}/additional/{additionalId}:
     patch:
+      operationId: toggleAdditionalService
       tags: [Services]
-      summary: Подключение/отключение доп. услуги
+      summary: Подключить/отключить доп. услугу
       description: |
-        Подключает или отключает дополнительную услугу.
-        Прокси-запрос к Starlink BSS.
-      operationId: setAdditionalService
+        Proxy → Биллинг: PATCH /.../additional-services/{asid}.
+        action: 1 = подключить, 0 = отключить.
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - name: service_id
+        - name: serviceId
           in: path
           required: true
           schema:
-            type: integer
-        - name: additional_service_id
+            type: string
+        - name: additionalId
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -861,494 +435,489 @@ paths:
               $ref: '#/components/schemas/AdditionalServiceActionRequest'
       responses:
         '200':
-          description: Операция выполнена
-          content:
-            application/json:
-              example:
-                success: true
-                message: service connected
-
-  /v1/subscriber/accounts/{account_id}/services/{service_id}/tariffs:
-    get:
-      tags: [Services]
-      summary: Доступные тарифы
-      description: |
-        Возвращает список доступных тарифов для указанной услуги.
-        Прокси-запрос к Starlink BSS.
-      operationId: getAvailableTariffs
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - name: service_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Список тарифов
+          description: Статус обновлён
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-                    price:
-                      type: number
-                    speed:
-                      type: string
-                    description:
-                      type: string
+                $ref: '#/components/schemas/ServiceActionResponse'
 
-  # ============================================================
-  # BUNDLES
-  # ============================================================
-  /v1/bundles:
+  /bundles:
     get:
-      tags: [Bundles]
-      summary: Все активные пакеты
-      description: |
-        Возвращает список всех активных пакетов предложений.
-        Прокси-запрос к Starlink BSS.
       operationId: getBundles
+      tags: [Services]
+      summary: Пакеты услуг
+      description: |
+        Proxy → Биллинг: GET /api/v1/bundles.
       responses:
         '200':
           description: Список пакетов
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Bundle'
+                $ref: '#/components/schemas/BundlesResponse'
 
-  /v1/bundles/{bundle_id}:
+  # ═══════════════════════════════════════════════════════
+  #  SUPPORT
+  # ═══════════════════════════════════════════════════════
+  /support:
     get:
-      tags: [Bundles]
-      summary: Детали пакета с тарифами
-      description: |
-        Возвращает детали пакета, включая ассоциированные тарифы.
-        Прокси-запрос к Starlink BSS.
-      operationId: getBundleDetail
-      parameters:
-        - name: bundle_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Детали пакета
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BundleDetailResponse'
-
-  # ============================================================
-  # TARIFF TYPES
-  # ============================================================
-  /v1/tariff-types:
-    get:
-      tags: [TariffTypes]
-      summary: Типы тарифов
-      description: |
-        Возвращает список всех включённых типов тарифов.
-        Прокси-запрос к Starlink BSS.
-      operationId: getTariffTypes
-      responses:
-        '200':
-          description: Список типов тарифов
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TariffType'
-
-  # ============================================================
-  # SHOP
-  # ============================================================
-  /v1/subscriber/shop:
-    post:
-      tags: [Services]
-      summary: Отправка заявки на услугу/тариф
-      description: |
-        Отправка заявки на подключение услуги или тарифа.
-        Прокси-запрос к Starlink BSS.
-      operationId: sendOrderRequest
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                account_id:
-                  type: integer
-                service_id:
-                  type: integer
-                tariff_id:
-                  type: integer
-      responses:
-        '200':
-          description: Заявка отправлена
-          content:
-            application/json:
-              example:
-                success: true
-                message: order created
-
-  # ============================================================
-  # SUPPORT
-  # ============================================================
-  /v1/support/send-email:
-    post:
+      operationId: getMyTickets
       tags: [Support]
-      summary: Обращение в техподдержку
+      summary: Список обращений
+      description: Возвращает все обращения текущего пользователя.
+      responses:
+        '200':
+          description: Список обращений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupportTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createTicket
+      tags: [Support]
+      summary: Создать обращение
       description: |
-        Отправляет email-сообщение в техподдержку от имени абонента.
-        Прокси-запрос к Starlink BSS.
-      operationId: sendSupportEmail
+        Создаёт тикет в Биллинге и отправляет SMS-уведомление оператору через Devino.
+        Proxy → Биллинг: POST /api/v1/support/send-email + Devino SMS.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SupportEmailRequest'
+              $ref: '#/components/schemas/CreateTicketRequest'
       responses:
         '200':
-          description: Сообщение отправлено
+          description: Обращение создано
           content:
             application/json:
-              example:
-                success: true
-                message: email sent
+              schema:
+                $ref: '#/components/schemas/SupportTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  # ============================================================
-  # PROMISED PAYMENT
-  # ============================================================
-  /v1/resources/promised-pay-terms:
+  # ═══════════════════════════════════════════════════════
+  #  PUSH (FCM)
+  # ═══════════════════════════════════════════════════════
+  /devices/register:
+    post:
+      operationId: registerDevice
+      tags: [Push]
+      summary: Зарегистрировать устройство для push
+      description: |
+        Приложение вызывает при запуске и при каждом обновлении FCM-токена.
+        Бэкенд сохраняет привязку user_id → fcm_token → platform в БД.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceRequest'
+      responses:
+        '200':
+          description: Устройство зарегистрировано
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /devices/unregister:
+    post:
+      operationId: unregisterDevice
+      tags: [Push]
+      summary: Отвязать устройство
+      description: |
+        Вызывается при выходе из аккаунта.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnregisterDeviceRequest'
+      responses:
+        '200':
+          description: Устройство отвязано
+
+  /notifications/preferences:
     get:
-      tags: [Account]
+      operationId: getNotificationPreferences
+      tags: [Push]
+      summary: Настройки уведомлений
+      responses:
+        '200':
+          description: Текущие настройки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: updateNotificationPreferences
+      tags: [Push]
+      summary: Обновить настройки
+      requestBody:
+        required: true
+        content:
+          application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+      responses:
+        '200':
+          description: Настройки обновлены
+
+  # ═══════════════════════════════════════════════════════
+  #  BILLING (BSS)
+  # ═══════════════════════════════════════════════════════
+  /billing/invoice:
+    get:
+      operationId: getCurrentInvoice
+      tags: [Billing]
+      summary: Текущий счёт
+      description: |
+        Детализация расчётного периода из Биллинга.
+      responses:
+        '200':
+          description: Счёт загружен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /billing/promised-pay:
+    get:
+      operationId: getPromisedPayTerms
+      tags: [Billing]
       summary: Условия обещанного платежа
       description: |
-        Возвращает информацию об услуге «Обещанный платёж»: доступность, сумму, условия.
-        Прокси-запрос к Starlink BSS.
-      operationId: getPromisedPayTerms
+        Proxy → Биллинг: GET /api/v1/resources/promised-pay-terms.
       responses:
         '200':
-          description: Условия обещанного платежа
+          description: Условия получены
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  available:
-                    type: boolean
-                  amount:
-                    type: number
-                  description:
-                    type: string
-                  commission:
-                    type: number
+                $ref: '#/components/schemas/PromisedPayTermsResponse'
 
-  # ============================================================
-  # NOTIFICATIONS — PUSH (FCM)
-  # ============================================================
-  /v1/notifications/send:
+  /billing/pay-link:
     get:
-      tags: [Notifications]
-      summary: Отправка push-уведомлений
+      operationId: getPayLink
+      tags: [Billing]
+      summary: Ссылка на оплату
       description: |
-        Инициирует отправку отложенных push-сообщений активным пользователям через Firebase Cloud Messaging (FCM).
-        Backend обращается к FCM HTTP v1 API с серверным ключом.
-        Прокси-запрос к Starlink BSS.
-      operationId: sendPushNotifications
+        Proxy → Биллинг: GET /api/v1/subscriber/accounts/{id}/pay-link.
       responses:
         '200':
-          description: Push-уведомления отправлены
-          content:
-            application/json:
-              example:
-                success: true
-                message: 'push notifications sent to N users'
-
-  /v1/notifications/status:
-    get:
-      tags: [Notifications]
-      summary: Статус отправки push-уведомлений
-      description: |
-        Проверяет статус отправки push-сообщений через FCM.
-        Прокси-запрос к Starlink BSS.
-      operationId: getPushNotificationStatus
-      responses:
-        '200':
-          description: Статус
-          content:
-            application/json:
-              example:
-                success: true
-                pending: 5
-                sent: 120
-                failed: 2
-
-  /v1/notifications/status-old:
-    get:
-      tags: [Notifications]
-      summary: Статус старых push-уведомлений
-      description: |
-        Проверяет статус задержанных/старых push-сообщений.
-        Прокси-запрос к Starlink BSS.
-      operationId: getOldPushNotificationStatus
-      responses:
-        '200':
-          description: Статус
-          content:
-            application/json:
-              example:
-                success: true
-                pending: 0
-                sent: 45
-                failed: 1
-
-  # ============================================================
-  # SMS — DEVINO TELECOM
-  # ============================================================
-  /v1/sms/send:
-    post:
-      tags: [Notifications]
-      summary: Отправка SMS (Devino Telecom)
-      description: |
-        Отправляет SMS-сообщение через шлюз Devino Telecom.
-        Backend аутентифицируется в Devino по login:password (Basic Auth) и вызывает REST API:
-        `POST https://integrationapi.net/v2/Send/SMS`.
-        Сервис предназначен для отправки одноразовых паролей (OTP), уведомлений об оплате, информационных сообщений.
-      operationId: sendSms
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SmsSendRequest'
-            example:
-              phone: '79001234567'
-              message: 'Ваш код подтверждения: 1234'
-              sender: 'Starlink'
-      responses:
-        '200':
-          description: SMS отправлено
+          description: Ссылка получена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SmsSendResponse'
-              example:
-                success: true
-                sms_id: 'MT-000000001'
-                status: queued
+                $ref: '#/components/schemas/PayLinkResponse'
 
-  /v1/sms/status/{sms_id}:
+  /billing/auto-pay:
     get:
-      tags: [Notifications]
-      summary: Статус SMS (Devino Telecom)
+      operationId: getAutoPayLink
+      tags: [Billing]
+      summary: Ссылка для подключения автоплатежа
       description: |
-        Проверяет статус доставки SMS-сообщения через Devino Telecom.
-        Backend вызывает `GET https://integrationapi.net/v2/MessageState/{sms_id}`.
-      operationId: getSmsStatus
-      parameters:
-        - name: sms_id
-          in: path
-          required: true
-          description: ID SMS-сообщения, полученный при отправке
-          schema:
-            type: string
-          example: 'MT-000000001'
+        Proxy → Биллинг: GET /.../auto-payment-link.
       responses:
         '200':
-          description: Статус SMS
+          description: Ссылка получена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SmsStatusResponse'
-              example:
-                success: true
-                sms_id: 'MT-000000001'
-                state: Delivered
-                state_description: 'Доставлено'
+                $ref: '#/components/schemas/PayLinkResponse'
 
-  /v1/sms/balance:
-    get:
-      tags: [Notifications]
-      summary: Баланс SMS-шлюза (Devino Telecom)
+  /billing/auto-pay:
+    delete:
+      operationId: disableAutoPay
+      tags: [Billing]
+      summary: Отключить автоплатёж
       description: |
-        Возвращает текущий баланс аккаунта в системе Devino Telecom.
-        Backend вызывает `GET https://integrationapi.net/v2/User/Balance`.
-      operationId: getSmsBalance
+        Proxy → Биллинг: GET /.../auto-payment-off.
       responses:
         '200':
-          description: Баланс
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SmsBalanceResponse'
-              example:
-                success: true
-                balance: 15420.50
-                currency: RUR
+          description: Автоплатёж отключён
 
-  # ============================================================
-  # WEBCLIENT (admin)
-  # ============================================================
-  /v1/webclient/groups:
-    get:
-      tags: [Support]
-      summary: Список групп веб-клиентов
-      description: |
-        Административный эндпоинт. Возвращает список групп веб-клиентов.
-        Прокси-запрос к Starlink BSS.
-      operationId: getWebclientGroups
-      responses:
-        '200':
-          description: Список групп
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-
-  /v1/webclient/groups/{group_id}:
-    get:
-      tags: [Support]
-      summary: Группа веб-клиентов по ID
-      description: |
-        Административный эндпоинт. Возвращает данные группы.
-        Прокси-запрос к Starlink BSS.
-      operationId: getWebclientGroupById
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Данные группы
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-
-  /v1/webclient/logs/user/{user_id}:
-    get:
-      tags: [Support]
-      summary: Логи пользователя
-      description: |
-        Административный эндпоинт. Возвращает логи действий пользователя.
-        Прокси-запрос к Starlink BSS.
-      operationId: getUserLogs
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Логи пользователя
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-
-  /v1/webclient/logs/client/{client_id}:
-    get:
-      tags: [Support]
-      summary: Логи клиента
-      description: |
-        Административный эндпоинт. Возвращает логи клиента.
-        Прокси-запрос к Starlink BSS.
-      operationId: getClientLogs
-      parameters:
-        - name: client_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Логи клиента
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-
-  # ============================================================
-  # COMPONENTS
-  # ============================================================
+# ─── Components ──────────────────────────────────────────
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: 'JWT-токен авторизации (действует 365 дней)'
-
-  parameters:
-    AccountId:
-      name: account_id
-      in: path
-      required: true
-      description: Идентификатор лицевого счёта
-      schema:
-        type: integer
-      example: 123456
-
-  responses:
-    Unauthorized:
-      description: Не авторизован
-      content:
-        application/json:
-          example:
-            detail: ''
-            success: false
-            message: not authenticated
-            code: 401
+      description: |
+        JWT-токен из POST /auth/login или POST /auth/verify-otp.
+        Срок действия — 365 дней.
 
   schemas:
-    # --- Auth ---
-    AuthRequest:
+    # ─── Auth ──────────────────────────────
+    LoginRequest:
       type: object
       required: [pin, password]
       properties:
         pin:
           type: string
-          maxLength: 10
-          description: PIN-код абонента
-          example: '1234'
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+          example: "039103"
         password:
           type: string
-          maxLength: 128
-          description: Пароль абонента
-          example: 'secret123'
+          minLength: 4
+          example: "123456"
 
-    AuthResponse:
+    RequestOtpRequest:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+          pattern: '^7[0-9]{10}$'
+          example: "79001234567"
+          description: Телефон (11 цифр, без +)
+
+    RequestOtpResponse:
+      type: object
+      properties:
+        expiresIn:
+          type: integer
+          example: 180
+          description: Время жизни OTP в секундах
+        attemptsLeft:
+          type: integer
+          example: 3
+
+    VerifyOtpRequest:
+      type: object
+      required: [phone, code]
+      properties:
+        phone:
+          type: string
+          example: "79001234567"
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          example: "482916"
+
+    OtpError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [invalid_code, expired, too_many_attempts]
+        message:
+          type: string
+          example: "Неверный код. Осталось попыток: 2"
+
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        user:
+          $ref: '#/components/schemas/User'
+
+    # ─── Payments (РСБ + СБП) ────────────
+    CreatePaymentRequest:
+      type: object
+      required: [amount, method]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 100
+          maximum: 5000000
+          description: |
+            Сумма.
+            Для method=rsb — в рублях (копейки внутри, напр. 16900 = 169.00 р.).
+            Для method=sbp — в рублях (500 = 500 р.).
+            Бэкенд нормализует для каждого провайдера.
+          example: 16900
+        method:
+          type: string
+          enum: [rsb, sbp, promise]
+          description: |
+            - `rsb` — Банковская карта через Банк Русский Стандарт
+            - `sbp` — Система быстрых платежей (Сбербанк)
+            - `promise` — Обещанный платёж (Биллинг, без шлюза)
+          example: "rsb"
+        description:
+          type: string
+          maxLength: 125
+          example: "Оплата тарифа: Интернет 100 Мбит/с"
+        serviceId:
+          type: string
+          nullable: true
+          description: ID услуги для привязки
+
+    CreatePaymentResponse:
+      type: object
+      required: [paymentId, status, paymentUrl]
+      properties:
+        paymentId:
+          type: string
+          example: "pay_a1b2c3d4"
+          description: |
+            Для method=rsb: внутренний ID + trans_id РСБ.
+            Для method=sbp: internal ID + order_id СБП.
+        status:
+          type: string
+          enum: [pending, created]
+          example: "pending"
+        paymentUrl:
+          type: string
+          format: uri
+          description: |
+            Для rsb: URL платёжной страницы РСБ (ClientHandler) для WebView.
+            Для sbp: qrcode_link для генерации QR-кода.
+            Для promise: null.
+          example: "https://securepay2.rsb.ru/ecomm2/ClientHandler?trans_id=..."
+        providerTransactionId:
+          type: string
+          nullable: true
+          description: trans_id (РСБ) или order_id (СБП)
+
+    PaymentStatusResponse:
+      type: object
+      required: [paymentId, status]
+      properties:
+        paymentId:
+          type: string
+          example: "pay_a1b2c3d4"
+        status:
+          type: string
+          enum: [pending, success, failed, expired, refunded]
+          description: |
+            Нормализованный статус из РСБ/СБП. См. ARCHITECTURE.md §1.7 и §2.5.
+          example: "success"
+        amount:
+          type: number
+          format: double
+          example: 16900
+        newBalance:
+          type: number
+          format: double
+          nullable: true
+          description: Обновлённый баланс (при status=success)
+          example: 150000
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        providerTransactionId:
+          type: string
+          nullable: true
+          description: RRN (РСБ) или order_id (СБП)
+        maskedCard:
+          type: string
+          nullable: true
+          description: Маскированный номер карты (только для method=rsb)
+          example: "5***********2372"
+        errorMessage:
+          type: string
+          nullable: true
+
+    SbpCallbackData:
+      type: object
+      required: [mdOrder, orderNumber, operation, status]
+      description: |
+        Данные callback от Сбербанка (СБП). См. openapi_sbp.json.
+      properties:
+        mdOrder:
+          type: string
+          description: Номер заказа в платёжном шлюзе
+        orderNumber:
+          type: string
+          description: Номер заказа партнёра
+        operation:
+          type: string
+          description: Тип операции (deposited, approved, reversed)
+        status:
+          type: integer
+          minimum: 0
+          maximum: 10
+          description: "0 = неуспешно, 1 = успешно"
+        additionalParams:
+          type: object
+          nullable: true
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "validation_error"
+        message:
+          type: string
+          example: "Метод оплаты 'promise' недоступен"
+
+    # ─── Push / Devices ─────────────────────
+    RegisterDeviceRequest:
+      type: object
+      required: [fcmToken, platform]
+      properties:
+        fcmToken:
+          type: string
+          example: "dGhpcyBpcyBhIGZha2UgdG9rZW4="
+        platform:
+          type: string
+          enum: [android, ios]
+        deviceId:
+          type: string
+          example: "a1b2c3d4e5f6"
+        appVersion:
+          type: string
+          example: "1.0.0"
+
+    UnregisterDeviceRequest:
+      type: object
+      required: [fcmToken]
+      properties:
+        fcmToken:
+          type: string
+
+    NotificationPreferences:
+      type: object
+      properties:
+        paymentSuccess:
+          type: boolean
+          default: true
+        paymentFailed:
+          type: boolean
+          default: true
+        balanceLow:
+          type: boolean
+          default: true
+        serviceExpiring:
+          type: boolean
+          default: true
+        newsAndPromo:
+          type: boolean
+          default: true
+        supportReply:
+          type: boolean
+          default: true
+
+    # ─── Billing ─────────────────────────────
+    PromisedPayTermsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          description: Условия обещанного платежа
+        message:
+          type: string
+
+    PayLinkResponse:
       type: object
       properties:
         success:
@@ -1356,569 +925,219 @@ components:
         data:
           type: object
           properties:
-            id:
-              type: integer
-              example: 12345
-            jwt:
+            url:
               type: string
-              description: JWT-токен
-              example: 'eyJhbGciOiJIUzI1NiIs...'
+              format: uri
+              description: Ссылка на оплату
         message:
           type: string
-        code:
-          type: integer
 
-    LogoutResponse:
+    # ─── Account ─────────────────────────────
+    AccountProfileResponse:
       type: object
+      required: [user, balance, activeServices]
       properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        code:
-          type: integer
-
-    # --- Account ---
-    CustomerResponse:
-      type: object
-      description: Профиль абонента из биллинговой системы
-      properties:
-        id:
-          type: integer
-          example: 12345
-        full_name:
-          type: string
-          example: 'Иванов И.И.'
-        phone:
-          type: string
-          example: '79001234567'
-        email:
-          type: string
-          example: 'user@example.com'
-        address:
-          type: string
-          example: 'г. Москва, ул. Ленина, д.1, кв.10'
-
-    AccountResponse:
-      type: object
-      description: Лицевой счёт абонента
-      properties:
-        id:
-          type: integer
-          example: 123456
-        account_number:
-          type: string
-          example: 'LS-000123'
+        user:
+          $ref: '#/components/schemas/User'
         balance:
-          type: number
-          example: -350.50
-          description: Текущий баланс (может быть отрицательным)
-        status:
-          type: string
-          enum: [active, blocked, suspended]
-          example: active
-        block_reason:
-          type: string
-          description: Причина блокировки (если заблокирован)
-        has_auto_payment:
-          type: boolean
-          example: false
-        auto_payment_amount:
-          type: number
-          example: 500.00
+          $ref: '#/components/schemas/Balance'
+        activeServices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
 
-    AccountUpdateRequest:
+    # ─── Entities ────────────────────────────
+    User:
       type: object
+      required: [id, fullName, createdAt]
       properties:
-        action:
+        id:
           type: string
-          enum: [block, unblock, set_promised_pay]
-          description: Действие над счётом
-        amount:
-          type: number
-          description: Сумма обещанного платежа (для set_promised_pay)
-        reason:
+          example: "039103"
+        fullName:
           type: string
-          description: Причина блокировки (для block)
-
-    # --- Card Payment (RSB ECOMM) ---
-    CardPaymentRegisterRequest:
-      type: object
-      required: [amount, currency, client_ip_addr]
-      properties:
-        amount:
-          type: integer
-          description: 'Сумма в копейках (последние 2 цифры — копейки)'
-          example: 12300
-          minimum: 1
-          maximum: 999999999999
-        currency:
-          type: string
-          description: 'Код валюты ISO 4217 (643 — рубль)'
-          example: '643'
-          maxLength: 3
-        client_ip_addr:
-          type: string
-          description: 'IP-адрес клиента'
-          example: '10.0.20.30'
-          maxLength: 15
-        description:
-          type: string
-          description: 'Описание платежа (UTF-8, латиница)'
-          maxLength: 125
-        mrch_transaction_id:
-          type: string
-          description: 'Уникальный ID транзакции мерчанта (UUID)'
-          maxLength: 225
-        language:
-          type: string
-          description: 'Язык платёжной страницы (ru/en)'
-          enum: [ru, en]
-        server_version:
-          type: string
-          description: 'Версия сервера ECOMM (2.0 — с доп. деталями)'
-          example: '2.0'
-        ecomm_payment_scenario:
-          type: string
-          description: 'Сценарий оплаты (10564 — СБП на странице Банка)'
-          example: '10564'
-
-    CardPaymentRegisterResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        transaction_id:
-          type: string
-          description: 'ID транзакции для ClientHandler URL'
-          example: 'rEsfhyIk8s9ypxkcS9fj/3C8FqA='
-        client_handler_url:
-          type: string
-          description: 'Полный URL для перенаправления клиента'
-          example: 'https://3dsecurepay.rsb.ru/ecomm2/ClientHandler?trans_id=...'
-
-    CardPaymentStatusRequest:
-      type: object
-      required: [trans_id, client_ip_addr]
-      properties:
-        trans_id:
-          type: string
-          description: 'Идентификатор транзакции'
-          example: 'rEsfhyIk8s9ypxkcS9fj/3C8FqA='
-          maxLength: 28
-        client_ip_addr:
-          type: string
-          maxLength: 15
-        server_version:
-          type: string
-          example: '2.0'
-
-    CardPaymentStatusResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        result:
-          type: string
-          description: 'OK / ERROR / REJECTED'
-          example: OK
-        result_ps:
-          type: string
-          description: 'FINISHED / ACTIVE / REVERSED'
-          example: FINISHED
-        result_code:
-          type: string
-          description: 'Код результата (000 — успех)'
-          example: '000'
-        threedsecure:
-          type: string
-          description: 'AUTHENTICATED / NOT_AUTHENTICATED / FAILED'
-        rrn:
-          type: string
-          description: 'Retrieval Reference Number'
-        approval_code:
-          type: string
-        card_number:
-          type: string
-          description: 'Маскированный номер карты'
-        mrch_transaction_id:
-          type: string
-        type:
-          type: string
-          description: 'Тип операции (REFND для возврата)'
-        iss_ccy:
-          type: string
-          description: 'Код страны эмитента'
-
-    DmsCompleteRequest:
-      type: object
-      required: [trans_id, amount, currency, client_ip_addr]
-      properties:
-        trans_id:
-          type: string
-          description: 'ID авторизации (из register DMS)'
-          maxLength: 28
-        amount:
-          type: integer
-          description: 'Сумма списания в копейках'
-        currency:
-          type: string
-          example: '643'
-        client_ip_addr:
-          type: string
-          maxLength: 15
-        description:
-          type: string
-        language:
-          type: string
-
-    DmsCompleteResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        result:
-          type: string
-        result_code:
-          type: string
-        rrn:
-          type: string
-        approval_code:
-          type: string
-        card_number:
-          type: string
-
-    TransactionActionRequest:
-      type: object
-      required: [trans_id]
-      properties:
-        trans_id:
-          type: string
-          maxLength: 28
-        suspected_fraud:
-          type: boolean
-          description: 'Флаг подозрения в мошенничестве (yes)'
-          default: false
-
-    TransactionActionResult:
-      type: object
-      properties:
-        success:
-          type: boolean
-        result:
-          type: string
-        result_code:
-          type: string
-
-    RefundRequest:
-      type: object
-      required: [trans_id]
-      properties:
-        trans_id:
-          type: string
-          maxLength: 28
-          description: 'Идентификатор оригинальной транзакции'
-        amount:
-          type: integer
-          description: 'Сумма возврата в копейках (необязательно — полный возврат)'
-
-    RefundResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        result:
-          type: string
-        result_code:
-          type: string
-        refund_trans_id:
-          type: string
-          description: 'ID транзакции возврата'
-
-    CloseDayResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        result:
-          type: string
-        result_code:
-          type: string
-        fld_075:
-          type: string
-          description: 'Количество авторизаций'
-        fld_076:
-          type: string
-          description: 'Количество отказов'
-        fld_087:
-          type: string
-          description: 'Сумма авторизаций'
-        fld_088:
-          type: string
-          description: 'Сумма отказов'
-
-    # --- SBP Payment ---
-    SbpCreateRequest:
-      type: object
-      required: [amount, account]
-      properties:
-        amount:
-          type: number
-          description: 'Сумма платежа в рублях'
-          example: 500.00
-          exclusiveMinimum: 0
-          maximum: 999999999999
-        account:
-          type: string
-          description: 'Номер лицевого счёта'
-          maxLength: 6
-          example: '123456'
+          example: "Валиев Закир"
         phone:
           type: string
-          description: 'Телефон плательщика'
-          maxLength: 12
-        email:
+          nullable: true
+          example: "+7 900 123 45 67"
+        avatarUrl:
           type: string
-          description: 'Email плательщика'
-        payment_stat:
-          type: string
-          description: 'Источник платежа'
-          default: sbpStat
-          maxLength: 10
-
-    SbpCreateResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        sbp_id:
-          type: integer
-          description: 'ID записи в PAY_SBP_LOG2'
-        rq_uid:
-          type: string
-          description: 'Уникальный идентификатор запроса'
-        order_id:
-          type: string
-          description: 'ID заказа в Сбербанке'
-        qrcode_link:
-          type: string
-          description: 'Платёжная ссылка для QR-кода'
-        qr_url:
-          type: string
-          description: 'URL формы оплаты'
-        amount:
-          type: string
-        status:
-          $ref: '#/components/schemas/PaymentState'
-
-    SbpStatusResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        sbp_id:
-          type: integer
-        rq_uid:
-          type: string
-        order_id:
-          type: string
-        status:
-          $ref: '#/components/schemas/PaymentState'
-        amount:
-          type: string
-        account:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        operation_time:
+          format: uri
+          nullable: true
+        createdAt:
           type: string
           format: date-time
 
-    SbpCancelResponse:
+    Balance:
       type: object
-      properties:
-        success:
-          type: boolean
-        sbp_id:
-          type: integer
-        order_id:
-          type: string
-        status:
-          $ref: '#/components/schemas/PaymentState'
-        message:
-          type: string
-
-    SbpRefundRequest:
-      type: object
+      required: [amount, currency, isPaid, lastUpdated]
       properties:
         amount:
           type: number
-          description: 'Сумма возврата (необязательно — полный возврат)'
-          exclusiveMinimum: 0
-
-    SbpRefundResponse:
-      type: object
-      properties:
-        success:
+          format: double
+          example: 100500
+        currency:
+          type: string
+          example: "RUB"
+        paidUntil:
+          type: string
+          format: date-time
+          nullable: true
+        isPaid:
           type: boolean
-        sbp_id:
-          type: integer
-        order_id:
+        lastUpdated:
           type: string
-        status:
-          $ref: '#/components/schemas/PaymentState'
-        refund_amount:
-          type: string
-        message:
-          type: string
+          format: date-time
 
-    SbpCallbackData:
+    Service:
       type: object
-      required: [mdOrder, orderNumber, operation, status]
+      required: [id, name, category, cost, status]
       properties:
-        mdOrder:
+        id:
           type: string
-          description: 'Номер заказа в платёжном шлюзе'
-          maxLength: 100
-        orderNumber:
+          example: "srv_internet_100"
+        name:
           type: string
-          description: 'Номер заказа в системе партнёра'
-          maxLength: 100
-        operation:
+          example: "Интернет 100 Мбит/с"
+        category:
           type: string
-          description: 'Тип операции (deposited, approved, reversed)'
-          maxLength: 50
+          example: "internet"
+        cost:
+          type: number
+          format: double
+          example: 16900
         status:
-          type: integer
-          description: 'Статус: 0 — неуспешно, 1 — успешно'
-          minimum: 0
-          maximum: 10
-        additionalParams:
-          type: object
-          description: 'Дополнительные параметры'
+          type: string
+          enum: [active, expired, paused, error]
+        billingCycle:
+          type: string
+          nullable: true
+          example: "monthly"
 
-    PaymentState:
-      type: string
-      enum:
-        - PAID
-        - CREATED
-        - REVERSED
-        - REFUNDED
-        - REVOKED
-        - DECLINED
-        - EXPIRED
-        - AUTHORIZED
-        - CONFIRMED
-        - ON_PAYMENT
-      description: 'Статус платежа СБП'
-
-    # --- Card / SBP Payment Link ---
-    CardPaymentLinkResponse:
+    Transaction:
       type: object
+      required: [id, type, amount, description, date, status]
       properties:
+        id:
+          type: string
         type:
           type: string
-          example: card
-        transaction_id:
+          enum: [topUp, payment, refund, bonus]
+        amount:
+          type: number
+          format: double
+          example: 16900
+        description:
           type: string
-        client_handler_url:
+          example: "Оплата через РСБ"
+        date:
           type: string
-          description: 'URL платежной формы РСБ для ввода карты'
+          format: date-time
+        status:
+          type: string
+          enum: [success, pending, failed]
+        paymentMethod:
+          type: string
+          nullable: true
+          enum: [rsb, sbp, promise, internal]
+        providerTransactionId:
+          type: string
+          nullable: true
+          description: RRN (РСБ) или order_id (СБП)
 
-    SbpPaymentLinkResponse:
-      type: object
-      properties:
-        type:
-          type: string
-          example: sbp
-        qrcode_link:
-          type: string
-          description: 'Ссылка для генерации QR-кода СБП'
-        qr_url:
-          type: string
-          description: 'URL формы оплаты СБП'
-        order_id:
-          type: string
-
-    # --- Transactions ---
     TransactionsRequest:
       type: object
       properties:
-        date_from:
+        start_date:
           type: string
-          format: date
-          description: 'Начальная дата'
-          example: '2024-01-01'
-        date_to:
+          nullable: true
+          example: "2025-01-01"
+        end_date:
           type: string
-          format: date
-          description: 'Конечная дата'
-          example: '2024-12-31'
-
-    # --- Services ---
-    ServiceItem:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        status:
-          type: string
-          enum: [active, suspended]
-        tariff:
-          type: object
-          properties:
-            id:
-              type: integer
-            name:
-              type: string
-            price:
-              type: number
+          nullable: true
+          example: "2025-08-25"
 
     ChangeServiceRequest:
       type: object
+      required: [action]
       properties:
         action:
           type: string
-          enum: [change_tariff, suspend, unsuspend]
-        tariff_id:
+          enum: [change-tariff, suspend, unsuspend]
+          example: "change-tariff"
+        tariffId:
           type: integer
-          description: 'ID нового тарифа (для change_tariff)'
+          nullable: true
+          example: 100
+        date_start:
+          type: string
+          nullable: true
+          example: "2025-01-01"
+        date_end:
+          type: string
+          nullable: true
+          example: "2025-04-01"
+
+    ServiceActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          example: "Тариф изменён"
+        effectiveFrom:
+          type: string
+          format: date-time
+          nullable: true
+
+    AdditionalService:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        cost:
+          type: number
+        isActive:
+          type: boolean
 
     AdditionalServiceActionRequest:
       type: object
+      required: [action]
       properties:
         action:
-          type: string
-          enum: [connect, disconnect]
+          type: integer
+          description: "0 = отключить, 1 = подключить"
+          example: 1
 
-    # --- Bundles ---
-    Bundle:
+    BundlesResponse:
       type: object
       properties:
-        id:
-          type: integer
-        name:
-          type: string
-        description:
-          type: string
-        is_active:
+        success:
           type: boolean
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              bid:
+                type: integer
+              name:
+                type: string
+              caption:
+                type: string
+        message:
+          type: string
 
-    BundleDetailResponse:
+    TariffsResponse:
       type: object
       properties:
-        id:
-          type: integer
-        name:
-          type: string
-        description:
-          type: string
-        is_active:
+        success:
           type: boolean
-        tariffs:
+        data:
           type: array
           items:
             type: object
@@ -1927,117 +1146,128 @@ components:
                 type: integer
               name:
                 type: string
-              price:
+              cost:
                 type: number
+              speed:
+                type: string
+                nullable: true
+        message:
+          type: string
 
-    # --- Tariff Types ---
-    TariffType:
+    SupportTicket:
       type: object
+      required: [id, subject, description, status, createdAt]
       properties:
         id:
-          type: integer
-        name:
+          type: string
+        subject:
           type: string
         description:
           type: string
-        is_enabled:
-          type: boolean
+        status:
+          type: string
+          enum: [open, inProgress, resolved, closed]
+        createdAt:
+          type: string
+          format: date-time
+        replyCount:
+          type: integer
+          default: 0
 
-    # --- Support ---
-    SupportEmailRequest:
+    CreateTicketRequest:
       type: object
-      required: [subject, message]
+      required: [subject, description]
       properties:
         subject:
           type: string
-          description: 'Тема обращения'
-        message:
+          maxLength: 200
+          example: "Не работает интернет"
+        description:
           type: string
-          description: 'Текст сообщения'
+          example: "С yesterday evening there is no connection"
 
-    # --- SMS (Devino Telecom) ---
-    SmsSendRequest:
+    InvoiceResponse:
       type: object
-      required: [phone, message]
+      required: [invoiceId, period, items, subtotal, total]
       properties:
-        phone:
+        invoiceId:
           type: string
-          description: 'Номер телефона получателя (формат 7XXXXXXXXXX)'
-          example: '79001234567'
-          pattern: '^7[0-9]{10}$'
-        message:
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            to:
+              type: string
+              format: date
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+        subtotal:
+          type: number
+          format: double
+        discount:
+          type: number
+          format: double
+        total:
+          type: number
+          format: double
+        dueDate:
           type: string
-          description: 'Текст SMS-сообщения (макс. 1000 символов для кириллицы, 160 для латиницы в одном SMS)'
-          maxLength: 1000
-          example: 'Ваш код подтверждения: 1234'
-        sender:
-          type: string
-          description: 'Имя отправителя (зарегистрированное в Devino)'
-          default: 'Starlink'
-          maxLength: 11
-        send_date:
-          type: string
-          format: date-time
-          description: 'Отложенная отправка (необязательно)'
-
-    SmsSendResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        sms_id:
-          type: string
-          description: 'ID SMS в системе Devino (формат MT-XXXXXXXXX)'
+          format: date
         status:
           type: string
-          description: 'Статус отправки (queued / accepted / error)'
-        error:
-          type: string
-          description: 'Описание ошибки (при наличии)'
+          enum: [pending, paid, overdue]
 
-    SmsStatusResponse:
+    InvoiceItem:
       type: object
       properties:
-        success:
-          type: boolean
-        sms_id:
+        serviceId:
           type: string
-        state:
+        serviceName:
           type: string
-          description: 'Состояние: Delivered / Sent / Expired / Undeliverable / Rejected'
-        state_description:
-          type: string
-          description: 'Описание состояния на русском'
-
-    SmsBalanceResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        balance:
+        cost:
           type: number
-          description: 'Текущий баланс'
-        currency:
-          type: string
-          description: 'Код валюты (RUR)'
+          format: double
+        daysUsed:
+          type: integer
+        dailyRate:
+          type: number
+          format: double
 
-    # --- Common ---
-    HTTPValidationError:
-      type: object
-      properties:
-        detail:
-          type: array
-          items:
-            $ref: '#/components/schemas/ValidationError'
-
-    ValidationError:
-      type: object
-      properties:
-        loc:
-          type: array
-          items:
-            type: string
-        msg:
-          type: string
-        type:
-          type: string
+  responses:
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Unauthorized"
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Not found"
+    TooManyRequests:
+      description: Слишком много запросов
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "too_many_requests"
+              retryAfter:
+                type: integer
+                example: 60

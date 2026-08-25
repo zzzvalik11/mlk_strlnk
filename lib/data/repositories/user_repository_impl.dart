@@ -38,7 +38,7 @@ class UserRepositoryImpl implements UserRepository {
         return right(_createMockUser().toDomain());
       }
 
-      final userModel = await _remoteSource.getUserProfile();
+      final userModel = await _remoteSource.getSubscriber();
       await _localSource.saveUser(userModel);
       return right(userModel.toDomain());
     } on DioException catch (e) {

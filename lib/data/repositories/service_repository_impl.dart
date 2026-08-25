@@ -22,7 +22,6 @@ class ServiceRepositoryImpl implements ServiceRepository {
   @override
   Future<Either<Failure, List<Service>>> getActiveServices({int accountId = 1}) async {
     try {
-      // Mock data for test user — no network calls
       if (_localSource.isMockUser()) {
         return right(_createMockServices());
       }

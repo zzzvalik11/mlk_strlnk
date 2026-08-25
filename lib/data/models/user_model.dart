@@ -1,5 +1,6 @@
 import 'package:telecom_dashboard/domain/entities/user.dart';
 
+/// Модель пользователя. Парсит JSON от /v1/subscriber.
 class UserModel {
   final String id;
   final String fullName;
@@ -17,21 +18,23 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String,
-      fullName: json['fullName'] as String,
-      phone: json['phone'] as String?,
+      id: (json['subscriber_id'] ?? json['id'] ?? '') as String,
+      fullName: (json['full_name'] ?? json['fullName'] ?? '') as String,
+      phone: (json['phone'] ?? json['mobile']) as String?,
       avatarUrl: json['avatarUrl'] as String?,
-      createdAt: _parseDateTime(json['createdAt']),
+      createdAt: _parseDateTime(
+        json['created_at'] ?? json['createdAt'] ?? DateTime.now(),
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'fullName': fullName,
+      'subscriber_id': id,
+      'full_name': fullName,
       'phone': phone,
       'avatarUrl': avatarUrl,
-      'createdAt': createdAt.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
     };
   }
 

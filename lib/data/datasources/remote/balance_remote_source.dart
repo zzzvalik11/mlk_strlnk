@@ -1,5 +1,4 @@
 import 'package:telecom_dashboard/data/datasources/remote/api_client.dart';
-import 'package:telecom_dashboard/data/models/balance_model.dart';
 
 /// Источник данных для операций со счетами абонента.
 /// Прокси к Starlink BSS (api.yaml v3.0.0).
