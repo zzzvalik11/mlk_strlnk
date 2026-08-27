@@ -29,6 +29,13 @@ dependencies:
   # URL launcher (открыть qrUrl в браузере / банковском приложении)
   url_launcher: ^6.3.0
 
+  # Environment variables from .env
+  flutter_dotenv: ^5.2.1
+
+  # Push notifications (Firebase Cloud Messaging)
+  firebase_core: ^3.12.1
+  firebase_messaging: ^15.2.4
+
   # Serialization
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0

@@ -1,8 +1,25 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConstants {
   AppConstants._();
 
   // API
-  static const String apiBaseUrl = 'http://10.0.2.2:3000/api';
+  static String get apiBaseUrl =>
+      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api';
+
+  // FCM
+  static String get fcmServerKey =>
+      dotenv.env['FCM_SERVER_KEY'] ?? '';
+
+  // РСБ
+  static String get rsbMerchantName =>
+      dotenv.env['RSB_MERCHANT_NAME'] ?? '';
+  static String get rsbTerminalId =>
+      dotenv.env['RSB_TERMINAL_ID'] ?? '';
+  static String get rsbMerchantId =>
+      dotenv.env['RSB_MERCHANT_ID'] ?? '';
+  static String get rsbSecretKey =>
+      dotenv.env['RSB_SECRET_KEY'] ?? '';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);
@@ -26,11 +43,7 @@ class AppConstants {
   static const int cacheTtlSeconds = 300;
 
   // Deep links / Payment callback
-  /// URL scheme приложения (используется для возврата из 3DS РСБ).
   static const String deepLinkScheme = 'starlink';
-
-  /// Паттерн URL, который перехватывается в WebView после завершения оплаты.
-  /// Бэкенд должен сконфигурировать этот URL как returnUrl при создании транзакции.
   static const String paymentCallbackHost = 'payment-callback.starlink.app';
   static const String paymentCallbackPath = '/callback';
 }

@@ -546,7 +546,7 @@ flutter pub dev flutter_launcher_icons --version
 flutter pub add dev:flutter_launcher_icons
 
 # flutter_launcher_icons.yaml
-# flutter pub run flutter_launcher_icons
+flutter pub run flutter_launcher_icons
 ```
 
 ### 5.2. Скриншоты

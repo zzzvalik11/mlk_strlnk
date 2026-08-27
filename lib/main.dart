@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:telecom_dashboard/core/constants/app_constants.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/data/local/storage_service.dart';
+import 'package:telecom_dashboard/data/services/fcm_service.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load .env (safe if file is missing - values fall back to defaults)
+  await dotenv.load(fileName: '.env');
+
+  // Firebase
+  await Firebase.initializeApp();
+
+  // FCM push notifications
+  final fcmService = FcmService();
+  await fcmService.init();
+  print('[FCM] Device token: ${fcmService.currentToken}');
 
   // Initialize SharedPreferences-backed storage before any provider uses it.
   final storageService = StorageService();
