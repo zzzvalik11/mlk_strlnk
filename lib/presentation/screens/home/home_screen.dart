@@ -31,8 +31,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeViewModelProvider);
-    final authState = ref.watch(authProvider);
-    final user = authState.valueOrNull;
+    // Safe read — authProvider may throw on web (SharedPreferences NotInitializedError)
+    final user = () {
+      try { return ref.watch(authProvider).valueOrNull; } catch (_) { return null; }
+    }();
 
     return RefreshIndicator(
       color: AppTheme.orange500,
