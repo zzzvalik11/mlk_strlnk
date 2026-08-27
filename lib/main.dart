@@ -13,16 +13,25 @@ import 'package:telecom_dashboard/presentation/router/app_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load .env (safe if file is missing - values fall back to defaults)
-  await dotenv.load(fileName: '.env');
+  // Load .env — gracefully skip if missing (web / CI / no .env file).
+  // app_constants.dart uses fallback values when dotenv is empty.
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env not found in asset bundle — OK, fallbacks in AppConstants will be used.
+  }
 
-  // Firebase
-  await Firebase.initializeApp();
+  // Firebase — gracefully skip if not configured (e.g. web without Firebase).
+  try {
+    await Firebase.initializeApp();
 
-  // FCM push notifications
-  final fcmService = FcmService();
-  await fcmService.init();
-  print('[FCM] Device token: ${fcmService.currentToken}');
+    // FCM push notifications
+    final fcmService = FcmService();
+    await fcmService.init();
+    print('[FCM] Device token: ${fcmService.currentToken}');
+  } catch (e) {
+    print('[Firebase] Init skipped: $e');
+  }
 
   // Initialize SharedPreferences-backed storage before any provider uses it.
   final storageService = StorageService();
