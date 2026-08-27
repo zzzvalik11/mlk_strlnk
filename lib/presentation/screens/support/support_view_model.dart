@@ -34,15 +34,25 @@ class SupportNotifier extends StateNotifier<SupportFormState> {
   SupportNotifier(this._ref) : super(const SupportFormInitial());
 
   Future<void> submitTicket({
-    required String subject,
-    required String description,
+    required String pin,
+    required String email,
+    required String phone,
+    required String message,
   }) async {
-    if (subject.trim().isEmpty) {
-      state = const SupportFormError('Введите тему обращения');
+    if (pin.trim().isEmpty) {
+      state = const SupportFormError('Введите ПИН-код');
       return;
     }
-    if (description.trim().isEmpty) {
-      state = const SupportFormError('Введите описание обращения');
+    if (email.trim().isEmpty) {
+      state = const SupportFormError('Введите E-mail');
+      return;
+    }
+    if (phone.trim().isEmpty) {
+      state = const SupportFormError('Введите номер телефона');
+      return;
+    }
+    if (message.trim().isEmpty) {
+      state = const SupportFormError('Введите сообщение');
       return;
     }
 
@@ -50,7 +60,12 @@ class SupportNotifier extends StateNotifier<SupportFormState> {
 
     try {
       final ticket = await _ref.read(
-        createTicketProvider((subject: subject.trim(), description: description.trim())).future,
+        createTicketProvider((
+          subject: 'ПИН ${pin.trim()}',
+          description: 'От: ${email.trim()}\n'
+              'Тел: ${phone.trim()}\n\n'
+              '${message.trim()}',
+        )).future,
       );
       state = SupportFormSuccess(ticket);
     } catch (e) {
