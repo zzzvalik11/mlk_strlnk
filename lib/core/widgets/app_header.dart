@@ -22,8 +22,12 @@ class AppHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Safe read — authProvider may throw on web (SharedPreferences NotInitializedError)
-    final User? user;
-    try { user = ref.watch(authProvider).valueOrNull; } catch (_) { user = null; }
+    User? user;
+    try {
+      user = ref.watch(authProvider).valueOrNull;
+    } catch (_) {
+      user = null;
+    }
     final unreadCount = ref.watch(unreadNotificationsProvider);
 
     return Padding(
