@@ -10,6 +10,7 @@ import 'package:telecom_dashboard/core/widgets/loading_spinner.dart';
 import 'package:telecom_dashboard/core/widgets/service_card.dart';
 import 'package:telecom_dashboard/domain/entities/user.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
+import 'package:telecom_dashboard/main.dart' show appContainer;
 import 'package:telecom_dashboard/presentation/screens/home/home_view_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -31,9 +32,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeViewModelProvider);
-    // Safe read — use container to bypass widget-tree framework calls on web
+    // Safe read via global container (bypasses WidgetRef on web)
     final user = () {
-      try { return ref.container.read(authProvider).valueOrNull; } catch (_) { return null; }
+      try { return appContainer.read(authProvider).valueOrNull; } catch (_) { return null; }
     }();
 
     return RefreshIndicator(

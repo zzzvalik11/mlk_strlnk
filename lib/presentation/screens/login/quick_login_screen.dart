@@ -7,6 +7,7 @@ import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/data/local/storage_service.dart';
+import 'package:telecom_dashboard/main.dart' show appContainer;
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 
 /// Screen for quick re-login (PIN-only or Biometric).
@@ -32,10 +33,9 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
   @override
   void initState() {
     super.initState();
-    // If biometric, auto-trigger on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
-        final localSource = ref.container.read(userLocalSourceProvider);
+        final localSource = appContainer.read(userLocalSourceProvider);
         final method = localSource.getAuthMethod();
         if (method == AuthMethod.biometric) {
           _authenticateBiometric();
@@ -60,8 +60,8 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
         ),
       );
       if (didAuth) {
-        await ref.container.read(authProvider.notifier).authenticateWithBiometric();
-        final authState = ref.container.read(authProvider);
+        await appContainer.read(authProvider.notifier).authenticateWithBiometric();
+        final authState = appContainer.read(authProvider);
         if (!mounted) return;
         if (authState.valueOrNull != null) {
           context.go(Routes.home);
@@ -88,23 +88,16 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
       setState(() => _error = 'Введите ПИН-код');
       return;
     }
-    ref.container.read(authProvider.notifier).authenticateWithPin(pin: pin);
+    appContainer.read(authProvider.notifier).authenticateWithPin(pin: pin);
   }
 
   @override
   Widget build(BuildContext context) {
-    final UserLocalSource localSource;
-    final AuthMethod method;
-    try {
-      localSource = ref.container.read(userLocalSourceProvider);
-      method = localSource.getAuthMethod() ?? AuthMethod.pin;
-    } catch (_) {
-      localSource = UserLocalSource(storageService: StorageService());
-      method = AuthMethod.pin;
-    }
+    final localSource = appContainer.read(userLocalSourceProvider);
+    final method = localSource.getAuthMethod() ?? AuthMethod.pin;
 
-    // Listen for auth success
-    ref.container.listen<AsyncValue>(authProvider, (prev, next) {
+    // Listen for auth success via container
+    appContainer.listen<AsyncValue>(authProvider, (prev, next) {
       if (next.valueOrNull != null) {
         context.go(Routes.home);
       } else if (next.hasError) {
@@ -135,8 +128,7 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                 if (method == AuthMethod.pin) ...[
                   Text(
                     'Введите ПИН-код',
-                    style: AppTheme.titleMedium
-                        .copyWith(color: AppTheme.gray700),
+                    style: AppTheme.titleMedium.copyWith(color: AppTheme.gray700),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -145,9 +137,7 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                     maxLength: 6,
                     textAlign: TextAlign.center,
                     style: AppTheme.headlineLarge.copyWith(
-                      fontSize: 32,
-                      letterSpacing: 12,
-                      color: AppTheme.gray900,
+                      fontSize: 32, letterSpacing: 12, color: AppTheme.gray900,
                     ),
                     onChanged: (_) {
                       if (_error != null) setState(() => _error = null);
@@ -155,8 +145,7 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                     onSubmitted: (_) => _onPinSubmit(),
                     decoration: InputDecoration(
                       counterText: '',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded,
-                          color: AppTheme.gray400),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.gray400),
                       border: OutlineInputBorder(
                         borderRadius: AppTheme.inputRadius,
                         borderSide: BorderSide(color: AppTheme.gray200),
@@ -167,8 +156,7 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppTheme.inputRadius,
-                        borderSide: const BorderSide(
-                            color: AppTheme.orange500, width: 2),
+                        borderSide: const BorderSide(color: AppTheme.orange500, width: 2),
                       ),
                     ),
                   ),
@@ -180,58 +168,34 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                       onPressed: _onPinSubmit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.orange500,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: const Text(
-                        'Войти',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: const Text('Войти', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
                     ),
                   ),
                 ] else ...[
-                  const Text(
-                    'Приложите палец для входа',
-                    style: TextStyle(
-                        fontSize: 16, color: AppTheme.gray600),
-                  ),
+                  const Text('Приложите палец для входа', style: TextStyle(fontSize: 16, color: AppTheme.gray600)),
                   const SizedBox(height: 32),
-                  // Big fingerprint button
                   GestureDetector(
                     onTap: _authenticateBiometric,
                     child: Container(
-                      width: 100,
-                      height: 100,
+                      width: 100, height: 100,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
+                        shape: BoxShape.circle, color: Colors.white,
                         boxShadow: AppTheme.elevatedShadow,
                       ),
-                      child: const Icon(Icons.fingerprint,
-                          size: 56, color: AppTheme.orange500),
+                      child: const Icon(Icons.fingerprint, size: 56, color: AppTheme.orange500),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () => context.go(Routes.login),
-                    child: Text(
-                      'Войти с паролем',
-                      style: AppTheme.bodyMedium
-                          .copyWith(color: AppTheme.gray500),
-                    ),
+                    child: Text('Войти с паролем', style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray500)),
                   ),
                 ],
                 if (_error != null) ...[
                   const SizedBox(height: 16),
-                  Text(
-                    _error!,
-                    style: AppTheme.bodySmall.copyWith(color: AppTheme.error),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(_error!, style: AppTheme.bodySmall.copyWith(color: AppTheme.error), textAlign: TextAlign.center),
                 ],
                 const Spacer(flex: 3),
                 // Support link
@@ -241,18 +205,10 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.mail_outline_rounded,
-                            size: 18, color: AppTheme.info),
+                        Icon(Icons.mail_outline_rounded, size: 18, color: AppTheme.info),
                         const SizedBox(width: 6),
                         Flexible(
-                          child: Text(
-                            'Написать в поддержку',
-                            style: AppTheme.bodyMedium.copyWith(
-                              color: AppTheme.info,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: Text('Написать в поддержку', style: AppTheme.bodyMedium.copyWith(color: AppTheme.info, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
                         ),
                       ],
                     ),

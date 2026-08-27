@@ -13,6 +13,11 @@ import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/router/app_router.dart';
 import 'package:telecom_dashboard/presentation/router/auth_change_notifier.dart';
 
+/// Global reference to the ProviderContainer — used by widgets to read
+/// authProvider directly (bypasses WidgetRef which triggers
+/// NotInitializedError on web through the widget-tree framework layer).
+late final ProviderContainer appContainer;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -44,7 +49,7 @@ void main() async {
   }
 
   // Create ProviderContainer with overrides.
-  final container = ProviderContainer(
+  appContainer = ProviderContainer(
     overrides: [
       storageServiceProvider.overrideWithValue(storageService),
     ],
@@ -52,12 +57,12 @@ void main() async {
 
   // Build the router OUTSIDE the widget tree so provider errors
   // (e.g. NotInitializedError from plugins on web) don't crash the build.
-  final authChangeNotifier = AuthChangeNotifier(container);
+  final authChangeNotifier = AuthChangeNotifier(appContainer);
   final router = createGoRouter(authChangeNotifier);
 
   runApp(
     UncontrolledProviderScope(
-      container: container,
+      container: appContainer,
       child: TelecomApp(router: router),
     ),
   );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/main.dart' show appContainer;
 import 'package:telecom_dashboard/core/utils/validators.dart';
 import 'package:telecom_dashboard/core/widgets/app_header.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
@@ -102,10 +103,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(supportViewModelProvider);
     final isSubmitting = state is SupportFormSubmitting;
-    // Safe read — use container to bypass widget-tree framework calls on web
+    // Safe read via global container (bypasses WidgetRef on web)
     bool isAuthenticated = false;
     try {
-      isAuthenticated = ref.container.read(authProvider).valueOrNull != null;
+      isAuthenticated = appContainer.read(authProvider).valueOrNull != null;
     } catch (_) {}
 
     return Scaffold(

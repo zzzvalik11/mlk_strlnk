@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/domain/entities/user.dart';
+import 'package:telecom_dashboard/main.dart' show appContainer;
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/providers/notifications_provider.dart';
 
@@ -21,10 +22,10 @@ class AppHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Safe read — use container to bypass widget-tree framework calls on web
+    // Read auth state directly from container (bypasses WidgetRef on web)
     User? user;
     try {
-      user = ref.container.read(authProvider).valueOrNull;
+      user = appContainer.read(authProvider).valueOrNull;
     } catch (_) {
       user = null;
     }
@@ -109,7 +110,7 @@ class AppHeader extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppTheme.gray400, size: 22),
             onPressed: () {
-              ref.container.read(authProvider.notifier).logout();
+              try { appContainer.read(authProvider.notifier).logout(); } catch (_) {}
               context.go(Routes.login);
             },
           ),
