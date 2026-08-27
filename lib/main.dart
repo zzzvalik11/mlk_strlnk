@@ -34,8 +34,14 @@ void main() async {
   }
 
   // Initialize SharedPreferences-backed storage before any provider uses it.
+  // On web or if SharedPreferences fails, the app still starts —
+  // providers that need storage will handle null/uninitialized state.
   final storageService = StorageService();
-  await storageService.init();
+  try {
+    await storageService.init();
+  } catch (e) {
+    print('[Storage] Init skipped: $e');
+  }
 
   runApp(
     ProviderScope(
