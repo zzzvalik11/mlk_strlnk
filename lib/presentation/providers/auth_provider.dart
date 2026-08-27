@@ -121,10 +121,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           _mapFailureToException(failure),
           StackTrace.current,
         ),
-        (user) async {
-          // Set token expiry to 365 days from now
-          final expiry = DateTime.now().add(AppConstants.tokenValidity);
-          await _localSource.saveTokenExpiry(expiry);
+        (user) {
+          // Fire-and-forget: save token expiry (safe even if storage unavailable)
+          _localSource.saveTokenExpiry(
+            DateTime.now().add(AppConstants.tokenValidity),
+          );
           state = AsyncValue.data(user);
         },
       );

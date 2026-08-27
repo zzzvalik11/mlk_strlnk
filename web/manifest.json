@@ -1,0 +1,9 @@
+{
+    "name": "Starlink",
+    "short_name": "Starlink",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#FFF7ED",
+    "theme_color": "#F97316",
+    "description": "Личный кабинет телеком-абонента"
+}

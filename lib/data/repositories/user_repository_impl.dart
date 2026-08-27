@@ -56,9 +56,13 @@ class UserRepositoryImpl implements UserRepository {
         return left(const Failure.validation(message: 'Неверный пароль'));
       }
       final userModel = _createMockUser();
-      await _localSource.saveToken('mock_token_039103');
-      await _localSource.saveUser(userModel);
-      await _localSource.setMockUser(true);
+      try {
+        await _localSource.saveToken('mock_token_039103');
+        await _localSource.saveUser(userModel);
+        await _localSource.setMockUser(true);
+      } catch (_) {
+        // Storage may be unavailable on web — proceed without persisting.
+      }
       return right(userModel.toDomain());
     }
 

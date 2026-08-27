@@ -52,12 +52,17 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
         final msg = authState.error.toString();
         state = LoginFormError(msg);
       } else if (authState.valueOrNull != null) {
-        // Check if first login
-        final localSource = _ref.read(userLocalSourceProvider);
-        if (!localSource.isFirstLoginDone()) {
-          await localSource.markFirstLoginDone();
-          state = const LoginFormNeedsMethodSelection();
-        } else {
+        // Check if first login (safe on web where storage may be unavailable)
+        try {
+          final localSource = _ref.read(userLocalSourceProvider);
+          if (!localSource.isFirstLoginDone()) {
+            await localSource.markFirstLoginDone();
+            state = const LoginFormNeedsMethodSelection();
+          } else {
+            state = const LoginFormSuccess(isFirstLogin: false);
+          }
+        } catch (_) {
+          // Storage unavailable — treat as returning user
           state = const LoginFormSuccess(isFirstLogin: false);
         }
       } else {
