@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -20,14 +21,18 @@ void main() async {
     await dotenv.load(fileName: '.env');
   } catch (_) {}
 
-  // Firebase — gracefully skip if not configured.
-  try {
-    await Firebase.initializeApp();
-    final fcmService = FcmService();
-    await fcmService.init();
-    print('[FCM] Device token: ${fcmService.currentToken}');
-  } catch (e) {
-    print('[Firebase] Init skipped: $e');
+  // Firebase — gracefully skip if not configured or on web without options.
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      final fcmService = FcmService();
+      await fcmService.init();
+      print('[FCM] Device token: ${fcmService.currentToken}');
+    } catch (e) {
+      print('[Firebase] Init skipped: $e');
+    }
+  } else {
+    print('[Firebase] Skipped on web');
   }
 
   // Initialize storage.

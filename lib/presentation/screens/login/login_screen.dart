@@ -246,11 +246,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           color: AppTheme.info,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'Написать в поддержку',
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.info,
-                            fontWeight: FontWeight.w500,
+                        Flexible(
+                          child: Text(
+                            'Написать в поддержку',
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.info,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

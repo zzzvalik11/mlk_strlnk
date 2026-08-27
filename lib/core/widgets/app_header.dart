@@ -21,14 +21,14 @@ class AppHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Safe read — authProvider may throw on web (SharedPreferences NotInitializedError)
+    // Safe read — use container to bypass widget-tree framework calls on web
     User? user;
     try {
-      user = ref.watch(authProvider).valueOrNull;
+      user = ref.container.read(authProvider).valueOrNull;
     } catch (_) {
       user = null;
     }
-    final unreadCount = ref.watch(unreadNotificationsProvider);
+    final unreadCount = ref.read(unreadNotificationsProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -109,7 +109,7 @@ class AppHeader extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppTheme.gray400, size: 22),
             onPressed: () {
-              ref.read(authProvider.notifier).logout();
+              ref.container.read(authProvider.notifier).logout();
               context.go(Routes.login);
             },
           ),

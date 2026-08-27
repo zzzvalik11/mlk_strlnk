@@ -31,9 +31,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeViewModelProvider);
-    // Safe read — authProvider may throw on web (SharedPreferences NotInitializedError)
+    // Safe read — use container to bypass widget-tree framework calls on web
     final user = () {
-      try { return ref.watch(authProvider).valueOrNull; } catch (_) { return null; }
+      try { return ref.container.read(authProvider).valueOrNull; } catch (_) { return null; }
     }();
 
     return RefreshIndicator(

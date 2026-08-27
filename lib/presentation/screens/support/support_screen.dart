@@ -102,10 +102,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(supportViewModelProvider);
     final isSubmitting = state is SupportFormSubmitting;
-    // Safe read — authProvider may throw on web (SharedPreferences NotInitializedError)
+    // Safe read — use container to bypass widget-tree framework calls on web
     bool isAuthenticated = false;
     try {
-      isAuthenticated = ref.watch(authProvider).valueOrNull != null;
+      isAuthenticated = ref.container.read(authProvider).valueOrNull != null;
     } catch (_) {}
 
     return Scaffold(

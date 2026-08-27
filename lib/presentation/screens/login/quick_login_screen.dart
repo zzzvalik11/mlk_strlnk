@@ -6,6 +6,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
+import 'package:telecom_dashboard/data/local/storage_service.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 
 /// Screen for quick re-login (PIN-only or Biometric).
@@ -33,11 +34,13 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
     super.initState();
     // If biometric, auto-trigger on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final localSource = ref.read(userLocalSourceProvider);
-      final method = localSource.getAuthMethod();
-      if (method == AuthMethod.biometric) {
-        _authenticateBiometric();
-      }
+      try {
+        final localSource = ref.container.read(userLocalSourceProvider);
+        final method = localSource.getAuthMethod();
+        if (method == AuthMethod.biometric) {
+          _authenticateBiometric();
+        }
+      } catch (_) {}
     });
   }
 
@@ -57,8 +60,8 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
         ),
       );
       if (didAuth) {
-        await ref.read(authProvider.notifier).authenticateWithBiometric();
-        final authState = ref.read(authProvider);
+        await ref.container.read(authProvider.notifier).authenticateWithBiometric();
+        final authState = ref.container.read(authProvider);
         if (!mounted) return;
         if (authState.valueOrNull != null) {
           context.go(Routes.home);
@@ -85,16 +88,23 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
       setState(() => _error = 'Введите ПИН-код');
       return;
     }
-    ref.read(authProvider.notifier).authenticateWithPin(pin: pin);
+    ref.container.read(authProvider.notifier).authenticateWithPin(pin: pin);
   }
 
   @override
   Widget build(BuildContext context) {
-    final localSource = ref.read(userLocalSourceProvider);
-    final method = localSource.getAuthMethod() ?? AuthMethod.pin;
+    final UserLocalSource localSource;
+    final AuthMethod method;
+    try {
+      localSource = ref.container.read(userLocalSourceProvider);
+      method = localSource.getAuthMethod() ?? AuthMethod.pin;
+    } catch (_) {
+      localSource = UserLocalSource(storageService: StorageService());
+      method = AuthMethod.pin;
+    }
 
     // Listen for auth success
-    ref.listen<AsyncValue>(authProvider, (prev, next) {
+    ref.container.listen<AsyncValue>(authProvider, (prev, next) {
       if (next.valueOrNull != null) {
         context.go(Routes.home);
       } else if (next.hasError) {
@@ -234,11 +244,14 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                         Icon(Icons.mail_outline_rounded,
                             size: 18, color: AppTheme.info),
                         const SizedBox(width: 6),
-                        Text(
-                          'Написать в поддержку',
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.info,
-                            fontWeight: FontWeight.w500,
+                        Flexible(
+                          child: Text(
+                            'Написать в поддержку',
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.info,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
