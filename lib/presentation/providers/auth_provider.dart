@@ -113,16 +113,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     required String pin,
     required String password,
   }) async {
+    print('[AUTH] login() called with pin=$pin');
     state = const AsyncValue.loading();
     try {
+      print('[AUTH] calling _loginUseCase.call');
       final result = await _loginUseCase.call(pin: pin, password: password);
+      print('[AUTH] usecase returned: isRight=${result.isRight()}');
       result.fold(
-        (failure) => state = AsyncValue.error(
-          _mapFailureToException(failure),
-          StackTrace.current,
-        ),
+        (failure) {
+          print('[AUTH] fold LEFT (failure)');
+          state = AsyncValue.error(
+            _mapFailureToException(failure),
+            StackTrace.current,
+          );
+        },
         (user) {
-          // Fire-and-forget: save token expiry (safe even if storage unavailable)
+          print('[AUTH] fold RIGHT (user=${user.fullName})');
           _localSource.saveTokenExpiry(
             DateTime.now().add(AppConstants.tokenValidity),
           );
@@ -130,6 +136,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         },
       );
     } catch (e, st) {
+      print('[AUTH] EXCEPTION: $e');
+      print('[AUTH] STACK: $st');
       state = AsyncValue.error(e, st);
     }
   }

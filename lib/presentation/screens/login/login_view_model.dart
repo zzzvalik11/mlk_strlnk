@@ -45,14 +45,17 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
     state = const LoginFormSubmitting();
 
     try {
-      await _ref.read(authProvider.notifier).login(pin: pin, password: password);
-
+      print('[LOGIN] Step 1: reading authProvider.notifier');
+      final authNotifier = _ref.read(authProvider.notifier);
+      print('[LOGIN] Step 2: calling authNotifier.login');
+      await authNotifier.login(pin: pin, password: password);
+      print('[LOGIN] Step 3: reading authProvider state');
       final authState = _ref.read(authProvider);
+      print('[LOGIN] Step 4: authState=$authState');
       if (authState.hasError) {
         final msg = authState.error.toString();
         state = LoginFormError(msg);
       } else if (authState.valueOrNull != null) {
-        // Check if first login (safe on web where storage may be unavailable)
         try {
           final localSource = _ref.read(userLocalSourceProvider);
           if (!localSource.isFirstLoginDone()) {
@@ -62,14 +65,15 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
             state = const LoginFormSuccess(isFirstLogin: false);
           }
         } catch (_) {
-          // Storage unavailable — treat as returning user
           state = const LoginFormSuccess(isFirstLogin: false);
         }
       } else {
         state = const LoginFormError('Неверный ПИН или пароль');
       }
-    } catch (e) {
-      state = LoginFormError(e.toString());
+    } catch (e, st) {
+      print('[LOGIN] ERROR: $e');
+      print('[LOGIN] STACK: $st');
+      state = LoginFormError('$e\n\n$st');
     }
   }
 
