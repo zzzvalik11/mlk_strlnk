@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/app_constants.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/data/local/storage_service.dart';
