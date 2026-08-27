@@ -70,35 +70,31 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           // ─── Period Filter ──────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: HistoryPeriod.values.map((p) {
-                  final isActive = notifier.period == p;
-                  String label = p.label;
-                  if (p == HistoryPeriod.custom && notifier.customRange != null) {
-                    final r = notifier.customRange!;
-                    label = '${DateFormatter.formatDate(r.start)} – ${DateFormatter.formatDate(r.end)}';
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(label, style: const TextStyle(fontSize: 13)),
-                      selected: isActive,
-                      onSelected: p == HistoryPeriod.custom
-                          ? (_) => _pickDateRange(context, notifier)
-                          : (_) => notifier.setPeriod(p),
-                      selectedColor: AppTheme.orange500.withOpacity(0.2),
-                      labelStyle: TextStyle(
-                        color: isActive ? AppTheme.orange500 : AppTheme.gray600,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  );
-                }).toList(),
-              ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: HistoryPeriod.values.map((p) {
+                final isActive = notifier.period == p;
+                String label = p.label;
+                if (p == HistoryPeriod.custom && notifier.customRange != null) {
+                  final r = notifier.customRange!;
+                  label = '${DateFormatter.formatDate(r.start)} – ${DateFormatter.formatDate(r.end)}';
+                }
+                return ChoiceChip(
+                  label: Text(label, style: const TextStyle(fontSize: 13)),
+                  selected: isActive,
+                  onSelected: p == HistoryPeriod.custom
+                      ? (_) => _pickDateRange(context, notifier)
+                      : (_) => notifier.setPeriod(p),
+                  selectedColor: AppTheme.orange500.withOpacity(0.2),
+                  labelStyle: TextStyle(
+                    color: isActive ? AppTheme.orange500 : AppTheme.gray600,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                );
+              }).toList(),
             ),
           ),
           const SizedBox(height: 4),
