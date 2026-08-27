@@ -32,12 +32,9 @@ void main() async {
       await Firebase.initializeApp();
       final fcmService = FcmService();
       await fcmService.init();
-      print('[FCM] Device token: ${fcmService.currentToken}');
-    } catch (e) {
-      print('[Firebase] Init skipped: $e');
+    } catch (_) {
+      // Firebase not configured — skip silently.
     }
-  } else {
-    print('[Firebase] Skipped on web');
   }
 
   // Initialize storage.

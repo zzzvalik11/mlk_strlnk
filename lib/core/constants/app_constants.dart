@@ -3,33 +3,45 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConstants {
   AppConstants._();
 
+  // ─── Safe dotenv accessor ─────────────────────────────────
+  // On web, .env may not exist (404). dotenv.load() is in try-catch,
+  // but dotenv.env still throws NotInitializedError if load failed.
+  // This helper catches that and returns null.
+  static String? _env(String key) {
+    try {
+      return dotenv.env[key];
+    } catch (_) {
+      return null;
+    }
+  }
+
   // API
   static String get apiBaseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api';
+      _env('API_BASE_URL') ?? 'http://10.0.2.2:3000/api';
 
   // СБП API (если не задан — используется apiBaseUrl)
   static String get sbpApiUrl =>
-      dotenv.env['SBP_API_URL'] ?? apiBaseUrl;
+      _env('SBP_API_URL') ?? apiBaseUrl;
 
   // РСБ платёжный шлюз (если не заданы — запросы идут через apiBaseUrl)
   static String get rsbPaymentUrl =>
-      dotenv.env['RSB_PAYMENT_URL'] ?? apiBaseUrl;
+      _env('RSB_PAYMENT_URL') ?? apiBaseUrl;
   static String get rsbRegisterUrl =>
-      dotenv.env['RSB_REGISTER_URL'] ?? apiBaseUrl;
+      _env('RSB_REGISTER_URL') ?? apiBaseUrl;
 
   // РСБ учётные данные
   static String get rsbMerchantName =>
-      dotenv.env['RSB_MERCHANT_NAME'] ?? '';
+      _env('RSB_MERCHANT_NAME') ?? '';
   static String get rsbTerminalId =>
-      dotenv.env['RSB_TERMINAL_ID'] ?? '';
+      _env('RSB_TERMINAL_ID') ?? '';
   static String get rsbMerchantId =>
-      dotenv.env['RSB_MERCHANT_ID'] ?? '';
+      _env('RSB_MERCHANT_ID') ?? '';
   static String get rsbSecretKey =>
-      dotenv.env['RSB_SECRET_KEY'] ?? '';
+      _env('RSB_SECRET_KEY') ?? '';
 
   // FCM
   static String get fcmServerKey =>
-      dotenv.env['FCM_SERVER_KEY'] ?? '';
+      _env('FCM_SERVER_KEY') ?? '';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);

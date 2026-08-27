@@ -29,14 +29,10 @@ class StorageService {
 
   // ─── String ─────────────────────────────────────
   String? getString(String key) {
-    if (_useMemory) {
-      print('[STORE] getString($key) -> memory: ${_memory.containsKey(key)}');
-      return _memory[key] as String?;
-    }
+    if (_useMemory) return _memory[key] as String?;
     try {
       return _prefs?.getString(key);
-    } catch (e) {
-      print('[STORE] getString($key) EXCEPTION: $e');
+    } catch (_) {
       return null;
     }
   }

@@ -9,17 +9,13 @@ class AuthChangeNotifier extends ChangeNotifier {
   final ProviderContainer _container;
 
   AuthChangeNotifier(this._container) {
-    print('[ACN] Constructor start');
     try {
-      print('[ACN] Calling container.listen(authProvider)');
-      _container.listen<AsyncValue>(authProvider, (_, next) {
-        print('[ACN] authProvider state changed: ${next.runtimeType}');
+      _container.listen<AsyncValue>(authProvider, (_, __) {
         notifyListeners();
       });
-      print('[ACN] listen OK');
-    } catch (e, st) {
-      print('[ACN] listen EXCEPTION: $e');
-      print('[ACN] listen STACK: $st');
+    } catch (_) {
+      // Provider failed to initialise — isAuthenticated will return false,
+      // so the router will redirect to the login screen.
     }
   }
 

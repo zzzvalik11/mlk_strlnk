@@ -22,7 +22,6 @@ class LoginFormError extends LoginFormState {
 }
 
 class LoginFormSuccess extends LoginFormState {
-  /// true if this is the first login and we should show auth method selection.
   final bool isFirstLogin;
   const LoginFormSuccess({this.isFirstLogin = false});
 }
@@ -45,9 +44,7 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
     state = const LoginFormSubmitting();
 
     try {
-      print('[LOGIN_VM] Calling _ref.read(authProvider.notifier)');
       await _ref.read(authProvider.notifier).login(pin: pin, password: password);
-      print('[LOGIN_VM] login() returned OK');
 
       final authState = _ref.read(authProvider);
       if (authState.hasError) {
@@ -64,9 +61,7 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
       } else {
         state = const LoginFormError('Неверный ПИН или пароль');
       }
-    } catch (e, st) {
-      print('[LOGIN_VM] EXCEPTION: $e');
-      print('[LOGIN_VM] STACK: $st');
+    } catch (e) {
       state = LoginFormError(e.toString());
     }
   }
