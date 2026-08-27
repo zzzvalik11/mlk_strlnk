@@ -22,11 +22,11 @@
 | Экран | Описание | ViewModel |
 |-------|----------|-----------|
 | Главная (`/`) | Баланс, дата оплаты, список активных услуг, уведомления, замок тарифа | `HomeViewModel` |
-| Оплата (`/payment`) | Быстрые действия, последние операции | `PaymentViewModel` |
+| Оплата (`/payment`) | Быстрые действия, последние операции, обещанный платёж | `PaymentViewModel` |
 | Новости (`/news`) | Лента статей с детальным просмотром (`/news/:id`) | `NewsViewModel` |
 | Поддержка (`/support`) | Создание обращений, отслеживание статуса | `SupportViewModel` |
-| Пополнение (`/top_up`) | Ввод суммы и оплата | `TopUpViewModel` |
-| История (`/history`) | Все транзакции с фильтрацией по периоду (вкл. произвольный) | `HistoryViewModel` |
+| Пополнение (`/top_up`) | Ввод суммы и оплата (карта / СБП QR) | `TopUpViewModel` |
+| История (`/history`) | Все транзакции с фильтрацией по периоду | `HistoryViewModel` |
 | Услуги (`/services`) | Список подключённых услуг | — |
 | Уведомления (`/notifications`) | Лента уведомлений с read/unread | — |
 | Настройки (`/settings`) | Смена метода авторизации, выход | — |
@@ -39,7 +39,7 @@
 
 ### Общая шапка
 
-Все экраны авторизованной зоны используют единый виджет `AppHeader` — аватар, имя/ID пользователя, колокольчик уведомлений, настройки, выход. На внутренних экранах добавляется кнопка «назад».
+Все экраны авторизованной зоны используют единый виджет `AppHeader` — логотип, имя/ID пользователя, колокольчик уведомлений, настройки, выход. На внутренних экранах добавляется кнопка «назад».
 
 ---
 
@@ -62,7 +62,7 @@
 | Platform | Workflow | Артефакт | Runner |
 |----------|----------|----------|--------|
 | Android | `.github/workflows/android.yml` | `.apk` или `.aab` | ubuntu-latest |
-| iOS | `.github/workflows/ios.yml` | `.ipa` | macos-latest |
+| iOS | `.github/workflows/ios.yml` | `.ipa` (без подписи) | macos-latest |
 
 Артефакты доступны для скачивания во вкладке **Actions**.
 
@@ -83,6 +83,11 @@
 | Локальное хранилище | SharedPreferences                  |
 | Локализация         | `flutter_localizations` + `intl`  |
 | Биометрия           | `local_auth`                      |
+| QR-коды (СБП)       | `qr_flutter`                      |
+| Платёжная WebView   | `webview_flutter`                 |
+| URL launcher        | `url_launcher`                     |
+| Push-уведомления    | `firebase_core` + `firebase_messaging` |
+| Конфигурация        | `flutter_dotenv`                  |
 | CI/CD               | GitHub Actions                    |
 
 ---
@@ -91,10 +96,10 @@
 
 ```
 lib/
-├── main.dart                          # Точка входа, ProviderScope
+├── main.dart                          # Точка входа, Firebase, .env, ProviderScope
 ├── core/
 │   ├── constants/
-│   │   ├── app_constants.dart         # URL-базы, ключи API
+│   │   ├── app_constants.dart         # URL-базы, ключи (из .env), таймауты
 │   │   ├── routes.dart                # Константы маршрутов
 │   │   └── themes.dart                # Цвета, текстовые стили, паддинги
 │   ├── errors/
@@ -105,7 +110,7 @@ lib/
 │   │   ├── date_formatter.dart        # Форматирование дат
 │   │   └── validators.dart            # Валидация ПИН / пароля
 │   └── widgets/
-│       ├── app_header.dart            # Единая шапка для всех экранов
+│       ├── app_header.dart            # Единая шапка (логотип, user, bell)
 │       ├── empty_state.dart           # Пустое состояние
 │       ├── error_state.dart           # Ошибка с retry
 │       ├── loading_spinner.dart       # Индикатор загрузки
@@ -118,6 +123,9 @@ lib/
 │   │   ├── transaction.dart
 │   │   ├── news_item.dart
 │   │   ├── support_ticket.dart
+│   │   ├── payment_link.dart
+│   │   ├── payment_result.dart
+│   │   ├── sms_status.dart
 │   │   └── page.dart                  # Пагинация
 │   ├── repositories/                  # Абстрактные контракты
 │   │   ├── user_repository.dart
@@ -125,92 +133,52 @@ lib/
 │   │   ├── service_repository.dart
 │   │   ├── transaction_repository.dart
 │   │   ├── news_repository.dart
+│   │   ├── payment_repository.dart
+│   │   ├── sms_repository.dart
 │   │   └── support_repository.dart
 │   └── usecases/                      # Бизнес-сценарии
 │       ├── auth/
-│       │   ├── login_usecase.dart
-│       │   └── get_current_user_usecase.dart
 │       ├── balance/
-│       │   ├── get_balance_usecase.dart
-│       │   └── top_up_usecase.dart
 │       ├── services/
-│       │   └── get_active_services_usecase.dart
 │       ├── transactions/
-│       │   └── get_transaction_history_usecase.dart
 │       ├── news/
-│       │   ├── get_news_list_usecase.dart
-│       │   └── get_news_by_id_usecase.dart
+│       ├── payments/
 │       └── support/
-│           └── create_ticket_usecase.dart
 ├── data/
 │   ├── models/                        # DTO (Freezed + toEntity extension)
-│   │   ├── user_model.dart
-│   │   ├── balance_model.dart
-│   │   ├── service_model.dart
-│   │   ├── transaction_model.dart
-│   │   ├── news_model.dart
-│   │   └── support_ticket_model.dart
 │   ├── datasources/
 │   │   ├── remote/                    # Dio-based API-клиенты
-│   │   │   ├── api_client.dart
+│   │   │   ├── api_client.dart        # Центральный HTTP-клиент (Dio + interceptors)
 │   │   │   ├── user_remote_source.dart
 │   │   │   ├── balance_remote_source.dart
 │   │   │   ├── service_remote_source.dart
 │   │   │   ├── transaction_remote_source.dart
 │   │   │   ├── news_remote_source.dart
+│   │   │   ├── payment_remote_source.dart
+│   │   │   ├── sms_remote_source.dart
 │   │   │   └── support_remote_source.dart
 │   │   └── local/
 │   │       └── user_local_source.dart
 │   ├── repositories/                  # Реализации domain-контрактов
-│   │   ├── user_repository_impl.dart
-│   │   ├── balance_repository_impl.dart
-│   │   ├── service_repository_impl.dart
-│   │   ├── transaction_repository_impl.dart
-│   │   ├── news_repository_impl.dart
-│   │   └── support_repository_impl.dart
+│   ├── services/
+│   │   └── fcm_service.dart           # Firebase Cloud Messaging
 │   └── local/
 │       └── storage_service.dart       # Обёртка над SharedPreferences
 └── presentation/
     ├── providers/                     # Riverpod providers
-    │   ├── auth_provider.dart
-    │   ├── balance_provider.dart
-    │   ├── services_provider.dart
-    │   ├── transactions_provider.dart
-    │   ├── news_provider.dart
-    │   └── support_provider.dart
     ├── screens/
-    │   ├── login/
-    │   │   ├── login_screen.dart
-    │   │   ├── login_view_model.dart
-    │   │   ├── quick_login_screen.dart
-    │   │   └── auth_method_selection_screen.dart
-    │   ├── home/
-    │   │   ├── home_screen.dart
-    │   │   └── home_view_model.dart
-    │   ├── payment/
-    │   │   ├── payment_screen.dart
-    │   │   └── payment_view_model.dart
-    │   ├── top_up/
-    │   │   ├── top_up_screen.dart
-    │   │   └── top_up_view_model.dart
-    │   ├── history/
-    │   │   ├── history_screen.dart
-    │   │   └── history_view_model.dart
-    │   ├── news/
-    │   │   ├── news_screen.dart
-    │   │   ├── news_view_model.dart
-    │   │   └── news_detail_screen.dart
-    │   ├── support/
-    │   │   ├── support_screen.dart
-    │   │   └── support_view_model.dart
-    │   ├── notifications/
-    │   │   └── notifications_screen.dart
-    │   ├── services/
-    │   │   └── services_screen.dart
-    │   └── settings/
-    │       └── settings_screen.dart
+    │   ├── login/                      # Логин, Quick Login, выбор метода
+    │   ├── home/                       # Главная
+    │   ├── payment/                    # Оплата, обещанный платёж
+    │   ├── top_up/                     # Пополнение, QR СБП, callback
+    │   ├── history/                    # История транзакций
+    │   ├── news/                       # Новости, детали
+    │   ├── support/                    # Поддержка
+    │   ├── notifications/              # Уведомления
+    │   ├── services/                   # Услуги
+    │   └── settings/                   # Настройки
     ├── widgets/navigation/
-    │   └── bottom_nav_bar.dart        # Нижняя навигация (4 вкладки)
+    │   └── bottom_nav_bar.dart         # Нижняя навигация (4 вкладки)
     └── router/
         └── app_router.dart            # GoRouter + ShellRoute + auth redirect
 ```
@@ -237,6 +205,7 @@ lib/
 │   Models (DTO, Freezed + toEntity extension)     │
 │   Remote Sources (Dio)                           │
 │   Local Sources (SharedPreferences)              │
+│   Services (FCM)                                 │
 │   Repository Implementations                     │
 └──────────────────────────────────────────────────┘
 
@@ -249,31 +218,17 @@ Dependency Rule: presentation → domain ← data
 
 Бэкенд выступает **оркестратором** между мобильным приложением и сторонними сервисами. Приложение напрямую не обращается к внешним API.
 
-| Сервис | Назначение | Протокол | Аутентификация |
-|--------|-----------|----------|----------------|
-| **Starlink BSS** (starlink-api v1.0.0) | Биллинг: авторизация, счета, услуги, тарифы, транзакции | REST API (JSON) | JWT Bearer Token (365 дней) |
-| **РСБ ECOMM** v3.0.17 | Платёжный шлюз: оплата картой (Visa/MC/Мир), 3DS 2.x, DMS, рекуррент, Apple/Google/Samsung/Yandex Pay | HTTP POST (form-encoded) + REST API (JSON API) | SSL-сертификат ТСП (mTLS, TLS 1.2+) |
-| **СБП** (НСПК через Сбербанк) | Оплата по QR-коду через Систему быстрых платежей | REST API (JSON) | API-ключи |
-| **Devino Telecom** | SMS: OTP, уведомления об оплате, информационные рассылки | REST API v2 (JSON) | Basic Auth (login:password) |
-| **Firebase Cloud Messaging** | Push-уведомления: статус платежей, напоминания, тарифы | FCM HTTP v1 API | OAuth 2.0 Service Account |
-
-### Платёжные методы
-
-- **Банковская карта** — через платёжную форму Банка Русский Стандарт (RSB ECOMM). Модели: SMS (единая транзакция) и DMS (авторизация + выполнение). Поддержка 3D Secure 2.x.
-- **СБП** — создание платежа, генерация QR-кода, callback-уведомления, возвраты. Доступно также на платёжной странице РСБ (`ecomm_payment_scenario=10564`).
-- **Рекуррентные платежи** — сохранение карты на стороне Банка, последующее списание по инициативе ТСП или клиента.
-
-### Ключевые эндпоинты прокси
-
-| Группа | Эндпоинты нашего API | Внешний сервис |
-|--------|---------------------|---------------|
-| Платежи (карта) | `/v1/payments/card/register`, `status`, `dms/*`, `reverse`, `refund`, `close-day` | РСБ ECOMM |
-| Платежи (СБП) | `/v1/payments/sbp/create`, `status/{id}`, `cancel/{id}`, `refund/{id}`, `callback` | СБП API |
-| SMS | `/v1/sms/send`, `status/{id}`, `balance` | Devino Telecom |
-| Push | `/v1/notifications/send`, `status`, `status-old` | FCM (через BSS) |
+| Сервис | Назначение | Протокол |
+|--------|-----------|----------|
+| **Starlink BSS** | Биллинг: авторизация, счета, услуги, тарифы, транзакции | REST API (JWT) |
+| **РСБ ECOMM** | Платёжный шлюз: оплата картой, 3DS 2.x | HTTP POST (SSL) |
+| **СБП** (Сбербанк) | Оплата по QR-коду | REST API (JSON) |
+| **Devino Telecom** | SMS: OTP, уведомления | REST API v2 (Basic Auth) |
+| **Firebase Cloud Messaging** | Push-уведомления | FCM HTTP v1 |
 
 Полная спецификация — [`api.yaml`](./api.yaml) (OpenAPI 3.0.3, 42 эндпоинта).
 Подробная архитектура — [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Публикация в сторы — [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md).
 
 ---
 
@@ -283,6 +238,7 @@ Dependency Rule: presentation → domain ← data
 
 - Flutter >= 3.22.0 (Dart >= 3.13.0)
 - Android Studio или VS Code с Flutter-плагином
+- Firebase проект (для push-уведомлений)
 
 ### Установка и запуск
 
@@ -290,30 +246,28 @@ Dependency Rule: presentation → domain ← data
 git clone https://github.com/zzzvalik11/mlk_strlnk.git
 cd mlk_strlnk
 
-# 1. Зависимости
+# 1. Переменные окружения
+cp .env.example .env
+# Отредактируйте .env (как минимум API_BASE_URL)
+
+# 2. Зависимости
 flutter pub get
 
-# 2. Генерация кода (Freezed + json_serializable)
-dart run build_runner build --delete-conflicting-outputs
+# 3. Генерация кода (Freezed + json_serializable)
+flutter pub run build_runner build --delete-conflicting-outputs
 
-# 3. Создание платформенных файлов
+# 4. Создание платформенных файлов
 flutter create --platforms=android,ios,web .
+bash scripts/configure_deep_links.sh
 
-# 4. Запуск
+# 5. Сгенерировать иконку приложения
+flutter pub run flutter_launcher_icons -f flutter_launcher_icons.yaml
+
+# 6. Запуск
 flutter run
 ```
 
-> **Примечание:** Платформенные директории (`android/`, `ios/`, `web/`) не хранятся в репозитории.
-> Исключение — `ios/Podfile` (в новых версиях Flutter SDK он не генерируется автоматически).
-> Если `flutter create` не создал Podfile, он уже есть в репозитории.
-
-### Запуск на Web
-
-```bash
-flutter run -d chrome
-# или
-flutter run -d Edge
-```
+> **Примечание:** Платформенные директории (`android/`, `ios/`, `web/`) не хранятся в репозитории — генерируются при каждой сборке.
 
 ### Если генерация не срабатывает (no-op)
 
@@ -321,7 +275,7 @@ flutter run -d Edge
 flutter clean
 rm -rf .dart_tool/build
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs
+flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
 ---
@@ -340,9 +294,28 @@ dart run build_runner build --delete-conflicting-outputs
 | `/services` | Услуги | Да |
 | `/notifications` | Уведомления | Да |
 | `/settings` | Настройки | Да |
+| `/promised_payment` | Обещанный платёж | Да |
 | `/login` | Вход (ПИН/пароль) | Нет |
 | `/quick_login` | Быстрый вход | Нет |
 | `/auth_method_selection` | Выбор метода входа | Нет |
+
+---
+
+## Конфигурация (.env)
+
+Чувствительные данные хранятся в `.env` (не попадает в git). Шаблон — [`.env.example`](./.env.example).
+
+| Переменная | Описание | По умолчанию |
+|------------|----------|---------------|
+| `API_BASE_URL` | Основной API (биллинг) | `http://10.0.2.2:3000/api` |
+| `SBP_API_URL` | СБП API (пустой = API_BASE_URL) | — |
+| `RSB_PAYMENT_URL` | РСБ шлюз (пустой = API_BASE_URL) | — |
+| `RSB_REGISTER_URL` | РСБ регистрация (пустой = API_BASE_URL) | — |
+| `RSB_MERCHANT_NAME` | Имя мерчанта РСБ | — |
+| `RSB_TERMINAL_ID` | Терминал РСБ | — |
+| `RSB_MERCHANT_ID` | Merchant ID РСБ | — |
+| `RSB_SECRET_KEY` | Секретный ключ РСБ | — |
+| `FCM_SERVER_KEY` | Server key для отправки пушей | — |
 
 ---
 
@@ -356,13 +329,16 @@ flutter analyze
 dart format lib/
 
 # Перегенерировать код
-dart run build_runner build --delete-conflicting-outputs
+flutter pub run build_runner build --delete-conflicting-outputs
 
 # Watch-режим (автогенерация при изменениях)
-dart run build_runner watch
+flutter pub run build_runner watch
 
-# Запустить CI локально (нужен act)
-act push -W .github/workflows/android.yml
+# Сгенерировать иконки
+flutter pub run flutter_launcher_icons -f flutter_launcher_icons.yaml
+
+# Отправить тестовый пуш
+bash scripts/send_test_push.sh <DEVICE_TOKEN> "Тест" "Привет!"
 ```
 
 ---
