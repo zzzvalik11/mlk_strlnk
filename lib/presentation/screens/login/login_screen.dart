@@ -71,24 +71,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
-                // ─── Logo with slogan ─────────────────
+                // ─── Logo ─────────────────
                 Center(
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/logo_act.png',
-                        width: 220,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'просто с нами проще',
-                        style: AppTheme.bodyMedium.copyWith(
-                          color: AppTheme.gray500,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
+                  child: Image.asset(
+                    'assets/images/logo_act.png',
+                    width: 220,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 48),

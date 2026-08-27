@@ -114,20 +114,10 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                 const Spacer(flex: 2),
                 // Logo
                 Center(
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/logo_act.png',
-                        width: 220,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'просто с нами проще',
-                        style: AppTheme.bodyMedium
-                            .copyWith(color: AppTheme.gray500, fontSize: 16),
-                      ),
-                    ],
+                  child: Image.asset(
+                    'assets/images/logo_act.png',
+                    width: 220,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const Spacer(flex: 1),
