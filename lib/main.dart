@@ -9,6 +9,7 @@ import 'package:telecom_dashboard/data/local/storage_service.dart';
 import 'package:telecom_dashboard/data/services/fcm_service.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/router/app_router.dart';
+import 'package:telecom_dashboard/presentation/router/auth_change_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +46,7 @@ void main() async {
 
   // Build the router OUTSIDE the widget tree so provider errors
   // (e.g. NotInitializedError from plugins on web) don't crash the build.
-  final authChangeNotifier = _AuthChangeNotifier(container);
+  final authChangeNotifier = AuthChangeNotifier(container);
   final router = createGoRouter(authChangeNotifier);
 
   runApp(
@@ -54,34 +55,6 @@ void main() async {
       child: TelecomApp(router: router),
     ),
   );
-}
-
-/// Bridge between Riverpod auth state and GoRouter's refreshListenable.
-class _AuthChangeNotifier extends ChangeNotifier {
-  final ProviderContainer _container;
-
-  _AuthChangeNotifier(this._container) {
-    _container.listen<AsyncValue>(authProvider, (_, __) {
-      notifyListeners();
-    });
-  }
-
-  /// Safe read — returns true only if auth provider has a valid user.
-  bool get isAuthenticated {
-    try {
-      return _container.read(authProvider).valueOrNull != null;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  bool get isLoading {
-    try {
-      return _container.read(authProvider) is AsyncLoading;
-    } catch (_) {
-      return false;
-    }
-  }
 }
 
 class TelecomApp extends StatelessWidget {

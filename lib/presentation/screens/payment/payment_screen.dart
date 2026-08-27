@@ -55,29 +55,23 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   childAspectRatio: 1.4,
                   children: [
                     _QuickAction(
-                      icon: Icons.account_balance_wallet_rounded,
-                      label: 'Оплата услуг',
+                      icon: Icons.credit_card_rounded,
+                      label: 'Банковская карта',
+                      subtitle: 'Visa, Mastercard, МИР',
                       color: AppTheme.orange500,
                       onTap: () => context.push(Routes.topUp),
                     ),
-                    const _QuickAction(
-                      icon: Icons.send_rounded,
-                      label: 'Перевод',
+                    _QuickAction(
+                      icon: Icons.qr_code_2_rounded,
+                      label: 'СБП',
+                      subtitle: 'Система быстрых платежей',
                       color: AppTheme.info,
-                    ),
-                    const _QuickAction(
-                      icon: Icons.smartphone_rounded,
-                      label: 'Привязать карту',
-                      color: AppTheme.success,
-                    ),
-                    const _QuickAction(
-                      icon: Icons.local_offer_rounded,
-                      label: 'Промокод',
-                      color: AppTheme.warning,
+                      onTap: () => context.push(Routes.topUp),
                     ),
                     _QuickAction(
                       icon: Icons.access_time_rounded,
                       label: 'Обещанный платёж',
+                      subtitle: 'Отложить оплату',
                       color: AppTheme.success,
                       onTap: () => context.push(Routes.promisedPayment),
                     ),
@@ -139,12 +133,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final Color color;
   final VoidCallback? onTap;
 
   const _QuickAction({
     required this.icon,
     required this.label,
+    this.subtitle,
     required this.color,
     this.onTap,
   });
@@ -188,12 +184,24 @@ class _QuickAction extends StatelessWidget {
                 Text(
                   label,
                   style: AppTheme.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle!,
+                    style: AppTheme.labelSmall.copyWith(
+                      color: AppTheme.gray500,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),

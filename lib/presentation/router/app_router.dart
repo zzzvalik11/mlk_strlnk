@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
+import 'package:telecom_dashboard/presentation/router/auth_change_notifier.dart';
 import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/home/home_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/login/auth_method_selection_screen.dart';
@@ -30,7 +31,7 @@ GoRouter createGoRouter(Listenable notifier) {
     debugLogDiagnostics: true,
     refreshListenable: notifier,
     redirect: (context, state) {
-      final n = notifier as _AuthChangeNotifier;
+      final n = notifier as AuthChangeNotifier;
       final isAuthenticated = n.isAuthenticated;
       final isLoading = n.isLoading;
 
