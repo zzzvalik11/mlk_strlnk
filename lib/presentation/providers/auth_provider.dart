@@ -26,12 +26,15 @@ void resetApiClient() {
 // ─── Infrastructure Providers ────────────────────────────────────
 
 final storageServiceProvider = Provider<StorageService>((ref) {
+  print('[PROV] storageServiceProvider (overridden)');
   final service = StorageService();
   return service;
 });
 
 final apiClientProvider = Provider<ApiClient>((ref) {
+  print('[PROV] apiClientProvider -> watching storageServiceProvider');
   final storageService = ref.watch(storageServiceProvider);
+  print('[PROV] apiClientProvider -> creating ApiClient');
   _apiClientSingleton ??= _createApiClient(storageService);
   return _apiClientSingleton!;
 });
@@ -39,18 +42,23 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 // ─── Data-Source Providers ────────────────────────────────────────
 
 final userRemoteSourceProvider = Provider<UserRemoteSource>((ref) {
+  print('[PROV] userRemoteSourceProvider -> watching apiClientProvider');
   final apiClient = ref.watch(apiClientProvider);
+  print('[PROV] userRemoteSourceProvider -> created');
   return UserRemoteSource(apiClient: apiClient);
 });
 
 final userLocalSourceProvider = Provider<UserLocalSource>((ref) {
+  print('[PROV] userLocalSourceProvider -> watching storageServiceProvider');
   final storageService = ref.watch(storageServiceProvider);
+  print('[PROV] userLocalSourceProvider -> created');
   return UserLocalSource(storageService: storageService);
 });
 
 // ─── Repository Providers ────────────────────────────────────────
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
+  print('[PROV] userRepositoryProvider -> watching remote+local sources');
   return UserRepositoryImpl(
     remoteSource: ref.watch(userRemoteSourceProvider),
     localSource: ref.watch(userLocalSourceProvider),
@@ -60,10 +68,12 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
 // ─── Use-Case Providers ──────────────────────────────────────────
 
 final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
+  print('[PROV] loginUseCaseProvider -> watching userRepositoryProvider');
   return LoginUseCase(ref.watch(userRepositoryProvider));
 });
 
 final getCurrentUserUseCaseProvider = Provider<GetCurrentUserUseCase>((ref) {
+  print('[PROV] getCurrentUserUseCaseProvider -> watching userRepositoryProvider');
   return GetCurrentUserUseCase(ref.watch(userRepositoryProvider));
 });
 
@@ -82,13 +92,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         _getCurrentUserUseCase = getCurrentUserUseCase,
         _localSource = localSource,
         super(const AsyncValue.loading()) {
+    print('[AUTH_N] Constructor OK, calling _checkAuth');
     _checkAuth();
   }
 
   Future<void> _checkAuth() async {
+    print('[AUTH_N] _checkAuth start');
     try {
+      print('[AUTH_N] calling getToken()');
       final token = _localSource.getToken();
-      // Check if token exists and has not expired
+      print('[AUTH_N] token=$token');
       if (token != null && _localSource.isTokenValid()) {
         final cached = _localSource.getUser();
         if (cached != null) {
@@ -96,12 +109,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           return;
         }
       }
-      // Token expired or missing — clear session
       if (token != null) {
         await _localSource.clearSession();
       }
+      print('[AUTH_N] _checkAuth -> data(null)');
       state = const AsyncValue.data(null);
-    } catch (_) {
+    } catch (e, st) {
+      print('[AUTH_N] _checkAuth EXCEPTION: $e');
+      print('[AUTH_N] _checkAuth STACK: $st');
       state = const AsyncValue.data(null);
     }
   }
@@ -113,22 +128,19 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     required String pin,
     required String password,
   }) async {
-    print('[AUTH] login() called with pin=$pin');
+    print('[AUTH_N] login(pin=$pin, password=$password)');
     state = const AsyncValue.loading();
     try {
-      print('[AUTH] calling _loginUseCase.call');
       final result = await _loginUseCase.call(pin: pin, password: password);
-      print('[AUTH] usecase returned: isRight=${result.isRight()}');
+      print('[AUTH_N] login usecase returned isRight=${result.isRight()}');
       result.fold(
         (failure) {
-          print('[AUTH] fold LEFT (failure)');
           state = AsyncValue.error(
             _mapFailureToException(failure),
             StackTrace.current,
           );
         },
         (user) {
-          print('[AUTH] fold RIGHT (user=${user.fullName})');
           _localSource.saveTokenExpiry(
             DateTime.now().add(AppConstants.tokenValidity),
           );
@@ -136,14 +148,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         },
       );
     } catch (e, st) {
-      print('[AUTH] EXCEPTION: $e');
-      print('[AUTH] STACK: $st');
+      print('[AUTH_N] login EXCEPTION: $e');
+      print('[AUTH_N] login STACK: $st');
       state = AsyncValue.error(e, st);
     }
   }
 
-  /// Quick re-login with PIN only (for returning users).
-  /// Validates PIN matches cached user and token is still valid.
   Future<void> authenticateWithPin({required String pin}) async {
     state = const AsyncValue.loading();
     try {
@@ -165,8 +175,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
-  /// Biometric re-login. Token validity is checked; biometric prompt
-  /// is handled at UI level via local_auth package.
   Future<void> authenticateWithBiometric() async {
     state = const AsyncValue.loading();
     try {
@@ -204,9 +212,16 @@ Exception _mapFailureToException(Failure failure) {
 
 final authProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
+  print('[PROV] authProvider -> step 1: loginUseCaseProvider');
+  final a = ref.watch(loginUseCaseProvider);
+  print('[PROV] authProvider -> step 2: getCurrentUserUseCaseProvider');
+  final b = ref.watch(getCurrentUserUseCaseProvider);
+  print('[PROV] authProvider -> step 3: userLocalSourceProvider');
+  final c = ref.watch(userLocalSourceProvider);
+  print('[PROV] authProvider -> step 4: creating AuthNotifier');
   return AuthNotifier(
-    loginUseCase: ref.watch(loginUseCaseProvider),
-    getCurrentUserUseCase: ref.watch(getCurrentUserUseCaseProvider),
-    localSource: ref.watch(userLocalSourceProvider),
+    loginUseCase: a,
+    getCurrentUserUseCase: b,
+    localSource: c,
   );
 });

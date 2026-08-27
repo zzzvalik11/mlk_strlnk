@@ -45,7 +45,9 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
     state = const LoginFormSubmitting();
 
     try {
+      print('[LOGIN_VM] Calling _ref.read(authProvider.notifier)');
       await _ref.read(authProvider.notifier).login(pin: pin, password: password);
+      print('[LOGIN_VM] login() returned OK');
 
       final authState = _ref.read(authProvider);
       if (authState.hasError) {
@@ -62,7 +64,9 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
       } else {
         state = const LoginFormError('Неверный ПИН или пароль');
       }
-    } catch (e) {
+    } catch (e, st) {
+      print('[LOGIN_VM] EXCEPTION: $e');
+      print('[LOGIN_VM] STACK: $st');
       state = LoginFormError(e.toString());
     }
   }
