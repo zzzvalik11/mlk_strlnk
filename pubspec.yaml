@@ -70,7 +70,5 @@ flutter:
 
   assets:
     - assets/images/
-    # .env for local dev (file is in .gitignore — safe for secrets)
-    - .env
 
 

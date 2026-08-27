@@ -181,7 +181,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                           onSubmitted: (_) => _messageFocusNode.requestFocus(),
                           decoration: _inputDecoration(
                             hintText: '+79001234567',
-                            prefixIcon: Icons.phone_outline_rounded,
+                            prefixIcon: Icons.phone_outlined,
                             errorText: _phoneError,
                           ),
                         ),
