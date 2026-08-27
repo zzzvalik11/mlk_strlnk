@@ -14,18 +14,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load .env — gracefully skip if missing (web / CI / no .env file).
-  // app_constants.dart uses fallback values when dotenv is empty.
   try {
     await dotenv.load(fileName: '.env');
-  } catch (_) {
-    // .env not found in asset bundle — OK, fallbacks in AppConstants will be used.
-  }
+  } catch (_) {}
 
-  // Firebase — gracefully skip if not configured (e.g. web without Firebase).
+  // Firebase — gracefully skip if not configured.
   try {
     await Firebase.initializeApp();
-
-    // FCM push notifications
     final fcmService = FcmService();
     await fcmService.init();
     print('[FCM] Device token: ${fcmService.currentToken}');
@@ -33,9 +28,7 @@ void main() async {
     print('[Firebase] Init skipped: $e');
   }
 
-  // Initialize SharedPreferences-backed storage before any provider uses it.
-  // On web or if SharedPreferences fails, the app still starts —
-  // providers that need storage will handle null/uninitialized state.
+  // Initialize storage.
   final storageService = StorageService();
   try {
     await storageService.init();
@@ -43,23 +36,60 @@ void main() async {
     print('[Storage] Init skipped: $e');
   }
 
+  // Create ProviderContainer with overrides.
+  final container = ProviderContainer(
+    overrides: [
+      storageServiceProvider.overrideWithValue(storageService),
+    ],
+  );
+
+  // Build the router OUTSIDE the widget tree so provider errors
+  // (e.g. NotInitializedError from plugins on web) don't crash the build.
+  final authChangeNotifier = _AuthChangeNotifier(container);
+  final router = createGoRouter(authChangeNotifier);
+
   runApp(
-    ProviderScope(
-      overrides: [
-        storageServiceProvider.overrideWithValue(storageService),
-      ],
-      child: const TelecomApp(),
+    UncontrolledProviderScope(
+      container: container,
+      child: TelecomApp(router: router),
     ),
   );
 }
 
-class TelecomApp extends ConsumerWidget {
-  const TelecomApp({super.key});
+/// Bridge between Riverpod auth state and GoRouter's refreshListenable.
+class _AuthChangeNotifier extends ChangeNotifier {
+  final ProviderContainer _container;
+
+  _AuthChangeNotifier(this._container) {
+    _container.listen<AsyncValue>(authProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+
+  /// Safe read — returns true only if auth provider has a valid user.
+  bool get isAuthenticated {
+    try {
+      return _container.read(authProvider).valueOrNull != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get isLoading {
+    try {
+      return _container.read(authProvider) is AsyncLoading;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+class TelecomApp extends StatelessWidget {
+  final GoRouter router;
+  const TelecomApp({super.key, required this.router});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
-
+  Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Starlink',
       debugShowCheckedModeBanner: false,

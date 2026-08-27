@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
-import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 import 'package:telecom_dashboard/presentation/screens/history/history_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/home/home_screen.dart';
 import 'package:telecom_dashboard/presentation/screens/login/auth_method_selection_screen.dart';
@@ -21,17 +19,21 @@ import 'package:telecom_dashboard/presentation/screens/payment/promised_payment_
 import 'package:telecom_dashboard/presentation/screens/top_up/top_up_screen.dart';
 import 'package:telecom_dashboard/presentation/widgets/navigation/bottom_nav_bar.dart';
 
-// ─── Router Provider ────────────────────────────────────────
+// ─── Router Factory ────────────────────────────────────────
 
-final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  final isAuthenticated = authState.valueOrNull != null;
-  final isLoading = authState is AsyncLoading;
-
+/// Creates a [GoRouter] that reacts to auth state changes via [notifier].
+/// The router is built outside the widget tree so provider init errors
+/// (e.g. platform plugins on web) never crash the build.
+GoRouter createGoRouter(Listenable notifier) {
   return GoRouter(
     initialLocation: Routes.home,
     debugLogDiagnostics: true,
+    refreshListenable: notifier,
     redirect: (context, state) {
+      final n = notifier as _AuthChangeNotifier;
+      final isAuthenticated = n.isAuthenticated;
+      final isLoading = n.isLoading;
+
       final isLoginRoute = state.matchedLocation == Routes.login;
       final isSupportRoute = state.matchedLocation == Routes.support;
       final isQuickLoginRoute = state.matchedLocation == Routes.quickLogin;
@@ -55,7 +57,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       ShellRoute(
         builder: (context, state, child) {
-          // Determine tab index from location
           final location = state.matchedLocation;
           int idx = 0;
           if (location.startsWith(Routes.payment)) idx = 1;
@@ -143,18 +144,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.paymentCallback,
         builder: (context, state) {
-          // go_router кладёт query-параметры в state.uri.queryParameters
           final params = Map<String, String>.from(state.uri.queryParameters);
           return PaymentCallbackScreen(queryParams: params);
         },
       ),
     ],
   );
-});
+}
 
 // ─── Shell Wrapper ──────────────────────────────────────────
 
-/// Wraps shell children with a [BottomNavBar] and manages tab state.
 class _ShellWrapper extends StatefulWidget {
   final Widget child;
   final int initialIndex;
