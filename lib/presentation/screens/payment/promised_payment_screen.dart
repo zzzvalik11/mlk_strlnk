@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:telecom_dashboard/core/constants/themes.dart';
 import 'package:telecom_dashboard/core/widgets/app_header.dart';
 
@@ -15,8 +16,19 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
   bool _isSuccess = false;
   String? _errorMessage;
 
+  /// Selected period in days (7..90), default 3 days (mapped to 3).
+  /// But user can choose 7-90. We start at 7.
+  double _selectedDays = 7;
+
+  DateTime get _startDate => DateTime.now().add(const Duration(days: 1));
+  DateTime get _endDate => _startDate.add(Duration(days: _selectedDays.round()));
+
+  String _formatDate(DateTime d) => DateFormat('dd.MM.yyyy', 'ru').format(d);
+
   @override
   Widget build(BuildContext context) {
+    final days = _selectedDays.round();
+
     return Scaffold(
       backgroundColor: AppTheme.orange50,
       body: SafeArea(
@@ -65,8 +77,85 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Обещанный платёж позволяет продлить срок оплаты услуг на 3 дня при недостаточном балансе. Услуга доступна не чаще одного раза в месяц.',
+                              'Обещанный платёж позволяет продлить срок оплаты услуг при недостаточном балансе. Выберите желаемый период отложенной оплаты.',
                               style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray700),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Period selection card
+                      Container(
+                        padding: AppTheme.cardPadding,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: AppTheme.cardRadius,
+                          boxShadow: AppTheme.cardShadow,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Выбор периода', style: AppTheme.titleMedium),
+                            const SizedBox(height: 8),
+                            Text(
+                              'С завтрашнего дня ($_formatDate(_startDate))',
+                              style: AppTheme.bodySmall.copyWith(color: AppTheme.gray500),
+                            ),
+                            const SizedBox(height: 20),
+                            // Slider
+                            Row(
+                              children: [
+                                Text(
+                                  '7',
+                                  style: AppTheme.bodySmall.copyWith(color: AppTheme.gray400),
+                                ),
+                                Expanded(
+                                  child: SliderTheme(
+                                    data: SliderThemeData(
+                                      activeTrackColor: AppTheme.orange500,
+                                      inactiveTrackColor: AppTheme.gray200,
+                                      thumbColor: AppTheme.orange500,
+                                      overlayColor: AppTheme.orange500.withOpacity(0.12),
+                                      valueIndicatorColor: AppTheme.orange500,
+                                      valueIndicatorTextStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    child: Slider(
+                                      value: _selectedDays,
+                                      min: 7,
+                                      max: 90,
+                                      divisions: 83,
+                                      label: '$days дн.',
+                                      onChanged: (v) => setState(() => _selectedDays = v),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '90',
+                                  style: AppTheme.bodySmall.copyWith(color: AppTheme.gray400),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // Period summary
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.orange50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$days дн.  |  с ${_formatDate(_startDate)} по ${_formatDate(_endDate)}',
+                                  style: AppTheme.bodyMedium.copyWith(
+                                    color: AppTheme.gray800,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -85,9 +174,9 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                           children: [
                             Text('Условия', style: AppTheme.titleMedium),
                             const SizedBox(height: 12),
-                            _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Баланс менее 100 ₽'),
-                            _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Нет предыдущих обещанных платежей в этом месяце'),
-                            _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Аккаунт не заблокирован'),
+                            const _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Баланс менее 100 руб.'),
+                            const _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Нет предыдущих обещанных платежей в этом месяце'),
+                            const _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Аккаунт не заблокирован'),
                           ],
                         ),
                       ),
@@ -129,7 +218,7 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                               Text('Обещанный платёж активирован', style: AppTheme.titleMedium, textAlign: TextAlign.center),
                               const SizedBox(height: 8),
                               Text(
-                                'Срок оплаты продлён на 3 дня. Пожалуйста, пополните баланс вовремя.',
+                                'Срок оплаты продлён на $days дн. (до ${_formatDate(_endDate)}). Пополните баланс вовремя.',
                                 style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray600),
                                 textAlign: TextAlign.center,
                               ),
@@ -184,7 +273,6 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
       _isSubmitting = true;
       _errorMessage = null;
     });
-    // Имитация запроса к серверу
     await Future.delayed(const Duration(seconds: 1));
     if (!mounted) return;
     setState(() {

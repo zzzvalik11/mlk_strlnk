@@ -116,39 +116,16 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [AppTheme.orange500, Color(0xFFE91E63)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: AppTheme.elevatedShadow,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'S',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700),
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/images/logo_act.png',
+                        width: 220,
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Starlink',
-                        style: AppTheme.headlineLarge
-                            .copyWith(fontSize: 36, color: AppTheme.gray900),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
                         'просто с нами проще',
                         style: AppTheme.bodyMedium
-                            .copyWith(color: AppTheme.gray500),
+                            .copyWith(color: AppTheme.gray500, fontSize: 16),
                       ),
                     ],
                   ),

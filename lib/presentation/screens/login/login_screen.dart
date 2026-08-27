@@ -71,49 +71,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
-                // ─── Logo ────────────────────────────────
+                // ─── Logo with slogan ─────────────────
                 Center(
                   child: Column(
                     children: [
-                      // Gradient avatar
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppTheme.orange500,
-                              Color(0xFFE91E63),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: AppTheme.elevatedShadow,
-                        ),
-                        child: Center(
-                          child: Text(
-                            'S',
-                            style: AppTheme.headlineLarge.copyWith(
-                              color: Colors.white,
-                              fontSize: 36,
-                            ),
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/images/logo_act.png',
+                        width: 220,
+                        fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Starlink',
-                        style: AppTheme.headlineLarge.copyWith(
-                          fontSize: 42,
-                          color: AppTheme.gray900,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 24),
                       Text(
                         'просто с нами проще',
                         style: AppTheme.bodyMedium.copyWith(
                           color: AppTheme.gray500,
+                          fontSize: 16,
                         ),
                       ),
                     ],

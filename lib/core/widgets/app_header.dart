@@ -46,26 +46,11 @@ class AppHeader extends ConsumerWidget {
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
             ),
-          // Avatar
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [AppTheme.orange500, Color(0xFFE91E63)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                user?.fullName.isNotEmpty == true ? user!.fullName[0] : 'S',
-                style: const TextStyle(
-                  color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+          // Logo
+          Image.asset(
+            'assets/images/logo.png',
+            width: 40,
+            height: 40,
           ),
           const SizedBox(width: 12),
           Expanded(

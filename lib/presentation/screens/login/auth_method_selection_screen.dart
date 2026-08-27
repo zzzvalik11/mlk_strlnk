@@ -25,26 +25,12 @@ class AuthMethodSelectionScreen extends ConsumerWidget {
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [AppTheme.orange500, Color(0xFFE91E63)],
-                          ),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'S',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700),
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/images/logo_act.png',
+                        width: 220,
+                        fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       const Text(
                         'Выберите способ входа',
                         style: TextStyle(
