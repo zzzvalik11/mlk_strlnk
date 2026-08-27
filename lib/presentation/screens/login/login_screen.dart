@@ -240,18 +240,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.mail_outline_rounded,
                           size: 18,
                           color: AppTheme.info,
                         ),
                         const SizedBox(width: 6),
-                        Flexible(
+                        const Flexible(
                           child: Text(
                             'Написать в поддержку',
-                            style: AppTheme.bodyMedium.copyWith(
+                            style: TextStyle(
                               color: AppTheme.info,
                               fontWeight: FontWeight.w500,
+                              fontSize: 14,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),

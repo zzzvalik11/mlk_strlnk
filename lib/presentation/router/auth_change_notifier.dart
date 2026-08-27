@@ -9,9 +9,17 @@ class AuthChangeNotifier extends ChangeNotifier {
   final ProviderContainer _container;
 
   AuthChangeNotifier(this._container) {
-    _container.listen<AsyncValue>(authProvider, (_, __) {
-      notifyListeners();
-    });
+    // Wrap in try-catch: on web, authProvider creation may fail with
+    // NotInitializedError (SharedPreferences / Firebase). We still want
+    // the app to boot and show the login screen.
+    try {
+      _container.listen<AsyncValue>(authProvider, (_, __) {
+        notifyListeners();
+      });
+    } catch (_) {
+      // Provider failed to initialise — isAuthenticated will return false,
+      // so the router will redirect to the login screen.
+    }
   }
 
   bool get isAuthenticated {

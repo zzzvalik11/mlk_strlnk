@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:telecom_dashboard/data/datasources/local/user_local_source.dart';
 import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
@@ -23,6 +22,7 @@ class LoginFormError extends LoginFormState {
 }
 
 class LoginFormSuccess extends LoginFormState {
+  /// true if this is the first login and we should show auth method selection.
   final bool isFirstLogin;
   const LoginFormSuccess({this.isFirstLogin = false});
 }
@@ -45,33 +45,24 @@ class LoginNotifier extends StateNotifier<LoginFormState> {
     state = const LoginFormSubmitting();
 
     try {
-      // Use container.read directly to bypass widget-tree framework calls
-      // that throw NotInitializedError on web.
-      final authNotifier = _ref.container.read(authProvider.notifier);
-      await authNotifier.login(pin: pin, password: password);
+      await _ref.read(authProvider.notifier).login(pin: pin, password: password);
 
-      final authState = _ref.container.read(authProvider);
+      final authState = _ref.read(authProvider);
       if (authState.hasError) {
         final msg = authState.error.toString();
         state = LoginFormError(msg);
       } else if (authState.valueOrNull != null) {
-        try {
-          final localSource = _ref.read(userLocalSourceProvider);
-          if (!localSource.isFirstLoginDone()) {
-            await localSource.markFirstLoginDone();
-            state = const LoginFormNeedsMethodSelection();
-          } else {
-            state = const LoginFormSuccess(isFirstLogin: false);
-          }
-        } catch (_) {
+        final localSource = _ref.read(userLocalSourceProvider);
+        if (!localSource.isFirstLoginDone()) {
+          await localSource.markFirstLoginDone();
+          state = const LoginFormNeedsMethodSelection();
+        } else {
           state = const LoginFormSuccess(isFirstLogin: false);
         }
       } else {
         state = const LoginFormError('Неверный ПИН или пароль');
       }
-    } catch (e, st) {
-      print('[LOGIN] ERROR: $e');
-      print('[LOGIN] STACK: $st');
+    } catch (e) {
       state = LoginFormError(e.toString());
     }
   }

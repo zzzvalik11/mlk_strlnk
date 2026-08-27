@@ -1,20 +1,22 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Thin wrapper around [SharedPreferences] for key-value local storage.
-/// On web, falls back to an in-memory map so that platform plugins
-/// that throw NotInitializedError never crash the app.
+/// On web, uses an in-memory [Map] to avoid platform plugin errors
+/// (e.g. NotInitializedError from SharedPreferences web implementation).
 class StorageService {
   SharedPreferences? _prefs;
-  final Map<String, String> _memoryStore = {};
+  final Map<String, Object> _memory = {};
   bool _useMemory = false;
+
+  /// Whether we are using the in-memory fallback.
+  bool get isMemory => _useMemory;
 
   /// Must be called once before using any other methods (e.g. in main.dart).
   Future<void> init() async {
     if (kIsWeb) {
-      // On web, use in-memory store to avoid NotInitializedError from
-      // shared_preferences when the web platform is not fully configured.
+      // On web, always use in-memory storage to avoid
+      // NotInitializedError from the shared_preferences web plugin.
       _useMemory = true;
       return;
     }
@@ -27,7 +29,7 @@ class StorageService {
 
   // ─── String ─────────────────────────────────────
   String? getString(String key) {
-    if (_useMemory) return _memoryStore[key];
+    if (_useMemory) return _memory[key] as String?;
     try {
       return _prefs?.getString(key);
     } catch (_) {
@@ -37,7 +39,7 @@ class StorageService {
 
   Future<bool> setString(String key, String value) async {
     if (_useMemory) {
-      _memoryStore[key] = value;
+      _memory[key] = value;
       return true;
     }
     try {
@@ -49,10 +51,7 @@ class StorageService {
 
   // ─── Bool ──────────────────────────────────────
   bool? getBool(String key) {
-    if (_useMemory) {
-      final v = _memoryStore[key];
-      return v == 'true' ? true : v == 'false' ? false : null;
-    }
+    if (_useMemory) return _memory[key] as bool?;
     try {
       return _prefs?.getBool(key);
     } catch (_) {
@@ -62,7 +61,7 @@ class StorageService {
 
   Future<bool> setBool(String key, bool value) async {
     if (_useMemory) {
-      _memoryStore[key] = value.toString();
+      _memory[key] = value;
       return true;
     }
     try {
@@ -74,10 +73,7 @@ class StorageService {
 
   // ─── Int ───────────────────────────────────────
   int? getInt(String key) {
-    if (_useMemory) {
-      final v = _memoryStore[key];
-      return v != null ? int.tryParse(v) : null;
-    }
+    if (_useMemory) return _memory[key] as int?;
     try {
       return _prefs?.getInt(key);
     } catch (_) {
@@ -87,7 +83,7 @@ class StorageService {
 
   Future<bool> setInt(String key, int value) async {
     if (_useMemory) {
-      _memoryStore[key] = value.toString();
+      _memory[key] = value;
       return true;
     }
     try {
@@ -100,7 +96,7 @@ class StorageService {
   // ─── Remove / Clear ────────────────────────────
   Future<bool> remove(String key) async {
     if (_useMemory) {
-      _memoryStore.remove(key);
+      _memory.remove(key);
       return true;
     }
     try {
@@ -112,7 +108,7 @@ class StorageService {
 
   Future<bool> clear() async {
     if (_useMemory) {
-      _memoryStore.clear();
+      _memory.clear();
       return true;
     }
     try {
