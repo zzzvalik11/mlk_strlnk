@@ -7,11 +7,17 @@ class AppConstants {
   static String get apiBaseUrl =>
       dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api';
 
-  // FCM
-  static String get fcmServerKey =>
-      dotenv.env['FCM_SERVER_KEY'] ?? '';
+  // СБП API (если не задан — используется apiBaseUrl)
+  static String get sbpApiUrl =>
+      dotenv.env['SBP_API_URL'] ?? apiBaseUrl;
 
-  // РСБ
+  // РСБ платёжный шлюз (если не заданы — запросы идут через apiBaseUrl)
+  static String get rsbPaymentUrl =>
+      dotenv.env['RSB_PAYMENT_URL'] ?? apiBaseUrl;
+  static String get rsbRegisterUrl =>
+      dotenv.env['RSB_REGISTER_URL'] ?? apiBaseUrl;
+
+  // РСБ учётные данные
   static String get rsbMerchantName =>
       dotenv.env['RSB_MERCHANT_NAME'] ?? '';
   static String get rsbTerminalId =>
@@ -20,6 +26,10 @@ class AppConstants {
       dotenv.env['RSB_MERCHANT_ID'] ?? '';
   static String get rsbSecretKey =>
       dotenv.env['RSB_SECRET_KEY'] ?? '';
+
+  // FCM
+  static String get fcmServerKey =>
+      dotenv.env['FCM_SERVER_KEY'] ?? '';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);

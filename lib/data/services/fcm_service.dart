@@ -9,36 +9,23 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 /// - Call [init] once at app startup (after Firebase.initializeApp).
 /// - Subscribe to [onMessage] / [onTokenRefresh] as needed.
 class FcmService {
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-
-  /// Token for the current device. Null until [init] completes.
   String? currentToken;
-
-  /// Stream of foreground messages (app is open).
-  Stream<RemoteMessage> get onMessage => _messaging.onMessage;
-
-  /// Stream of token refresh events.
-  Stream<String> get onTokenRefresh => _messaging.onTokenRefresh;
 
   /// Initialise notifications: request permission, get token, listen for messages.
   Future<void> init() async {
     // Request permission (Android 13+ requires explicit request).
-    await _messaging.requestPermission(
+    await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
-      criticalAlert: false,
-      provisional: false,
-      announcement: false,
-      carPlay: false,
     );
 
     // Get the device FCM token.
-    currentToken = await _messaging.getToken();
+    currentToken = await FirebaseMessaging.instance.getToken();
     // TODO: send currentToken to your backend so it can target this device.
 
     // Listen for token changes (e.g. after app reinstall).
-    _messaging.onTokenRefresh.listen((newToken) {
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
       currentToken = newToken;
       // TODO: update token on backend.
     });
@@ -46,14 +33,14 @@ class FcmService {
     // Foreground message handler (app is open).
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-    // Background message handler (registered globally below).
-    FirebaseMessaging.onBackgroundMessage(_backgroundMessageHandler);
+    // Background message handler (must be a top-level function).
+    FirebaseMessaging.onBackgroundMessage(fcmBackgroundMessageHandler);
 
     // User tapped notification while app was in background.
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
 
     // Check if app was opened from a terminated state via notification.
-    final initialMessage = await _messaging.getInitialMessage();
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
       _handleMessageOpenedApp(initialMessage);
     }
@@ -72,17 +59,17 @@ class FcmService {
 
   /// Subscribe to a topic.
   Future<void> subscribeToTopic(String topic) async {
-    await _messaging.subscribeToTopic(topic);
+    await FirebaseMessaging.instance.subscribeToTopic(topic);
   }
 
   /// Unsubscribe from a topic.
   Future<void> unsubscribeFromTopic(String topic) async {
-    await _messaging.unsubscribeFromTopic(topic);
+    await FirebaseMessaging.instance.unsubscribeFromTopic(topic);
   }
 
   /// Delete the current token (e.g. on logout).
   Future<void> deleteToken() async {
-    await _messaging.deleteToken();
+    await FirebaseMessaging.instance.deleteToken();
     currentToken = null;
   }
 }
