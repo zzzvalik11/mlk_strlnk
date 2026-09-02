@@ -36,3 +36,4 @@ test/
 
 # Coverage
 /coverage
+pubspec.lock
