@@ -186,7 +186,7 @@ class _ShellWrapperState extends State<_ShellWrapper> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.orange50,
-      body: widget.child,
+      body: SafeArea(child: widget.child),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
