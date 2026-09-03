@@ -1,13 +1,11 @@
 import 'dart:convert';
+
 import 'package:telecom_dashboard/core/constants/app_constants.dart';
 import 'package:telecom_dashboard/data/local/storage_service.dart';
 import 'package:telecom_dashboard/data/models/user_model.dart';
 
 /// Auth method choices for quick re-login.
-enum AuthMethod {
-  pin,
-  biometric,
-}
+enum AuthMethod { pin, biometric }
 
 /// Extension to parse [AuthMethod] from stored string.
 extension AuthMethodX on AuthMethod {
@@ -20,8 +18,7 @@ class UserLocalSource {
 
   final StorageService _storageService;
 
-  UserLocalSource({required StorageService storageService})
-      : _storageService = storageService;
+  UserLocalSource({required this._storageService});
 
   // ─── Token ─────────────────────────────────────
   Future<bool> saveToken(String token) {
@@ -67,9 +64,7 @@ class UserLocalSource {
     final raw = _storageService.getString(_userKey);
     if (raw == null) return null;
     try {
-      return UserModel.fromJson(
-        jsonDecode(raw) as Map<String, dynamic>,
-      );
+      return UserModel.fromJson(jsonDecode(raw) as Map<String, dynamic>);
     } catch (_) {
       return null;
     }

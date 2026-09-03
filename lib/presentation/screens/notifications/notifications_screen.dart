@@ -28,7 +28,8 @@ class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
@@ -73,14 +74,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     setState(() {
       _notifications.setAll(
         0,
-        _notifications.map((n) => PushNotification(
-          id: n.id,
-          title: n.title,
-          body: n.body,
-          createdAt: n.createdAt,
-          isRead: true,
-          type: n.type,
-        )).toList(),
+        _notifications
+            .map(
+              (n) => PushNotification(
+                id: n.id,
+                title: n.title,
+                body: n.body,
+                createdAt: n.createdAt,
+                isRead: true,
+                type: n.type,
+              ),
+            )
+            .toList(),
       );
     });
     ref.read(unreadNotificationsProvider.notifier).state = 0;
@@ -177,7 +182,9 @@ class _NotificationTile extends StatelessWidget {
           boxShadow: AppTheme.cardShadow,
           border: notification.isRead
               ? null
-              : Border(left: BorderSide(color: AppTheme.orange500, width: 3)),
+              : const Border(
+                  left: const BorderSide(color: AppTheme.orange500, width: 3),
+                ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,9 +231,7 @@ class _NotificationTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     notification.body,
-                    style: AppTheme.bodySmall.copyWith(
-                      color: AppTheme.gray600,
-                    ),
+                    style: AppTheme.bodySmall.copyWith(color: AppTheme.gray600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

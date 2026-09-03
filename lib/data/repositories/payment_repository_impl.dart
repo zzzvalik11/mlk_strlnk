@@ -12,8 +12,7 @@ import 'package:telecom_dashboard/domain/repositories/payment_repository.dart';
 class PaymentRepositoryImpl implements PaymentRepository {
   final PaymentRemoteSource _remoteSource;
 
-  PaymentRepositoryImpl({required PaymentRemoteSource remoteSource})
-      : _remoteSource = remoteSource;
+  PaymentRepositoryImpl({required this._remoteSource});
 
   @override
   Future<Either<Failure, PaymentLink>> getPayLink({
@@ -34,10 +33,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
       }
 
       // По умолчанию — карточная оплата
-      return right(PaymentLink.fromJson({
-        ...json,
-        'type': 'card',
-      }));
+      return right(PaymentLink.fromJson({...json, 'type': 'card'}));
     } on DioException catch (e) {
       return left(Failure.network(message: e.message ?? 'Ошибка сети'));
     } catch (e) {
@@ -102,11 +98,13 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }) async {
     try {
       final json = await _remoteSource.getSbpPaymentStatus(orderId: orderId);
-      return right(PaymentResult.fromJson({
-        'success': json['success'],
-        'result_code': json['status'] != 'PAID' ? '000' : null,
-        'message': json['status'],
-      }));
+      return right(
+        PaymentResult.fromJson({
+          'success': json['success'],
+          'result_code': json['status'] != 'PAID' ? '000' : null,
+          'message': json['status'],
+        }),
+      );
     } on DioException catch (e) {
       return left(Failure.network(message: e.message ?? 'Ошибка сети'));
     } catch (e) {
@@ -120,10 +118,12 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }) async {
     try {
       final json = await _remoteSource.cancelSbpPayment(orderId: orderId);
-      return right(PaymentResult.fromJson({
-        'success': json['success'],
-        'message': json['message'],
-      }));
+      return right(
+        PaymentResult.fromJson({
+          'success': json['success'],
+          'message': json['message'],
+        }),
+      );
     } on DioException catch (e) {
       return left(Failure.network(message: e.message ?? 'Ошибка сети'));
     } catch (e) {
@@ -141,10 +141,12 @@ class PaymentRepositoryImpl implements PaymentRepository {
         orderId: orderId,
         amount: amount,
       );
-      return right(PaymentResult.fromJson({
-        'success': json['success'],
-        'message': json['message'],
-      }));
+      return right(
+        PaymentResult.fromJson({
+          'success': json['success'],
+          'message': json['message'],
+        }),
+      );
     } on DioException catch (e) {
       return left(Failure.network(message: e.message ?? 'Ошибка сети'));
     } catch (e) {

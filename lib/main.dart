@@ -47,9 +47,7 @@ void main() async {
 
   // Create ProviderContainer with overrides.
   appContainer = ProviderContainer(
-    overrides: [
-      storageServiceProvider.overrideWithValue(storageService),
-    ],
+    overrides: [storageServiceProvider.overrideWithValue(storageService)],
   );
 
   // Build the router OUTSIDE the widget tree so provider errors
@@ -94,7 +92,7 @@ class TelecomApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        inputDecorationTheme: InputDecorationTheme(
+        inputDecorationTheme: const InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(
@@ -109,10 +107,7 @@ class TelecomApp extends StatelessWidget {
             borderRadius: AppTheme.inputRadius,
             borderSide: BorderSide(color: AppTheme.orange500, width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         snackBarTheme: SnackBarThemeData(
           behavior: SnackBarBehavior.floating,

@@ -61,7 +61,7 @@ paths:
     post:
       operationId: login
       tags: [Auth]
-      summary: Авторизация по ПИН-коду и паролю
+      summary: Авторизация по ПИН (договору) и паролю
       description: |
         Проверяет учётные данные в Биллинге (BSS /api/v1/auth/token) и возвращает JWT.
         Proxy-эндпоинт → Биллинг.

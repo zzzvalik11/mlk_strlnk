@@ -14,11 +14,7 @@ class NewsRepositoryImpl implements NewsRepository {
   final NewsRemoteSource _remoteSource;
   final UserLocalSource _localSource;
 
-  NewsRepositoryImpl({
-    required NewsRemoteSource remoteSource,
-    required UserLocalSource localSource,
-  })  : _remoteSource = remoteSource,
-        _localSource = localSource;
+  NewsRepositoryImpl({required this._remoteSource, required this._localSource});
 
   @override
   Future<Either<Failure, Page<NewsItem>>> getNewsList({
@@ -28,13 +24,15 @@ class NewsRepositoryImpl implements NewsRepository {
     try {
       if (_localSource.isMockUser()) {
         final items = _createMockNews();
-        return right(Page<NewsItem>(
-          items: items,
-          total: items.length,
-          page: page,
-          limit: limit,
-          hasMore: false,
-        ));
+        return right(
+          Page<NewsItem>(
+            items: items,
+            total: items.length,
+            page: page,
+            limit: limit,
+            hasMore: false,
+          ),
+        );
       }
 
       final models = await _remoteSource.getNewsList();
@@ -61,7 +59,12 @@ class NewsRepositoryImpl implements NewsRepository {
         final all = _createMockNews();
         final match = all.where((n) => n.id == id).firstOrNull;
         if (match == null) {
-          return left(const Failure.server(statusCode: 404, message: 'Новость не найдена'));
+          return left(
+            const Failure.server(
+              statusCode: 404,
+              message: 'Новость не найдена',
+            ),
+          );
         }
         return right(match);
       }

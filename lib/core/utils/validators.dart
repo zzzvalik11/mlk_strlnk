@@ -8,18 +8,18 @@ class Validators {
   /// Expected: exactly 6 numeric digits.
   static String? validatePin(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Введите ПИН-код';
+      return 'Введите ПИН';
     }
 
     final pin = value.trim();
 
     if (pin.length != 6) {
-      return 'ПИН-код должен содержать 6 цифр';
+      return 'ПИН должен содержать 6 цифр';
     }
 
     final isNumeric = RegExp(r'^\d{6}$').hasMatch(pin);
     if (!isNumeric) {
-      return 'ПИН-код должен содержать только цифры';
+      return 'ПИН должен содержать только цифры';
     }
 
     return null;

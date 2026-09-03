@@ -7,16 +7,12 @@ class ServiceCard extends StatelessWidget {
   final Service service;
   final VoidCallback? onTap;
 
-  const ServiceCard({
-    super.key,
-    required this.service,
-    this.onTap,
-  });
+  const ServiceCard({super.key, required this.service, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final hasWarning = service.warningMessage != null &&
-        service.warningMessage!.isNotEmpty;
+    final hasWarning =
+        service.warningMessage != null && service.warningMessage!.isNotEmpty;
 
     return InkWell(
       onTap: onTap,
@@ -49,7 +45,7 @@ class ServiceCard extends StatelessWidget {
                             width: 44,
                             height: 44,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorBuilder: (_, __, ___) => const Icon(
                               Icons.public,
                               color: AppTheme.orange500,
                               size: 22,
@@ -75,10 +71,7 @@ class ServiceCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        service.category,
-                        style: AppTheme.bodySmall,
-                      ),
+                      Text(service.category, style: AppTheme.bodySmall),
                     ],
                   ),
                 ),
@@ -96,7 +89,7 @@ class ServiceCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.warning_amber_rounded,
                           color: AppTheme.error,
                           size: 14,
@@ -126,10 +119,7 @@ class ServiceCard extends StatelessWidget {
                 ),
                 if (service.billingCycle != null) ...[
                   const SizedBox(width: 8),
-                  Text(
-                    '/ ${service.billingCycle}',
-                    style: AppTheme.bodySmall,
-                  ),
+                  Text('/ ${service.billingCycle}', style: AppTheme.bodySmall),
                 ],
                 const Spacer(),
                 // Status indicator

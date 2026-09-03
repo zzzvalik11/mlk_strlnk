@@ -42,30 +42,34 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
       switch (link) {
         case CardPaymentLink(:final clientHandlerUrl):
           // Открываем WebView с платёжной формой РСБ
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => _PaymentWebView(url: clientHandlerUrl),
-            ),
-          ).then((_) {
-            // После закрытия WebView — сброс и обновление баланса
-            ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
-          });
+          Navigator.of(context)
+              .push(
+                MaterialPageRoute(
+                  builder: (_) => _PaymentWebView(url: clientHandlerUrl),
+                ),
+              )
+              .then((_) {
+                // После закрытия WebView — сброс и обновление баланса
+                ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
+              });
         case SbpPaymentLink(:final qrcodeLink, :final qrUrl):
           // Открываем QR-экран
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => _SbpQrScreen(
-                qrcodeLink: qrcodeLink,
-                qrUrl: qrUrl,
-              ),
-            ),
-          ).then((_) {
-            ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
-          });
+          Navigator.of(context)
+              .push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      _SbpQrScreen(qrcodeLink: qrcodeLink, qrUrl: qrUrl),
+                ),
+              )
+              .then((_) {
+                ref.read(topUpViewModelProvider.notifier).onPaymentReturn();
+              });
       }
     });
 
-    final effectiveAmount = ref.read(topUpViewModelProvider.notifier).effectiveAmount;
+    final effectiveAmount = ref
+        .read(topUpViewModelProvider.notifier)
+        .effectiveAmount;
 
     return Scaffold(
       backgroundColor: AppTheme.orange50,
@@ -103,18 +107,22 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                     ),
                     const SizedBox(height: 24),
                     // ─── Своя сумма ───────────────────
-                    Text('Или введите свою сумму', style: AppTheme.bodySmall),
+                    const Text(
+                      'Или введите свою сумму',
+                      style: AppTheme.bodySmall,
+                    ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _customAmountController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       onChanged: (value) {
                         ref
                             .read(topUpViewModelProvider.notifier)
                             .updateCustomAmount(value);
                       },
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: '0,00',
                         suffixText: '₽',
                         filled: true,
@@ -154,8 +162,9 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                           children: [
                             Text(
                               'Итого:',
-                              style: AppTheme.titleMedium
-                                  .copyWith(color: AppTheme.gray600),
+                              style: AppTheme.titleMedium.copyWith(
+                                color: AppTheme.gray600,
+                              ),
                             ),
                             Text(
                               CurrencyFormatter.formatCurrency(effectiveAmount),
@@ -177,8 +186,9 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                         padding: const EdgeInsets.only(top: 12),
                         child: Text(
                           topUpState.error!,
-                          style: AppTheme.bodySmall
-                              .copyWith(color: AppTheme.error),
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.error,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -187,7 +197,8 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                     SizedBox(
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: (effectiveAmount == null ||
+                        onPressed:
+                            (effectiveAmount == null ||
                                 effectiveAmount <= 0 ||
                                 topUpState.isSubmitting)
                             ? null
@@ -207,8 +218,9 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  valueColor:
-                                      AlwaysStoppedAnimation(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Text(
@@ -318,7 +330,7 @@ class _PaymentMethodSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Способ оплаты',
               style: AppTheme.titleMedium,
               textAlign: TextAlign.center,
@@ -484,9 +496,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
     final params = Map<String, String>.from(uri.queryParameters);
     if (mounted) {
       Navigator.of(context).pop();
-      context.go(
-        '${Routes.paymentCallback}?${uri.query}',
-      );
+      context.go('${Routes.paymentCallback}?${uri.query}');
     }
   }
 
@@ -510,9 +520,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
           WebViewWidget(controller: _controller),
           if (_isLoading)
             const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.orange500,
-              ),
+              child: CircularProgressIndicator(color: AppTheme.orange500),
             ),
         ],
       ),
@@ -598,11 +606,14 @@ class _SbpQrScreen extends StatelessWidget {
                       icon: const Icon(Icons.open_in_browser_rounded, size: 20),
                       label: const Text(
                         'Открыть в приложении банка',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.orange500,
-                        side: BorderSide(color: AppTheme.orange500),
+                        side: const BorderSide(color: AppTheme.orange500),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

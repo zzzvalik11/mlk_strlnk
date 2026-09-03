@@ -1,4 +1,5 @@
 import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:telecom_dashboard/core/constants/app_constants.dart';
 import 'package:telecom_dashboard/data/local/storage_service.dart';
@@ -13,10 +14,7 @@ class ApiClient {
   late final Dio _dio;
   final StorageService _storageService;
 
-  ApiClient({
-    required StorageService storageService,
-    String? baseUrl,
-  }) : _storageService = storageService {
+  ApiClient({required this._storageService, String? baseUrl}) {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl ?? AppConstants.apiBaseUrl,
@@ -30,10 +28,7 @@ class ApiClient {
       ),
     );
 
-    _dio.interceptors.addAll([
-      _authInterceptor,
-      _errorLoggingInterceptor,
-    ]);
+    _dio.interceptors.addAll([_authInterceptor, _errorLoggingInterceptor]);
   }
 
   /// Underlying [Dio] instance (exposed for datasources that need raw access).
@@ -44,29 +39,27 @@ class ApiClient {
   // ------------------------------------------------------------------
 
   InterceptorsWrapper get _authInterceptor => InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final token = _storageService
-              .getString(AppConstants.authTokenKey);
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] =
-                '${AppConstants.authHeaderPrefix}$token';
-          }
-          handler.next(options);
-        },
-      );
+    onRequest: (options, handler) {
+      final token = _storageService.getString(AppConstants.authTokenKey);
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] =
+            '${AppConstants.authHeaderPrefix}$token';
+      }
+      handler.next(options);
+    },
+  );
 
-  InterceptorsWrapper get _errorLoggingInterceptor =>
-      InterceptorsWrapper(
-        onError: (error, handler) {
-          log(
-            '[ApiClient] ${error.type} — ${error.requestOptions.path} '
-            '${error.response?.statusCode}: ${error.message}',
-            name: 'ApiClient',
-            error: error,
-          );
-          handler.next(error);
-        },
+  InterceptorsWrapper get _errorLoggingInterceptor => InterceptorsWrapper(
+    onError: (error, handler) {
+      log(
+        '[ApiClient] ${error.type} — ${error.requestOptions.path} '
+        '${error.response?.statusCode}: ${error.message}',
+        name: 'ApiClient',
+        error: error,
       );
+      handler.next(error);
+    },
+  );
 
   // ------------------------------------------------------------------
   // Convenience methods
@@ -76,10 +69,7 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) {
-    return _dio.get<T>(
-      path,
-      queryParameters: queryParameters,
-    );
+    return _dio.get<T>(path, queryParameters: queryParameters);
   }
 
   Future<Response<T>> post<T>(
@@ -87,11 +77,7 @@ class ApiClient {
     dynamic body,
     Map<String, dynamic>? queryParameters,
   }) {
-    return _dio.post<T>(
-      path,
-      data: body,
-      queryParameters: queryParameters,
-    );
+    return _dio.post<T>(path, data: body, queryParameters: queryParameters);
   }
 
   Future<Response<T>> put<T>(
@@ -99,11 +85,7 @@ class ApiClient {
     dynamic body,
     Map<String, dynamic>? queryParameters,
   }) {
-    return _dio.put<T>(
-      path,
-      data: body,
-      queryParameters: queryParameters,
-    );
+    return _dio.put<T>(path, data: body, queryParameters: queryParameters);
   }
 
   /// Sends a multipart/form-data request (e.g. file uploads).
@@ -115,14 +97,9 @@ class ApiClient {
   }) {
     final formData = FormData.fromMap({
       if (fields != null) ...fields,
-      for (final file in files)
-        'files': file,
+      for (final file in files) 'files': file,
     });
 
-    return _dio.post<T>(
-      path,
-      data: formData,
-      onSendProgress: onSendProgress,
-    );
+    return _dio.post<T>(path, data: formData, onSendProgress: onSendProgress);
   }
 }

@@ -4,7 +4,7 @@ class AppTheme {
   AppTheme._();
 
   // ─── Brand Colors ───────────────────────────────────────────
-  static const Color orange500 = Color(0xFFF37021);
+  static const Color orange500 = Color(0xFFee7300);
   static const Color orange50 = Color(0xFFFFF5F0);
   static const Color orange100 = Color(0xFFFFEADB);
   static const Color orange200 = Color(0xFFFFD4B5);
@@ -128,10 +128,10 @@ class AppTheme {
 
   // ─── Border Radius ──────────────────────────────────────────
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(16));
-  static const BorderRadius buttonRadius =
-      BorderRadius.all(Radius.circular(12));
-  static const BorderRadius inputRadius =
-      BorderRadius.all(Radius.circular(8));
+  static const BorderRadius buttonRadius = BorderRadius.all(
+    Radius.circular(12),
+  );
+  static const BorderRadius inputRadius = BorderRadius.all(Radius.circular(8));
 
   // ─── Shadows ────────────────────────────────────────────────
   static List<BoxShadow> cardShadow = [

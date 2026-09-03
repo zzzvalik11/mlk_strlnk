@@ -7,8 +7,7 @@ import 'package:telecom_dashboard/data/models/user_model.dart';
 class UserRemoteSource {
   final ApiClient _apiClient;
 
-  UserRemoteSource({required ApiClient apiClient})
-      : _apiClient = apiClient;
+  UserRemoteSource({required this._apiClient});
 
   /// GET /v1/subscriber — профиль авторизованного абонента.
   Future<UserModel> getSubscriber() async {

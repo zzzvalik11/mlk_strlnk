@@ -15,10 +15,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
   final UserLocalSource _localSource;
 
   TransactionRepositoryImpl({
-    required TransactionRemoteSource remoteSource,
-    required UserLocalSource localSource,
-  })  : _remoteSource = remoteSource,
-        _localSource = localSource;
+    required this._remoteSource,
+    required this._localSource,
+  });
 
   @override
   Future<Either<Failure, Page<Transaction>>> getHistory({
@@ -29,13 +28,15 @@ class TransactionRepositoryImpl implements TransactionRepository {
     try {
       if (_localSource.isMockUser()) {
         final items = _createMockTransactions();
-        return right(Page<Transaction>(
-          items: items,
-          total: items.length,
-          page: 1,
-          limit: items.length,
-          hasMore: false,
-        ));
+        return right(
+          Page<Transaction>(
+            items: items,
+            total: items.length,
+            page: 1,
+            limit: items.length,
+            hasMore: false,
+          ),
+        );
       }
 
       final models = await _remoteSource.getTransactionHistory(
@@ -60,22 +61,35 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<Either<Failure, Transaction>> getTransactionDetails(String id, {int accountId = 1}) async {
+  Future<Either<Failure, Transaction>> getTransactionDetails(
+    String id, {
+    int accountId = 1,
+  }) async {
     try {
       if (_localSource.isMockUser()) {
         final all = _createMockTransactions();
         final match = all.where((t) => t.id == id).firstOrNull;
         if (match == null) {
-          return left(const Failure.server(statusCode: 404, message: 'Транзакция не найдена'));
+          return left(
+            const Failure.server(
+              statusCode: 404,
+              message: 'Транзакция не найдена',
+            ),
+          );
         }
         return right(match);
       }
 
-      final models = await _remoteSource.getTransactionHistory(accountId: accountId);
+      final models = await _remoteSource.getTransactionHistory(
+        accountId: accountId,
+      );
       final match = models.where((m) => m.id == id).firstOrNull;
       if (match == null) {
         return left(
-          Failure.server(statusCode: 404, message: 'Транзакция не найдена'),
+          const Failure.server(
+            statusCode: 404,
+            message: 'Транзакция не найдена',
+          ),
         );
       }
       return right(match.toDomain());

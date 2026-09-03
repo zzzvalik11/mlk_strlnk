@@ -5,7 +5,8 @@ import 'package:telecom_dashboard/presentation/providers/auth_provider.dart';
 /// Bridge between Riverpod auth state and GoRouter's refreshListenable.
 /// Safe to use outside Riverpod widget tree — all reads are wrapped
 /// in try-catch so platform plugin errors (e.g. on web) don't propagate.
-class AuthChangeNotifier extends ChangeNotifier {
+class AuthChangeNotifier extends ChangeNotifier
+    implements ValueListenable<bool> {
   final ProviderContainer _container;
 
   AuthChangeNotifier(this._container) {
@@ -18,6 +19,9 @@ class AuthChangeNotifier extends ChangeNotifier {
       // so the router will redirect to the login screen.
     }
   }
+
+  @override
+  bool get value => isAuthenticated;
 
   bool get isAuthenticated {
     try {

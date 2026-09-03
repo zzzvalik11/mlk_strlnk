@@ -6,8 +6,7 @@ import 'package:telecom_dashboard/data/models/transaction_model.dart';
 class TransactionRemoteSource {
   final ApiClient _apiClient;
 
-  TransactionRemoteSource({required ApiClient apiClient})
-      : _apiClient = apiClient;
+  TransactionRemoteSource({required this._apiClient});
 
   /// POST /v1/subscriber/accounts/{accountId}/transactions
   /// История транзакций с фильтрацией по датам.

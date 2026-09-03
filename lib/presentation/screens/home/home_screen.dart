@@ -34,7 +34,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final homeState = ref.watch(homeViewModelProvider);
     // Safe read via global container (bypasses WidgetRef on web)
     final user = () {
-      try { return appContainer.read(authProvider).valueOrNull; } catch (_) { return null; }
+      try {
+        return appContainer.read(authProvider).valueOrNull;
+      } catch (_) {
+        return null;
+      }
     }();
 
     return RefreshIndicator(
@@ -68,12 +72,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(
             padding: AppTheme.cardPadding,
             decoration: BoxDecoration(
-              color: Colors.white, borderRadius: AppTheme.cardRadius, boxShadow: AppTheme.cardShadow,
+              color: Colors.white,
+              borderRadius: AppTheme.cardRadius,
+              boxShadow: AppTheme.cardShadow,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Баланс', style: AppTheme.bodySmall),
+                const Text('Баланс', style: AppTheme.bodySmall),
                 const SizedBox(height: 4),
                 Text(
                   CurrencyFormatter.formatCurrency(state.balance.amount),
@@ -83,13 +89,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Оплачено ${DateFormatter.formatPaidUntil(state.balance.paidUntil!)}',
-                    style: AppTheme.bodyMedium.copyWith(color: AppTheme.success),
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.success,
+                    ),
                   ),
                 ],
                 if (isFrozen)
                   Container(
                     margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.warning.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -97,9 +108,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.lock_rounded, size: 14, color: AppTheme.warning),
+                        const Icon(
+                          Icons.lock_rounded,
+                          size: 14,
+                          color: AppTheme.warning,
+                        ),
                         const SizedBox(width: 4),
-                        Text('Тариф заморожен', style: AppTheme.bodySmall.copyWith(color: AppTheme.warning, fontWeight: FontWeight.w600)),
+                        Text(
+                          'Тариф заморожен',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.warning,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -136,7 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               behavior: HitTestBehavior.opaque,
               child: Row(
                 children: [
-                  Text('Активные услуги', style: AppTheme.titleMedium),
+                  const Text('Активные услуги', style: AppTheme.titleMedium),
                   const Spacer(),
                   // Freeze/unfreeze lock
                   IconButton(
@@ -146,10 +167,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       size: 22,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                     onPressed: () => _showFreezeDialog(isFrozen),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: AppTheme.gray400, size: 24),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.gray400,
+                    size: 24,
+                  ),
                 ],
               ),
             ),
@@ -182,7 +210,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Отменить заморозку'),
-        content: const Text('Вы уверены, что хотите отменить заморозку тарифного плана? Услуги будут возобновлены.'),
+        content: const Text(
+          'Вы уверены, что хотите отменить заморозку тарифного плана? Услуги будут возобновлены.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -194,7 +224,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ref.read(homeViewModelProvider.notifier).toggleLock();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.orange500, foregroundColor: Colors.white, elevation: 0,
+              backgroundColor: AppTheme.orange500,
+              foregroundColor: Colors.white,
+              elevation: 0,
             ),
             child: const Text('Отменить заморозку'),
           ),
@@ -210,7 +242,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Заморозка тарифа'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -231,11 +265,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   return ChoiceChip(
                     label: Text('$days дн.'),
                     selected: isSelected,
-                    onSelected: (_) => setDialogState(() => selectedDays = days),
+                    onSelected: (_) =>
+                        setDialogState(() => selectedDays = days),
                     selectedColor: AppTheme.orange500.withOpacity(0.2),
                     labelStyle: TextStyle(
                       color: isSelected ? AppTheme.orange500 : AppTheme.gray700,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   );
                 }).toList(),
@@ -258,7 +295,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ref.read(homeViewModelProvider.notifier).toggleLock();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.orange500, foregroundColor: Colors.white, elevation: 0,
+                backgroundColor: AppTheme.orange500,
+                foregroundColor: Colors.white,
+                elevation: 0,
               ),
               child: const Text('Заморозить'),
             ),
@@ -277,9 +316,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.error),
+          const Icon(
+            Icons.error_outline_rounded,
+            size: 64,
+            color: AppTheme.error,
+          ),
           const SizedBox(height: 16),
-          Text(message, style: AppTheme.bodyMedium, textAlign: TextAlign.center),
+          Text(
+            message,
+            style: AppTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => ref.read(homeViewModelProvider.notifier).refresh(),
@@ -323,7 +370,11 @@ class _ActionButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: isPrimary ? Colors.white : AppTheme.gray600, size: 20),
+              Icon(
+                icon,
+                color: isPrimary ? Colors.white : AppTheme.gray600,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 label,

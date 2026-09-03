@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:telecom_dashboard/core/constants/routes.dart';
@@ -38,7 +39,8 @@ GoRouter createGoRouter(Listenable notifier) {
       final isLoginRoute = state.matchedLocation == Routes.login;
       final isSupportRoute = state.matchedLocation == Routes.support;
       final isQuickLoginRoute = state.matchedLocation == Routes.quickLogin;
-      final isAuthMethodRoute = state.matchedLocation == Routes.authMethodSelection;
+      final isAuthMethodRoute =
+          state.matchedLocation == Routes.authMethodSelection;
 
       // Public routes (no auth required)
       if (isSupportRoute || isQuickLoginRoute || isAuthMethodRoute) return null;
@@ -67,32 +69,29 @@ GoRouter createGoRouter(Listenable notifier) {
           return _ShellWrapper(
             initialIndex: idx,
             child: child,
+            authState: notifier as ValueListenable<bool>,
           );
         },
         routes: [
           GoRoute(
             path: Routes.home,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: HomeScreen()),
           ),
           GoRoute(
             path: Routes.payment,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: PaymentScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: PaymentScreen()),
           ),
           GoRoute(
             path: Routes.news,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: NewsScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: NewsScreen()),
           ),
           GoRoute(
             path: Routes.support,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: SupportScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: SupportScreen()),
           ),
         ],
       ),
@@ -158,8 +157,13 @@ GoRouter createGoRouter(Listenable notifier) {
 class _ShellWrapper extends StatefulWidget {
   final Widget child;
   final int initialIndex;
+  final ValueListenable<bool> authState;
 
-  const _ShellWrapper({required this.child, required this.initialIndex});
+  const _ShellWrapper({
+    required this.child,
+    required this.initialIndex,
+    required this.authState,
+  });
 
   @override
   State<_ShellWrapper> createState() => _ShellWrapperState();
@@ -184,22 +188,31 @@ class _ShellWrapperState extends State<_ShellWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.orange50,
-      body: SafeArea(child: widget.child),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-          final routes = [
-            Routes.home,
-            Routes.payment,
-            Routes.news,
-            Routes.support,
-          ];
-          context.go(routes[index]);
-        },
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: widget.authState,
+      builder: (context, isAuthenticated, child) {
+        final showBottomNav = isAuthenticated;
+
+        return Scaffold(
+          backgroundColor: AppTheme.orange50,
+          body: SafeArea(child: widget.child),
+          bottomNavigationBar: showBottomNav
+              ? BottomNavBar(
+                  currentIndex: _currentIndex,
+                  onTap: (index) {
+                    setState(() => _currentIndex = index);
+                    final routes = [
+                      Routes.home,
+                      Routes.payment,
+                      Routes.news,
+                      Routes.support,
+                    ];
+                    context.go(routes[index]);
+                  },
+                )
+              : null,
+        );
+      },
     );
   }
 }

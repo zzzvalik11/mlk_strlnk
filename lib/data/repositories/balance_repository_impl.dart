@@ -15,10 +15,9 @@ class BalanceRepositoryImpl implements BalanceRepository {
   final UserLocalSource _localSource;
 
   BalanceRepositoryImpl({
-    required BalanceRemoteSource remoteSource,
-    required UserLocalSource localSource,
-  })  : _remoteSource = remoteSource,
-        _localSource = localSource;
+    required this._remoteSource,
+    required this._localSource,
+  });
 
   @override
   Future<Either<Failure, Balance>> getBalance() async {
@@ -30,10 +29,9 @@ class BalanceRepositoryImpl implements BalanceRepository {
 
       final accounts = await _remoteSource.getAccounts();
       if (accounts.isEmpty) {
-        return left(const Failure.server(
-          statusCode: 404,
-          message: 'Счета не найдены',
-        ));
+        return left(
+          const Failure.server(statusCode: 404, message: 'Счета не найдены'),
+        );
       }
       // Берём первый счёт для баланса
       final first = accounts.first;
@@ -64,9 +62,11 @@ class BalanceRepositoryImpl implements BalanceRepository {
       // Пополнение теперь через PaymentRepository (РСБ/СБП).
       // Этот метод оставлен для совместимости, но реальная логика
       // перенесена в PaymentRepository.getPayLink().
-      return left(const Failure.unknown(
-        message: 'Используйте PaymentRepository для пополнения',
-      ));
+      return left(
+        const Failure.unknown(
+          message: 'Используйте PaymentRepository для пополнения',
+        ),
+      );
     } on DioException catch (e) {
       return left(DioExceptionMapper.map(e));
     } catch (e) {

@@ -10,8 +10,7 @@ import 'package:telecom_dashboard/domain/repositories/sms_repository.dart';
 class SmsRepositoryImpl implements SmsRepository {
   final SmsRemoteSource _remoteSource;
 
-  SmsRepositoryImpl({required SmsRemoteSource remoteSource})
-      : _remoteSource = remoteSource;
+  SmsRepositoryImpl({required this._remoteSource});
 
   @override
   Future<Either<Failure, SmsSendResult>> sendSms({

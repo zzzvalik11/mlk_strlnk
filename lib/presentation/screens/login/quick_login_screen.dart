@@ -46,10 +46,13 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
 
   Future<void> _authenticateBiometric() async {
     try {
-      final canAuth = await _localAuth.canCheckBiometrics ||
+      final canAuth =
+          await _localAuth.canCheckBiometrics ||
           await _localAuth.isDeviceSupported();
       if (!canAuth) {
-        setState(() => _error = 'Биометрия не поддерживается на этом устройстве');
+        setState(
+          () => _error = 'Биометрия не поддерживается на этом устройстве',
+        );
         return;
       }
       final didAuth = await _localAuth.authenticate(
@@ -60,7 +63,9 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
         ),
       );
       if (didAuth) {
-        await appContainer.read(authProvider.notifier).authenticateWithBiometric();
+        await appContainer
+            .read(authProvider.notifier)
+            .authenticateWithBiometric();
         final authState = appContainer.read(authProvider);
         if (!mounted) return;
         if (authState.valueOrNull != null) {
@@ -75,8 +80,7 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
   }
 
   String _mapBioError(String? msg) {
-    if (msg?.contains('locked') == true ||
-        msg?.contains('Lockout') == true) {
+    if (msg?.contains('locked') == true || msg?.contains('Lockout') == true) {
       return 'Слишком много попыток. Попробуйте позже.';
     }
     return 'Ошибка биометрии: $msg';
@@ -85,7 +89,7 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
   void _onPinSubmit() {
     final pin = _pinController.text.trim();
     if (pin.isEmpty) {
-      setState(() => _error = 'Введите ПИН-код');
+      setState(() => _error = 'Введите ПИН');
       return;
     }
     appContainer.read(authProvider.notifier).authenticateWithPin(pin: pin);
@@ -127,8 +131,10 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                 // Auth method specific UI
                 if (method == AuthMethod.pin) ...[
                   Text(
-                    'Введите ПИН-код',
-                    style: AppTheme.titleMedium.copyWith(color: AppTheme.gray700),
+                    'Введите ПИН',
+                    style: AppTheme.titleMedium.copyWith(
+                      color: AppTheme.gray700,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -137,15 +143,20 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                     maxLength: 6,
                     textAlign: TextAlign.center,
                     style: AppTheme.headlineLarge.copyWith(
-                      fontSize: 32, letterSpacing: 12, color: AppTheme.gray900,
+                      fontSize: 32,
+                      letterSpacing: 12,
+                      color: AppTheme.gray900,
                     ),
                     onChanged: (_) {
                       if (_error != null) setState(() => _error = null);
                     },
                     onSubmitted: (_) => _onPinSubmit(),
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       counterText: '',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.gray400),
+                      prefixIcon: Icon(
+                        Icons.lock_outline_rounded,
+                        color: AppTheme.gray400,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: AppTheme.inputRadius,
                         borderSide: BorderSide(color: AppTheme.gray200),
@@ -156,7 +167,10 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppTheme.inputRadius,
-                        borderSide: const BorderSide(color: AppTheme.orange500, width: 2),
+                        borderSide: BorderSide(
+                          color: AppTheme.orange500,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -168,34 +182,61 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                       onPressed: _onPinSubmit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.orange500,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
-                      child: const Text('Войти', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                      child: const Text(
+                        'Войти',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ] else ...[
-                  const Text('Приложите палец для входа', style: TextStyle(fontSize: 16, color: AppTheme.gray600)),
+                  const Text(
+                    'Приложите палец для входа',
+                    style: TextStyle(fontSize: 16, color: AppTheme.gray600),
+                  ),
                   const SizedBox(height: 32),
                   GestureDetector(
                     onTap: _authenticateBiometric,
                     child: Container(
-                      width: 100, height: 100,
+                      width: 100,
+                      height: 100,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle, color: Colors.white,
+                        shape: BoxShape.circle,
+                        color: Colors.white,
                         boxShadow: AppTheme.elevatedShadow,
                       ),
-                      child: const Icon(Icons.fingerprint, size: 56, color: AppTheme.orange500),
+                      child: const Icon(
+                        Icons.fingerprint,
+                        size: 56,
+                        color: AppTheme.orange500,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () => context.go(Routes.login),
-                    child: Text('Войти с паролем', style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray500)),
+                    child: Text(
+                      'Войти с паролем',
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.gray500,
+                      ),
+                    ),
                   ),
                 ],
                 if (_error != null) ...[
                   const SizedBox(height: 16),
-                  Text(_error!, style: AppTheme.bodySmall.copyWith(color: AppTheme.error), textAlign: TextAlign.center),
+                  Text(
+                    _error!,
+                    style: AppTheme.bodySmall.copyWith(color: AppTheme.error),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
                 const Spacer(flex: 3),
                 // Support link
@@ -205,10 +246,21 @@ class _QuickLoginScreenState extends ConsumerState<QuickLoginScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.mail_outline_rounded, size: 18, color: AppTheme.info),
+                        const Icon(
+                          Icons.mail_outline_rounded,
+                          size: 18,
+                          color: AppTheme.info,
+                        ),
                         const SizedBox(width: 6),
                         Flexible(
-                          child: Text('Написать в поддержку', style: AppTheme.bodyMedium.copyWith(color: AppTheme.info, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            'Написать в поддержку',
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.info,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),

@@ -18,11 +18,7 @@ class UserRepositoryImpl implements UserRepository {
   final UserRemoteSource _remoteSource;
   final UserLocalSource _localSource;
 
-  UserRepositoryImpl({
-    required UserRemoteSource remoteSource,
-    required UserLocalSource localSource,
-  })  : _remoteSource = remoteSource,
-        _localSource = localSource;
+  UserRepositoryImpl({required this._remoteSource, required this._localSource});
 
   @override
   Future<Either<Failure, User>> getCurrentUser() async {

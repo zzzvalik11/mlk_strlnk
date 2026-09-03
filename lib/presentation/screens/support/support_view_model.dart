@@ -40,7 +40,7 @@ class SupportNotifier extends StateNotifier<SupportFormState> {
     required String message,
   }) async {
     if (pin.trim().isEmpty) {
-      state = const SupportFormError('Введите ПИН-код');
+      state = const SupportFormError('Введите ПИН');
       return;
     }
     if (email.trim().isEmpty) {
@@ -62,7 +62,8 @@ class SupportNotifier extends StateNotifier<SupportFormState> {
       final ticket = await _ref.read(
         createTicketProvider((
           subject: 'ПИН ${pin.trim()}',
-          description: 'От: ${email.trim()}\n'
+          description:
+              'От: ${email.trim()}\n'
               'Тел: ${phone.trim()}\n\n'
               '${message.trim()}',
         )).future,
@@ -80,5 +81,5 @@ class SupportNotifier extends StateNotifier<SupportFormState> {
 
 final supportViewModelProvider =
     StateNotifierProvider.autoDispose<SupportNotifier, SupportFormState>((ref) {
-  return SupportNotifier(ref);
-});
+      return SupportNotifier(ref);
+    });

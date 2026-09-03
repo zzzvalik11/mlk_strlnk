@@ -8,7 +8,8 @@ class PromisedPaymentScreen extends ConsumerStatefulWidget {
   const PromisedPaymentScreen({super.key});
 
   @override
-  ConsumerState<PromisedPaymentScreen> createState() => _PromisedPaymentScreenState();
+  ConsumerState<PromisedPaymentScreen> createState() =>
+      _PromisedPaymentScreenState();
 }
 
 class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
@@ -21,7 +22,8 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
   double _selectedDays = 7;
 
   DateTime get _startDate => DateTime.now().add(const Duration(days: 1));
-  DateTime get _endDate => _startDate.add(Duration(days: _selectedDays.round()));
+  DateTime get _endDate =>
+      _startDate.add(Duration(days: _selectedDays.round()));
 
   String _formatDate(DateTime d) => DateFormat('dd.MM.yyyy', 'ru').format(d);
 
@@ -64,10 +66,14 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                                     color: AppTheme.info.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(Icons.info_outline_rounded, color: AppTheme.info, size: 24),
+                                  child: const Icon(
+                                    Icons.info_outline_rounded,
+                                    color: AppTheme.info,
+                                    size: 24,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(
+                                const Expanded(
                                   child: Text(
                                     'Обещанный платёж',
                                     style: AppTheme.titleMedium,
@@ -78,7 +84,9 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                             const SizedBox(height: 16),
                             Text(
                               'Обещанный платёж позволяет продлить срок оплаты услуг при недостаточном балансе. Выберите желаемый период отложенной оплаты.',
-                              style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray700),
+                              style: AppTheme.bodyMedium.copyWith(
+                                color: AppTheme.gray700,
+                              ),
                             ),
                           ],
                         ),
@@ -95,11 +103,16 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Выбор периода', style: AppTheme.titleMedium),
+                            const Text(
+                              'Выбор периода',
+                              style: AppTheme.titleMedium,
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               'С завтрашнего дня ($_formatDate(_startDate))',
-                              style: AppTheme.bodySmall.copyWith(color: AppTheme.gray500),
+                              style: AppTheme.bodySmall.copyWith(
+                                color: AppTheme.gray500,
+                              ),
                             ),
                             const SizedBox(height: 20),
                             // Slider
@@ -107,7 +120,9 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                               children: [
                                 Text(
                                   '7',
-                                  style: AppTheme.bodySmall.copyWith(color: AppTheme.gray400),
+                                  style: AppTheme.bodySmall.copyWith(
+                                    color: AppTheme.gray400,
+                                  ),
                                 ),
                                 Expanded(
                                   child: SliderTheme(
@@ -115,7 +130,8 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                                       activeTrackColor: AppTheme.orange500,
                                       inactiveTrackColor: AppTheme.gray200,
                                       thumbColor: AppTheme.orange500,
-                                      overlayColor: AppTheme.orange500.withOpacity(0.12),
+                                      overlayColor: AppTheme.orange500
+                                          .withOpacity(0.12),
                                       valueIndicatorColor: AppTheme.orange500,
                                       valueIndicatorTextStyle: const TextStyle(
                                         color: Colors.white,
@@ -129,13 +145,16 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                                       max: 90,
                                       divisions: 83,
                                       label: '$days дн.',
-                                      onChanged: (v) => setState(() => _selectedDays = v),
+                                      onChanged: (v) =>
+                                          setState(() => _selectedDays = v),
                                     ),
                                   ),
                                 ),
                                 Text(
                                   '90',
-                                  style: AppTheme.bodySmall.copyWith(color: AppTheme.gray400),
+                                  style: AppTheme.bodySmall.copyWith(
+                                    color: AppTheme.gray400,
+                                  ),
                                 ),
                               ],
                             ),
@@ -143,7 +162,10 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                             // Period summary
                             Center(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppTheme.orange50,
                                   borderRadius: BorderRadius.circular(12),
@@ -169,14 +191,23 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                           borderRadius: AppTheme.cardRadius,
                           boxShadow: AppTheme.cardShadow,
                         ),
-                        child: Column(
+                        child: const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Условия', style: AppTheme.titleMedium),
-                            const SizedBox(height: 12),
-                            const _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Баланс менее 100 руб.'),
-                            const _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Нет предыдущих обещанных платежей в этом месяце'),
-                            const _ConditionItem(icon: Icons.check_circle_outline_rounded, text: 'Аккаунт не заблокирован'),
+                            SizedBox(height: 12),
+                            _ConditionItem(
+                              icon: Icons.check_circle_outline_rounded,
+                              text: 'Баланс менее 100 руб.',
+                            ),
+                            _ConditionItem(
+                              icon: Icons.check_circle_outline_rounded,
+                              text: 'Нет предыдущих обещанных платежей в этом месяце',
+                            ),
+                            _ConditionItem(
+                              icon: Icons.check_circle_outline_rounded,
+                              text: 'Аккаунт не заблокирован',
+                            ),
                           ],
                         ),
                       ),
@@ -191,12 +222,18 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.error_outline_rounded, color: AppTheme.error, size: 20),
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: AppTheme.error,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
-                                  style: AppTheme.bodySmall.copyWith(color: AppTheme.error),
+                                  style: AppTheme.bodySmall.copyWith(
+                                    color: AppTheme.error,
+                                  ),
                                 ),
                               ),
                             ],
@@ -213,13 +250,23 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.success),
+                              const Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 64,
+                                color: AppTheme.success,
+                              ),
                               const SizedBox(height: 12),
-                              Text('Обещанный платёж активирован', style: AppTheme.titleMedium, textAlign: TextAlign.center),
+                              const Text(
+                                'Обещанный платёж активирован',
+                                style: AppTheme.titleMedium,
+                                textAlign: TextAlign.center,
+                              ),
                               const SizedBox(height: 8),
                               Text(
                                 'Срок оплаты продлён на $days дн. (до ${_formatDate(_endDate)}). Пополните баланс вовремя.',
-                                style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray600),
+                                style: AppTheme.bodyMedium.copyWith(
+                                  color: AppTheme.gray600,
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -230,7 +277,9 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                         SizedBox(
                           height: 56,
                           child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _activatePromisedPayment,
+                            onPressed: _isSubmitting
+                                ? null
+                                : _activatePromisedPayment,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.orange500,
                               foregroundColor: Colors.white,
@@ -246,12 +295,17 @@ class _PromisedPaymentScreenState extends ConsumerState<PromisedPaymentScreen> {
                                     height: 24,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
                                 : const Text(
                                     'Активировать',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                           ),
                         ),
@@ -297,7 +351,10 @@ class _ConditionItem extends StatelessWidget {
           Icon(icon, color: AppTheme.success, size: 18),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text, style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray700)),
+            child: Text(
+              text,
+              style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray700),
+            ),
           ),
         ],
       ),

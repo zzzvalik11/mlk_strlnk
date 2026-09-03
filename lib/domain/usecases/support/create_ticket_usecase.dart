@@ -14,13 +14,21 @@ class CreateTicketUseCase {
   }) {
     if (subject.trim().isEmpty) {
       return Future.value(
-        left(Failure.validation(message: 'Тема обращения не может быть пустой')),
+        left(
+          const Failure.validation(
+            message: 'Тема обращения не может быть пустой',
+          ),
+        ),
       );
     }
 
     if (description.trim().isEmpty) {
       return Future.value(
-        left(Failure.validation(message: 'Описание обращения не может быть пустым')),
+        left(
+          const Failure.validation(
+            message: 'Описание обращения не может быть пустым',
+          ),
+        ),
       );
     }
 

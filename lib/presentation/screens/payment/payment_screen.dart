@@ -37,92 +37,94 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       onRefresh: () => ref.read(paymentViewModelProvider.notifier).refresh(),
       child: CustomScrollView(
         slivers: [
-            // ─── Header ─────────────────────────
-            SliverToBoxAdapter(
-              child: AppHeader(showBackButton: true, title: 'Оплата'),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            // ─── Quick Action Cards ─────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.4,
-                  children: [
-                    _QuickAction(
-                      icon: Icons.credit_card_rounded,
-                      label: 'Банковская карта',
-                      subtitle: 'Visa, Mastercard, МИР',
-                      color: AppTheme.orange500,
-                      onTap: () => context.push(Routes.topUp),
-                    ),
-                    _QuickAction(
-                      icon: Icons.qr_code_2_rounded,
-                      label: 'СБП',
-                      subtitle: 'Система быстрых платежей',
-                      color: AppTheme.info,
-                      onTap: () => context.push(Routes.topUp),
-                    ),
-                    _QuickAction(
-                      icon: Icons.access_time_rounded,
-                      label: 'Обещанный платёж',
-                      subtitle: 'Отложить оплату',
-                      color: AppTheme.success,
-                      onTap: () => context.push(Routes.promisedPayment),
-                    ),
-                  ],
-                ),
+          // ─── Header ─────────────────────────
+          const SliverToBoxAdapter(
+            child: AppHeader(showBackButton: true, title: 'Оплата'),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          // ─── Quick Action Cards ─────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.4,
+                children: [
+                  _QuickAction(
+                    icon: Icons.credit_card_rounded,
+                    label: 'Банковская карта',
+                    subtitle: 'Visa, Mastercard, МИР',
+                    color: AppTheme.orange500,
+                    onTap: () => context.push(Routes.topUp),
+                  ),
+                  _QuickAction(
+                    icon: Icons.qr_code_2_rounded,
+                    label: 'СБП',
+                    subtitle: 'Система быстрых платежей',
+                    color: AppTheme.info,
+                    onTap: () => context.push(Routes.topUp),
+                  ),
+                  _QuickAction(
+                    icon: Icons.access_time_rounded,
+                    label: 'Обещанный платёж',
+                    subtitle: 'Отложить оплату',
+                    color: AppTheme.success,
+                    onTap: () => context.push(Routes.promisedPayment),
+                  ),
+                ],
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            // ─── Recent Transactions ────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Последние операции',
-                  style: AppTheme.titleMedium,
-                ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          // ─── Recent Transactions ────────────
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text('Последние операции', style: AppTheme.titleMedium),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          switch (state) {
+            PaymentLoading() => const SliverFillRemaining(
+              child: LoadingSpinner(),
+            ),
+            PaymentError(:final message) => SliverFillRemaining(
+              child: ErrorState(
+                message: message,
+                onRetry: () =>
+                    ref.read(paymentViewModelProvider.notifier).refresh(),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            switch (state) {
-              PaymentLoading() => const SliverFillRemaining(child: LoadingSpinner()),
-              PaymentError(:final message) => SliverFillRemaining(
-                  child: ErrorState(
-                    message: message,
-                    onRetry: () =>
-                        ref.read(paymentViewModelProvider.notifier).refresh(),
+            PaymentEmpty() => const SliverFillRemaining(
+              child: EmptyState(
+                icon: Icons.receipt_long_rounded,
+                message: 'Нет операций',
+              ),
+            ),
+            PaymentLoaded(:final recentTransactions) => SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => Padding(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: index < recentTransactions.length - 1 ? 8 : 80,
+                  ),
+                  child: _TransactionItem(
+                    transaction: recentTransactions[index],
                   ),
                 ),
-              PaymentEmpty() => SliverFillRemaining(
-                  child: const EmptyState(
-                    icon: Icons.receipt_long_rounded,
-                    message: 'Нет операций',
-                  ),
-                ),
-              PaymentLoaded(:final recentTransactions) => SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => Padding(
-                      padding: EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: index < recentTransactions.length - 1 ? 8 : 80,
-                      ),
-                      child: _TransactionItem(
-                          transaction: recentTransactions[index]),
-                    ),
-                    childCount: recentTransactions.length,
-                  ),
-                ),
-              PaymentInitial() => const SliverFillRemaining(child: LoadingSpinner()),
-            },
-          ],
+                childCount: recentTransactions.length,
+              ),
+            ),
+            PaymentInitial() => const SliverFillRemaining(
+              child: LoadingSpinner(),
+            ),
+          },
+        ],
       ),
     );
   }
@@ -157,15 +159,16 @@ class _QuickAction extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: AppTheme.cardRadius,
-          onTap: onTap ??
-            () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label — скоро'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+          onTap:
+              onTap ??
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$label — скоро'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
           child: Padding(
             padding: AppTheme.cardPaddingSmall,
             child: Column(
@@ -220,7 +223,8 @@ class _TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = transaction.type == TransactionType.topUp ||
+    final isPositive =
+        transaction.type == TransactionType.topUp ||
         transaction.type == TransactionType.refund ||
         transaction.type == TransactionType.bonus;
     final signedAmount = isPositive

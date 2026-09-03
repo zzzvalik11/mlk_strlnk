@@ -40,7 +40,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (_pinError != null || _passwordError != null) return;
 
-    ref.read(loginViewModelProvider.notifier).login(
+    ref
+        .read(loginViewModelProvider.notifier)
+        .login(
           pin: _pinController.text.trim(),
           password: _passwordController.text.trim(),
         );
@@ -93,12 +95,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     }
                     ref.read(loginViewModelProvider.notifier).resetError();
                   },
-                  onSubmitted: (_) =>
-                      _passwordFocusNode.requestFocus(),
+                  onSubmitted: (_) => _passwordFocusNode.requestFocus(),
                   decoration: InputDecoration(
-                    labelText: 'ПИН-код',
+                    labelText: 'ПИН',
                     hintText: '039103',
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.person_outline_rounded,
                       color: AppTheme.gray500,
                     ),
@@ -106,23 +107,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     errorText: _pinError,
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(
+                    border: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.gray200),
                     ),
-                    enabledBorder: OutlineInputBorder(
+                    enabledBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.gray200),
                     ),
-                    focusedBorder: OutlineInputBorder(
+                    focusedBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
-                      borderSide: BorderSide(color: AppTheme.orange500, width: 2),
+                      borderSide: BorderSide(
+                        color: AppTheme.orange500,
+                        width: 2,
+                      ),
                     ),
-                    errorBorder: OutlineInputBorder(
+                    errorBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.error),
                     ),
-                    focusedErrorBorder: OutlineInputBorder(
+                    focusedErrorBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.error, width: 2),
                     ),
@@ -145,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Пароль',
                     hintText: '123456',
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.lock_outline_rounded,
                       color: AppTheme.gray500,
                     ),
@@ -163,23 +167,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     errorText: _passwordError,
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(
+                    border: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.gray200),
                     ),
-                    enabledBorder: OutlineInputBorder(
+                    enabledBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.gray200),
                     ),
-                    focusedBorder: OutlineInputBorder(
+                    focusedBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
-                      borderSide: BorderSide(color: AppTheme.orange500, width: 2),
+                      borderSide: BorderSide(
+                        color: AppTheme.orange500,
+                        width: 2,
+                      ),
                     ),
-                    errorBorder: OutlineInputBorder(
+                    errorBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.error),
                     ),
-                    focusedErrorBorder: OutlineInputBorder(
+                    focusedErrorBorder: const OutlineInputBorder(
                       borderRadius: AppTheme.inputRadius,
                       borderSide: BorderSide(color: AppTheme.error, width: 2),
                     ),
@@ -191,10 +198,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
+                      // ignore: unnecessary_cast
                       (formState as LoginFormError).message,
-                      style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.error,
-                      ),
+                      style: AppTheme.bodySmall.copyWith(color: AppTheme.error),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -219,8 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor:
-                                  AlwaysStoppedAnimation(Colors.white),
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
                             ),
                           )
                         : const Text(
@@ -237,16 +242,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Center(
                   child: GestureDetector(
                     onTap: () => context.push(Routes.support),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.mail_outline_rounded,
                           size: 18,
                           color: AppTheme.info,
                         ),
-                        const SizedBox(width: 6),
-                        const Flexible(
+                        SizedBox(width: 6),
+                        Flexible(
                           child: Text(
                             'Написать в поддержку',
                             style: TextStyle(

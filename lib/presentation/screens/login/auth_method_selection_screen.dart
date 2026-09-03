@@ -70,8 +70,9 @@ class AuthMethodSelectionScreen extends ConsumerWidget {
                   onPressed: () => context.go(Routes.home),
                   child: Text(
                     'Выбрать позже',
-                    style:
-                        AppTheme.bodyMedium.copyWith(color: AppTheme.gray500),
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.gray500,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -159,13 +160,18 @@ class _OptionCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                          fontSize: 14, color: AppTheme.gray500),
+                        fontSize: 14,
+                        color: AppTheme.gray500,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right,
-                  color: AppTheme.gray400, size: 24),
+              const Icon(
+                Icons.chevron_right,
+                color: AppTheme.gray400,
+                size: 24,
+              ),
             ],
           ),
         ),

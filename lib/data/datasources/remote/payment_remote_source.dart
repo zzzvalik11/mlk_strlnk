@@ -5,7 +5,7 @@ import 'package:telecom_dashboard/data/datasources/remote/api_client.dart';
 class PaymentRemoteSource {
   final ApiClient _apiClient;
 
-  PaymentRemoteSource({required ApiClient apiClient}) : _apiClient = apiClient;
+  PaymentRemoteSource({required this._apiClient});
 
   /// Получить ссылку на оплату.
   /// GET /v1/subscriber/accounts/{accountId}/pay-link
@@ -16,10 +16,7 @@ class PaymentRemoteSource {
   }) async {
     final response = await _apiClient.get(
       '/v1/subscriber/accounts/$accountId/pay-link',
-      queryParameters: {
-        'amount': amount,
-        'payment_method': paymentMethod,
-      },
+      queryParameters: {'amount': amount, 'payment_method': paymentMethod},
     );
     return response.data as Map<String, dynamic>;
   }
@@ -29,8 +26,10 @@ class PaymentRemoteSource {
   Future<Map<String, dynamic>> registerCardPayment({
     required Map<String, dynamic> body,
   }) async {
-    final response =
-        await _apiClient.post('/v1/payments/card/register', body: body);
+    final response = await _apiClient.post(
+      '/v1/payments/card/register',
+      body: body,
+    );
     return response.data as Map<String, dynamic>;
   }
 
@@ -40,11 +39,14 @@ class PaymentRemoteSource {
     required String transactionId,
     required String clientIp,
   }) async {
-    final response = await _apiClient.post('/v1/payments/card/status', body: {
-      'trans_id': transactionId,
-      'client_ip_addr': clientIp,
-      'server_version': '2.0',
-    });
+    final response = await _apiClient.post(
+      '/v1/payments/card/status',
+      body: {
+        'trans_id': transactionId,
+        'client_ip_addr': clientIp,
+        'server_version': '2.0',
+      },
+    );
     return response.data as Map<String, dynamic>;
   }
 
@@ -53,8 +55,10 @@ class PaymentRemoteSource {
   Future<Map<String, dynamic>> reverseCardPayment({
     required String transactionId,
   }) async {
-    final response = await _apiClient.post('/v1/payments/card/reverse',
-        body: {'trans_id': transactionId});
+    final response = await _apiClient.post(
+      '/v1/payments/card/reverse',
+      body: {'trans_id': transactionId},
+    );
     return response.data as Map<String, dynamic>;
   }
 
@@ -66,8 +70,10 @@ class PaymentRemoteSource {
   }) async {
     final body = <String, dynamic>{'trans_id': transactionId};
     if (amount != null) body['amount'] = amount;
-    final response =
-        await _apiClient.post('/v1/payments/card/refund', body: body);
+    final response = await _apiClient.post(
+      '/v1/payments/card/refund',
+      body: body,
+    );
     return response.data as Map<String, dynamic>;
   }
 
@@ -76,8 +82,7 @@ class PaymentRemoteSource {
   Future<Map<String, dynamic>> getSbpPaymentStatus({
     required String orderId,
   }) async {
-    final response =
-        await _apiClient.get('/v1/payments/sbp/status/$orderId');
+    final response = await _apiClient.get('/v1/payments/sbp/status/$orderId');
     return response.data as Map<String, dynamic>;
   }
 
@@ -86,8 +91,7 @@ class PaymentRemoteSource {
   Future<Map<String, dynamic>> cancelSbpPayment({
     required String orderId,
   }) async {
-    final response =
-        await _apiClient.get('/v1/payments/sbp/cancel/$orderId');
+    final response = await _apiClient.get('/v1/payments/sbp/cancel/$orderId');
     return response.data as Map<String, dynamic>;
   }
 

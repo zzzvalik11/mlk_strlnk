@@ -6,8 +6,7 @@ import 'package:telecom_dashboard/data/models/service_model.dart';
 class ServiceRemoteSource {
   final ApiClient _apiClient;
 
-  ServiceRemoteSource({required ApiClient apiClient})
-      : _apiClient = apiClient;
+  ServiceRemoteSource({required this._apiClient});
 
   /// GET /v1/subscriber/accounts/{accountId}/services
   /// Список услуг, подключённых к счёту.

@@ -5,7 +5,7 @@ import 'package:telecom_dashboard/data/models/support_ticket_model.dart';
 class SupportRemoteSource {
   final ApiClient _apiClient;
 
-  SupportRemoteSource({required ApiClient apiClient}) : _apiClient = apiClient;
+  SupportRemoteSource({required this._apiClient});
 
   /// POST /v1/support/send-email — обращение в техподдержку.
   Future<SupportTicketModel> createTicket({
@@ -14,14 +14,9 @@ class SupportRemoteSource {
   }) async {
     final response = await _apiClient.post(
       '/v1/support/send-email',
-      body: {
-        'subject': subject,
-        'message': description,
-      },
+      body: {'subject': subject, 'message': description},
     );
-    return SupportTicketModel.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+    return SupportTicketModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// GET /v1/support/tickets — список обращений.

@@ -14,7 +14,11 @@ class TopUpUseCase {
   }) {
     if (amount <= 0) {
       return Future.value(
-        left(Failure.validation(message: 'Сумма пополнения должна быть больше нуля')),
+        left(
+          const Failure.validation(
+            message: 'Сумма пополнения должна быть больше нуля',
+          ),
+        ),
       );
     }
 

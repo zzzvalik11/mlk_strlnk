@@ -14,10 +14,9 @@ class SupportRepositoryImpl implements SupportRepository {
   final UserLocalSource _localSource;
 
   SupportRepositoryImpl({
-    required SupportRemoteSource remoteSource,
-    required UserLocalSource localSource,
-  })  : _remoteSource = remoteSource,
-        _localSource = localSource;
+    required this._remoteSource,
+    required this._localSource,
+  });
 
   @override
   Future<Either<Failure, SupportTicket>> createTicket({
@@ -72,7 +71,12 @@ class SupportRepositoryImpl implements SupportRepository {
         final all = _createMockTickets();
         final match = all.where((t) => t.id == id).firstOrNull;
         if (match == null) {
-          return left(const Failure.server(statusCode: 404, message: 'Обращение не найдено'));
+          return left(
+            const Failure.server(
+              statusCode: 404,
+              message: 'Обращение не найдено',
+            ),
+          );
         }
         return right(match);
       }
@@ -81,7 +85,10 @@ class SupportRepositoryImpl implements SupportRepository {
       final match = models.where((m) => m.id == id).firstOrNull;
       if (match == null) {
         return left(
-          Failure.server(statusCode: 404, message: 'Обращение не найдено'),
+          const Failure.server(
+            statusCode: 404,
+            message: 'Обращение не найдено',
+          ),
         );
       }
       return right(match.toDomain());

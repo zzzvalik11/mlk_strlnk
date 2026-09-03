@@ -11,27 +11,23 @@ class DioExceptionMapper {
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.transformTimeout:
-        return Failure.network(
+        return const Failure.network(
           message: 'Превышено время ожидания соединения',
         );
 
       case DioExceptionType.connectionError:
-        return Failure.network(
-          message: 'Нет подключения к интернету',
-        );
+        return const Failure.network(message: 'Нет подключения к интернету');
 
       case DioExceptionType.badResponse:
         return _mapBadResponse(exception);
 
       case DioExceptionType.badCertificate:
-        return Failure.network(
+        return const Failure.network(
           message: 'Ошибка сертификата безопасности',
         );
 
       case DioExceptionType.cancel:
-        return Failure.unknown(
-          message: 'Запрос был отменён',
-        );
+        return const Failure.unknown(message: 'Запрос был отменён');
 
       case DioExceptionType.unknown:
         return Failure.unknown(
@@ -55,10 +51,7 @@ class DioExceptionMapper {
       return Failure.server(statusCode: statusCode, message: message);
     }
 
-    return Failure.server(
-      statusCode: statusCode ?? 0,
-      message: message,
-    );
+    return Failure.server(statusCode: statusCode ?? 0, message: message);
   }
 
   static String _extractMessage(DioException exception) {

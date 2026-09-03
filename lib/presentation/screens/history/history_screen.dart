@@ -26,8 +26,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     });
   }
 
-  Future<void> _pickDateRange(BuildContext context, HistoryNotifier notifier) async {
-    final initial = notifier.customRange ??
+  Future<void> _pickDateRange(
+    BuildContext context,
+    HistoryNotifier notifier,
+  ) async {
+    final initial =
+        notifier.customRange ??
         DateTimeRange(
           start: DateTime.now().subtract(const Duration(days: 30)),
           end: DateTime.now(),
@@ -67,82 +71,88 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         child: Column(
           children: [
             const AppHeader(showBackButton: true, title: 'История операций'),
-          // ─── Period Filter ──────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: HistoryPeriod.values.map((p) {
-                final isActive = notifier.period == p;
-                String label = p.label;
-                if (p == HistoryPeriod.custom && notifier.customRange != null) {
-                  final r = notifier.customRange!;
-                  label = '${DateFormatter.formatDate(r.start)} – ${DateFormatter.formatDate(r.end)}';
-                }
-                return ChoiceChip(
-                  label: Text(label, style: const TextStyle(fontSize: 13)),
-                  selected: isActive,
-                  onSelected: p == HistoryPeriod.custom
-                      ? (_) => _pickDateRange(context, notifier)
-                      : (_) => notifier.setPeriod(p),
-                  selectedColor: AppTheme.orange500.withOpacity(0.2),
-                  labelStyle: TextStyle(
-                    color: isActive ? AppTheme.orange500 : AppTheme.gray600,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                );
-              }).toList(),
+            // ─── Period Filter ──────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: HistoryPeriod.values.map((p) {
+                  final isActive = notifier.period == p;
+                  String label = p.label;
+                  if (p == HistoryPeriod.custom &&
+                      notifier.customRange != null) {
+                    final r = notifier.customRange!;
+                    label =
+                        '${DateFormatter.formatDate(r.start)} – ${DateFormatter.formatDate(r.end)}';
+                  }
+                  return ChoiceChip(
+                    label: Text(label, style: const TextStyle(fontSize: 13)),
+                    selected: isActive,
+                    onSelected: p == HistoryPeriod.custom
+                        ? (_) => _pickDateRange(context, notifier)
+                        : (_) => notifier.setPeriod(p),
+                    selectedColor: AppTheme.orange500.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                      color: isActive ? AppTheme.orange500 : AppTheme.gray600,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          // ─── Content ──────────────────────
+            const SizedBox(height: 4),
+            // ─── Content ──────────────────────
             Expanded(
               child: switch (state) {
-              HistoryLoading() => const LoadingSpinner(),
-              HistoryError(:final message) => ErrorState(
+                HistoryLoading() => const LoadingSpinner(),
+                HistoryError(:final message) => ErrorState(
                   message: message,
-                  onRetry: () => notifier.refresh(),
+                  onRetry: notifier.refresh,
                 ),
-              HistoryEmpty() => const EmptyState(
+                HistoryEmpty() => const EmptyState(
                   icon: Icons.receipt_long_rounded,
                   message: 'Нет операций',
                   subtitle: 'Нет операций за выбранный период',
                 ),
-              HistoryLoaded(:final transactions, :final hasMore) =>
-                RefreshIndicator(
-                  color: AppTheme.orange500,
-                  onRefresh: () => notifier.refresh(),
-                  child: ListView.builder(
-                    padding: AppTheme.screenPadding.copyWith(bottom: 16),
-                    itemCount: transactions.length + (hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == transactions.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Center(
-                            child: TextButton(
-                              onPressed: () => notifier.loadMore(),
-                              child: const Text('Загрузить ещё'),
+                HistoryLoaded(:final transactions, :final hasMore) =>
+                  RefreshIndicator(
+                    color: AppTheme.orange500,
+                    onRefresh: notifier.refresh,
+                    child: ListView.builder(
+                      padding: AppTheme.screenPadding.copyWith(bottom: 16),
+                      itemCount: transactions.length + (hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == transactions.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Center(
+                              child: TextButton(
+                                onPressed: notifier.loadMore,
+                                child: const Text('Загрузить ещё'),
+                              ),
                             ),
+                          );
+                        }
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: index < transactions.length - 1 ? 8 : 0,
+                          ),
+                          child: _TransactionItem(
+                            transaction: transactions[index],
                           ),
                         );
-                      }
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: index < transactions.length - 1 ? 8 : 0),
-                        child: _TransactionItem(transaction: transactions[index]),
-                      );
-                    },
+                      },
+                    ),
                   ),
-                ),
-              HistoryInitial() => const LoadingSpinner(),
-            },
-          ),
-        ],
+                HistoryInitial() => const LoadingSpinner(),
+              },
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -156,7 +166,8 @@ class _TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = transaction.type == TransactionType.topUp ||
+    final isPositive =
+        transaction.type == TransactionType.topUp ||
         transaction.type == TransactionType.refund ||
         transaction.type == TransactionType.bonus;
     final signedAmount = isPositive
@@ -166,14 +177,18 @@ class _TransactionItem extends StatelessWidget {
     return Container(
       padding: AppTheme.cardPaddingSmall,
       decoration: BoxDecoration(
-        color: Colors.white, borderRadius: AppTheme.cardRadius, boxShadow: AppTheme.cardShadow,
+        color: Colors.white,
+        borderRadius: AppTheme.cardRadius,
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Row(
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: _iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12),
+              color: _iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(_icon, color: _iconColor, size: 22),
           ),
@@ -182,17 +197,37 @@ class _TransactionItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(transaction.description, style: AppTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  transaction.description,
+                  style: AppTheme.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: _iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                      child: Text(_typeLabel, style: AppTheme.labelSmall.copyWith(color: _iconColor, fontWeight: FontWeight.w600)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _iconColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        _typeLabel,
+                        style: AppTheme.labelSmall.copyWith(
+                          color: _iconColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    Text(DateFormatter.formatDate(transaction.date), style: AppTheme.labelSmall),
+                    Text(
+                      DateFormatter.formatDate(transaction.date),
+                      style: AppTheme.labelSmall,
+                    ),
                   ],
                 ),
               ],

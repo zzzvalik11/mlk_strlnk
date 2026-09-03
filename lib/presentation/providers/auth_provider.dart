@@ -75,13 +75,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   final UserLocalSource _localSource;
 
   AuthNotifier({
-    required LoginUseCase loginUseCase,
-    required GetCurrentUserUseCase getCurrentUserUseCase,
-    required UserLocalSource localSource,
-  })  : _loginUseCase = loginUseCase,
-        _getCurrentUserUseCase = getCurrentUserUseCase,
-        _localSource = localSource,
-        super(const AsyncValue.loading()) {
+    required this._loginUseCase,
+    required this._getCurrentUserUseCase,
+    required this._localSource,
+  }) : super(const AsyncValue.loading()) {
     _checkAuth();
   }
 
@@ -106,10 +103,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> checkAuth() => _checkAuth();
 
-  Future<void> login({
-    required String pin,
-    required String password,
-  }) async {
+  Future<void> login({required String pin, required String password}) async {
     state = const AsyncValue.loading();
     try {
       final result = await _loginUseCase.call(pin: pin, password: password);
@@ -143,7 +137,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         throw Exception('Нет сохранённых данных. Войдите заново.');
       }
       if (cached.id != pin) {
-        throw Exception('Неверный ПИН-код');
+        throw Exception('Неверный ПИН');
       }
       state = AsyncValue.data(cached.toDomain());
     } catch (e, st) {
@@ -178,16 +172,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
 Exception _mapFailureToException(Failure failure) {
   return failure.when(
-    network: (m) => Exception(m),
+    network: Exception.new,
     server: (_, m) => Exception(m),
-    validation: (m) => Exception(m),
-    cache: (m) => Exception(m),
-    unknown: (m) => Exception(m),
+    validation: Exception.new,
+    cache: Exception.new,
+    unknown: Exception.new,
   );
 }
 
-final authProvider =
-    StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
+final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((
+  ref,
+) {
   return AuthNotifier(
     loginUseCase: ref.watch(loginUseCaseProvider),
     getCurrentUserUseCase: ref.watch(getCurrentUserUseCaseProvider),

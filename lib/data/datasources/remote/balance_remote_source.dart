@@ -5,7 +5,7 @@ import 'package:telecom_dashboard/data/datasources/remote/api_client.dart';
 class BalanceRemoteSource {
   final ApiClient _apiClient;
 
-  BalanceRemoteSource({required ApiClient apiClient}) : _apiClient = apiClient;
+  BalanceRemoteSource({required this._apiClient});
 
   /// GET /v1/subscriber/accounts — список лицевых счетов.
   Future<List<Map<String, dynamic>>> getAccounts() async {

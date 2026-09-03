@@ -6,7 +6,7 @@ import 'package:telecom_dashboard/data/models/news_model.dart';
 class NewsRemoteSource {
   final ApiClient _apiClient;
 
-  NewsRemoteSource({required ApiClient apiClient}) : _apiClient = apiClient;
+  NewsRemoteSource({required this._apiClient});
 
   /// GET /v1/resources/news — список новостей.
   Future<List<NewsModel>> getNewsList() async {

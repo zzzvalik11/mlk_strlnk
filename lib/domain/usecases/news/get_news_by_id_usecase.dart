@@ -11,7 +11,9 @@ class GetNewsByIdUseCase {
   Future<Either<Failure, NewsItem>> call({required String id}) {
     if (id.isEmpty) {
       return Future.value(
-        left(Failure.validation(message: 'ID новости не может быть пустым')),
+        left(
+          const Failure.validation(message: 'ID новости не может быть пустым'),
+        ),
       );
     }
 

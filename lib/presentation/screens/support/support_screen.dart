@@ -64,15 +64,21 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
         _messageError = 'Введите сообщение';
       }
     });
-    if (_pinError != null || _emailError != null ||
-        _phoneError != null || _messageError != null) return;
+    if (_pinError != null ||
+        _emailError != null ||
+        _phoneError != null ||
+        _messageError != null) {
+      return;
+    }
 
-    ref.read(supportViewModelProvider.notifier).submitTicket(
-      pin: _pinController.text,
-      email: _emailController.text,
-      phone: _phoneController.text,
-      message: _messageController.text,
-    );
+    ref
+        .read(supportViewModelProvider.notifier)
+        .submitTicket(
+          pin: _pinController.text,
+          email: _emailController.text,
+          phone: _phoneController.text,
+          message: _messageController.text,
+        );
   }
 
   void _onPhoneChanged(String value) {
@@ -125,13 +131,13 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 20),
-                      Text('Поддержка', style: AppTheme.headlineLarge),
+                      const Text('Поддержка', style: AppTheme.headlineLarge),
                       const SizedBox(height: 24),
                       if (state is SupportFormSuccess)
                         _buildSuccessState(state.ticket.id)
                       else ...[
                         // ─── ПИН ─────────────────
-                        _buildLabel('ПИН-код'),
+                        _buildLabel('ПИН (договор)'),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _pinController,
@@ -143,7 +149,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                           ],
                           textInputAction: TextInputAction.next,
                           onChanged: (_) {
-                            if (_pinError != null) setState(() => _pinError = null);
+                            if (_pinError != null) {
+                              setState(() => _pinError = null);
+                            }
                             ref.read(supportViewModelProvider.notifier).reset();
                           },
                           onSubmitted: (_) => _emailFocusNode.requestFocus(),
@@ -164,7 +172,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                           textInputAction: TextInputAction.next,
                           autocorrect: false,
                           onChanged: (_) {
-                            if (_emailError != null) setState(() => _emailError = null);
+                            if (_emailError != null) {
+                              setState(() => _emailError = null);
+                            }
                           },
                           onSubmitted: (_) => _phoneFocusNode.requestFocus(),
                           decoration: _inputDecoration(
@@ -201,7 +211,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                           maxLines: 5,
                           minLines: 3,
                           onChanged: (_) {
-                            if (_messageError != null) setState(() => _messageError = null);
+                            if (_messageError != null) {
+                              setState(() => _messageError = null);
+                            }
                           },
                           decoration: _inputDecoration(
                             hintText: 'Опишите проблему или вопрос',
@@ -214,8 +226,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                           Padding(
                             padding: const EdgeInsets.only(top: 12),
                             child: Text(
-                              (state as SupportFormError).message,
-                              style: AppTheme.bodySmall.copyWith(color: AppTheme.error),
+                              (state).message,
+                              style: AppTheme.bodySmall.copyWith(
+                                color: AppTheme.error,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -240,7 +254,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                                     height: 24,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
                                 : const Text(
@@ -255,7 +271,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                       ],
                       const SizedBox(height: 32),
                       // ─── FAQ ────────────────────────
-                      Text('Частые вопросы', style: AppTheme.titleMedium),
+                      const Text('Частые вопросы', style: AppTheme.titleMedium),
                       const SizedBox(height: 8),
                       const _FaqItem(
                         question: 'Как пополнить баланс?',
@@ -300,23 +316,23 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
       errorText: errorText,
       filled: true,
       fillColor: Colors.white,
-      border: OutlineInputBorder(
+      border: const OutlineInputBorder(
         borderRadius: AppTheme.inputRadius,
         borderSide: BorderSide(color: AppTheme.gray200),
       ),
-      enabledBorder: OutlineInputBorder(
+      enabledBorder: const OutlineInputBorder(
         borderRadius: AppTheme.inputRadius,
         borderSide: BorderSide(color: AppTheme.gray200),
       ),
-      focusedBorder: OutlineInputBorder(
+      focusedBorder: const OutlineInputBorder(
         borderRadius: AppTheme.inputRadius,
         borderSide: BorderSide(color: AppTheme.orange500, width: 2),
       ),
-      errorBorder: OutlineInputBorder(
+      errorBorder: const OutlineInputBorder(
         borderRadius: AppTheme.inputRadius,
         borderSide: BorderSide(color: AppTheme.error),
       ),
-      focusedErrorBorder: OutlineInputBorder(
+      focusedErrorBorder: const OutlineInputBorder(
         borderRadius: AppTheme.inputRadius,
         borderSide: BorderSide(color: AppTheme.error, width: 2),
       ),
@@ -334,16 +350,20 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
       child: Column(
         children: [
           const SizedBox(height: 16),
-          Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.success),
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 64,
+            color: AppTheme.success,
+          ),
           const SizedBox(height: 16),
-          Text('Обращение отправлено', style: AppTheme.titleLarge),
+          const Text('Обращение отправлено', style: AppTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
             'Номер: $ticketId',
             style: AppTheme.bodyMedium.copyWith(color: AppTheme.gray500),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Мы ответим вам в ближайшее время',
             style: AppTheme.bodyMedium,
             textAlign: TextAlign.center,
@@ -398,10 +418,12 @@ class _FaqItem extends StatelessWidget {
           question,
           style: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.w500),
         ),
-        trailing: Icon(Icons.expand_more_rounded, color: AppTheme.gray400, size: 20),
-        children: [
-          Text(answer, style: AppTheme.bodyMedium),
-        ],
+        trailing: const Icon(
+          Icons.expand_more_rounded,
+          color: AppTheme.gray400,
+          size: 20,
+        ),
+        children: [Text(answer, style: AppTheme.bodyMedium)],
       ),
     );
   }

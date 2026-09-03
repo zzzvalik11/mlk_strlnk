@@ -14,19 +14,22 @@ class ServiceRepositoryImpl implements ServiceRepository {
   final UserLocalSource _localSource;
 
   ServiceRepositoryImpl({
-    required ServiceRemoteSource remoteSource,
-    required UserLocalSource localSource,
-  })  : _remoteSource = remoteSource,
-        _localSource = localSource;
+    required this._remoteSource,
+    required this._localSource,
+  });
 
   @override
-  Future<Either<Failure, List<Service>>> getActiveServices({int accountId = 1}) async {
+  Future<Either<Failure, List<Service>>> getActiveServices({
+    int accountId = 1,
+  }) async {
     try {
       if (_localSource.isMockUser()) {
         return right(_createMockServices());
       }
 
-      final models = await _remoteSource.getActiveServices(accountId: accountId);
+      final models = await _remoteSource.getActiveServices(
+        accountId: accountId,
+      );
       return right(models.map((m) => m.toDomain()).toList());
     } on DioException catch (e) {
       return left(DioExceptionMapper.map(e));
@@ -36,22 +39,29 @@ class ServiceRepositoryImpl implements ServiceRepository {
   }
 
   @override
-  Future<Either<Failure, Service>> getServiceDetails(String id, {int accountId = 1}) async {
+  Future<Either<Failure, Service>> getServiceDetails(
+    String id, {
+    int accountId = 1,
+  }) async {
     try {
       if (_localSource.isMockUser()) {
         final all = _createMockServices();
         final match = all.where((s) => s.id == id).firstOrNull;
         if (match == null) {
-          return left(const Failure.server(statusCode: 404, message: 'Услуга не найдена'));
+          return left(
+            const Failure.server(statusCode: 404, message: 'Услуга не найдена'),
+          );
         }
         return right(match);
       }
 
-      final models = await _remoteSource.getActiveServices(accountId: accountId);
+      final models = await _remoteSource.getActiveServices(
+        accountId: accountId,
+      );
       final match = models.where((m) => m.id == id).firstOrNull;
       if (match == null) {
         return left(
-          Failure.server(statusCode: 404, message: 'Услуга не найдена'),
+          const Failure.server(statusCode: 404, message: 'Услуга не найдена'),
         );
       }
       return right(match.toDomain());
@@ -63,7 +73,10 @@ class ServiceRepositoryImpl implements ServiceRepository {
   }
 
   @override
-  Future<Either<Failure, Service>> renewService(String id, {int accountId = 1}) async {
+  Future<Either<Failure, Service>> renewService(
+    String id, {
+    int accountId = 1,
+  }) async {
     try {
       if (_localSource.isMockUser()) {
         final result = await getServiceDetails(id, accountId: accountId);
@@ -83,7 +96,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
 
   List<Service> _createMockServices() {
     return [
-      Service(
+      const Service(
         id: '1',
         name: 'Интернет 100 Мбит/с',
         category: 'Интернет',
@@ -91,7 +104,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
         status: ServiceStatus.active,
         billingCycle: 'Ежемесячно',
       ),
-      Service(
+      const Service(
         id: '2',
         name: 'ТВ-пакет «Базовый»',
         category: 'ТВ',
@@ -99,7 +112,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
         status: ServiceStatus.active,
         billingCycle: 'Ежемесячно',
       ),
-      Service(
+      const Service(
         id: '3',
         name: 'Защита от спама',
         category: 'Безопасность',
